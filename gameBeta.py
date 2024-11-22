@@ -23,7 +23,10 @@ class Character:
         self.block = 0
         self.potion = [None, None, None]
         self.relics = []
-        self.buff = {'Strength': 0, 'Dexterity': 0}
+        self.buff = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Throns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Flurry': 0}
+        #Debuffs: Atrophy = lose dex at the end of turn
+        self.debuff = {'Vulerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0}
+        self.powers = {'Parry': 0, 'Deflect': 0, 'Cursed Ward': 0, 'Feel No Pain': 0, 'Evolve': 0, 'Transfer Pain': 0, 'Dark Embrace': 0, 'Corruption Form': 0, 'Spectral Blades': 0, 'Seeing Red': 0, 'Corruption': 0, 'Clear Mind': 0}
     
     def relic_pickup(self, relic):
         self.relics.append(relic)
