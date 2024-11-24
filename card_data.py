@@ -1,3 +1,4 @@
+import effects
 class Card():
     def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target):
         self.id = id # Card ID, which is an integer
@@ -56,9 +57,9 @@ class Card():
 card_data = {
     0: ('Curse of the Blade', 4, 4, 'U', 'When drawn, lose 4, At the end of the turn, lose 2 HP. Retain', False, False, True, False, {'drawn': {'Hp': -4}, 'turn end': {'Hp': -2}}, 0),
 
-    1000: ('Slash', 0, 0, 1, 'Deal 6 damage.', False, False, False, False, {'dmg': (6, 1)}, 1),
-    1001: ('Bash', 0, 0, 1, 'Deal 8 damage. Apply 2 Vulnerable.', False, False, False, False, {'dmg': (8, 1), 'debuff': (0, 2)}, 1),
-    1002: ('Block', 0, 1, 1, 'Gain 5 block.', False, False, False, False, {'block': (5, 1)}, 0),
+    1000: ('Slash', 0, 0, 1, 'Deal 6 damage.', False, False, False, False, {effects.deal_damage: (6, 1)}, 1),
+    1001: ('Bash', 0, 0, 1, 'Deal 8 damage. Apply 2 Vulnerable.', False, False, False, False, {effects.deal_damage: (8, 1), effects.apply_debuff: (['Vulerable'], [2])}, 1),
+    1002: ('Block', 0, 1, 1, 'Gain 5 block.', False, False, False, False, {effects.block_gain: (5, 1)}, 0),
     1003: ('Inflict Wounds', 0, 0, 0, 'Deal 3 damage. Apply 1 Vulnerable', False, False, False, False, {'dmg': (3, 1), 'debuff': (0, 1)}, 1),
     1004: ("Rampage", 1, 0, 0, 'Deal 6 damage. Add a copy of this card to your discard pile.', False, False, False, False, {'dmg': (6, 1), 'add': ('discard', 1004, 1)}, 1),
     1005: ("Covet", 1, 1, 0, 'Draw 1 card. Discard 1 card, if the card discarded was a Curse, Exhaust it instead.', False, False, False, False, {'draw': 1, 'discard': 1, 'cond': ('curse', {'exhaust': (1, 'discard', 'top')}, {'NA': 0})}, 0),
