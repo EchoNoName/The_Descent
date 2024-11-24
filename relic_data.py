@@ -33,7 +33,7 @@ relicsList = {
     'Meal Ticket': ('When you enter a Shop, heal 10 Hp.', 4),
     'Comfy Pillow': ('When you Rest, heal 15 additional Hp.', 4),
     'Lantern': ('At the start of combat, gain 1 Energy.', 4),
-    'Javalin': ('Your first attack does 8 additional damage.', 4),
+    'Javalin': ('At the start of combat, gain 8 Vigour', 4),
     'Crystal Ball': ('You can no longer encounter enemy combat in Event rooms.', 4),
     'Lucky 7': ('On turn 7, gain 17 Gold.', 4),
     'Coupon Sheet': ('Removing a card at a Shop always costs 50 Gold.', 4),
