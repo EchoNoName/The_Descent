@@ -1,4 +1,3 @@
-import effects
 import card_data
 import card_constructor
 import random
