@@ -1,21 +1,4 @@
 import effects
-class Card():
-    def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target):
-        self.id = id # Card ID, which is an integer
-        self.name = name # Name of the card, a string
-        self.rarity = rarity # rarity represented by an integer
-        self.type = type # type of card (attack, skill, power, curse, status), represented by an integer
-        self.cost = cost # cost of the card, can be just a number, x or a special cost written like ('C', original cost, +/-, condition)
-        self.card_text = card_text # Base card text, a string
-        self.innate = innate # Boolean representing whether a card is innate
-        self.exhaust = exhaust # Boolean representing whether a card is exhaust
-        self.retain = retain # Boolean representing whether a card is retain
-        self.ethereal = ethereal # Boolean representing whether a card is ethereal
-        self.effect = effect # what the card actually does, represented by a dictonary that contains its actions
-        self.target = target # The targets of the card, represented by an integer
-        self.combat_cost = (None, None) #(Cost, Duration of cost (Played, Turn, Combat))
-        self.chaotic = False # whether a card is chaotic, represented by boolean
-        
 
 
 #the card ids will consist of 4 numbers, ABCD, A represents the class of cards, and the rest represents the card number, adding 100 is the upgraded version of the card.
@@ -54,15 +37,15 @@ class Card():
 
 #Note: When 'exhaust' is put in place for a #, that means # of cards exhausted
 
-card_data = {
+Cards = {
     0: ('Curse of the Blade', 4, 4, 'U', 'When drawn, lose 4, At the end of the turn, lose 2 HP. Retain', False, False, True, False, {'drawn': {'Hp': -4}, 'turn end': {'Hp': -2}}, 0),
 
-    1000: ('Slash', 0, 0, 1, 'Deal 6 damage.', False, False, False, False, {effects.deal_damage: (6, 1)}, 1),
-    1001: ('Bash', 0, 0, 1, 'Deal 8 damage. Apply 2 Vulnerable.', False, False, False, False, {effects.deal_damage: (8, 1), effects.apply_debuff: (['Vulerable'], [2])}, 1),
-    1002: ('Block', 0, 1, 1, 'Gain 5 block.', False, False, False, False, {effects.block_gain: (5, 1)}, 0),
-    1003: ('Inflict Wounds', 0, 0, 0, 'Deal 3 damage. Apply 1 Vulnerable', False, False, False, False, {'dmg': (3, 1), 'debuff': (0, 1)}, 1),
-    1004: ("Rampage", 1, 0, 0, 'Deal 6 damage. Add a copy of this card to your discard pile.', False, False, False, False, {'dmg': (6, 1), 'add': ('discard', 1004, 1)}, 1),
-    1005: ("Covet", 1, 1, 0, 'Draw 1 card. Discard 1 card, if the card discarded was a Curse, Exhaust it instead.', False, False, False, False, {'draw': 1, 'discard': 1, 'cond': ('curse', {'exhaust': (1, 'discard', 'top')}, {'NA': 0})}, 0),
+    1000: ('Slash', 0, 0, 1, 'Deal 6 damage.', False, False, False, False, {effects.deal_attack_damage: (6, 1)}, 1),
+    1001: ('Bash', 0, 0, 1, 'Deal 8 damage. Apply 2 Vulnerable.', False, False, False, False, {effects.deal_attack_damage: (8, 1), effects.apply_debuff: (['Vulerable'], [2])}, 1),
+    1002: ('Block', 0, 1, 1, 'Gain 5 block.', False, False, False, False, {effects.block_gain_card: (5, 1)}, 0),
+    1003: ('Inflict Wounds', 0, 0, 0, 'Deal 3 damage. Apply 1 Vulnerable', False, False, False, False, {effects.deal_attack_damage: (3, 1), effects.apply_debuff: (['Vulnerable'], [1])}, 1),
+    1004: ("Rampage", 1, 0, 0, 'Deal 6 damage. Add a copy of this card to your discard pile.', False, False, False, False, {effects.deal_attack_damage: (6, 1), effects.add_card_to_pile: (2, 1004)}, 1), # 0 = hand, 1 = draw pile, 2 = discard pile. 3 = exhaust pile
+    1005: ("Covet", 1, 1, 0, 'Draw 1 card. Discard 1 card, if the card discarded was a Curse, Exhaust it instead.', False, False, False, False, {effects.draw_cards: 1, 'discard': 1, 'cond': ('curse', {'exhaust': (1, 'discard', 'top')}, {'NA': 0})}, 0),
     1006: ("Flex", 1, 1, 0, 'Gain 2 Temporary Strength.', False, False, False, False, {'buff': (0, 2), 'debuff': (3, 2)}, 0),
     1007: ("War cry", 1, 1, 0, 'Draw 1 card, place 1 card on top of the draw pile, gain 3 Vigour.', False, False, False, False, {'draw': 1, 'place': ('hand', 1, 'deck', 'top')}, 0),
     1008: ("To Basics", 1, 1, 0, 'Add 1 Common card from your draw pile into your hand.', False, False, False, False, {'search': ("deck", 'common', 1)}, 0),

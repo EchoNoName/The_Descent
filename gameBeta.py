@@ -1,3 +1,5 @@
+import card_data
+import card_constructor
 import effects
 import combat_beta
 
@@ -42,10 +44,11 @@ class Relics: # Relic Object Class
 
 
 class Character:
-    def __init__(self, name, maxHp):
+    def __init__(self, name, maxHp, character_class):
         self.name = name
         self.maxHp = maxHp
         self.Hp = maxHp
+        self.character_class = character_class
         self.block = 0
         self.deck = []
         self.potions = [None, None, None]
@@ -63,8 +66,11 @@ class Character:
         if self.potions.count(None) > 0:
             self.potions[self.potions.index(None)] = potion
 
-    def gain_block(self, amount):
+    def gain_block_card(self, amount):
         self.block += amount + self.buff['Dexterity']
+    
+    def gain_block_power(self, amount):
+        self.block += amount
     
     def gain_buff(self, buff_type, amount):
         self.buff[buff_type] += amount

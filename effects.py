@@ -1,7 +1,8 @@
+import card_constructor
 import math
 import random
 
-def deal_damage(damage, targets, buffs, debuffs, *args):
+def deal_attack_damage(damage, targets, buffs, debuffs, *args):
     actualDamage = damage + buffs['Strength'] + buffs['Vigour']
     actualDamage = (actualDamage - debuffs['-Strength'])
     if debuffs['Weak'] > 0:
@@ -12,12 +13,26 @@ def deal_damage(damage, targets, buffs, debuffs, *args):
     else:
         targets.damage_taken(actualDamage)
 
-def block_gain(block, targets, *args):
+def deal_damage(damage, targets, *args):
     if isinstance(targets, list):
         for entity in targets:
-            entity.gain_block(block)
+            entity.damage_taken(damage)
     else:
-        targets.gain_block(block)
+        targets.damage_taken(damage)
+
+def block_gain_card(block, targets, *args):
+    if isinstance(targets, list):
+        for entity in targets:
+            entity.gain_block_card(block)
+    else:
+        targets.gain_block_card(block)
+
+def block_gain_power(block, targets, *args):
+    if isinstance(targets, list):
+        for entity in targets:
+            entity.gain_block_power(block)
+    else:
+        targets.gain_block_power(block)
 
 def apply_buff(buffs, amount, targets):
     if isinstance(targets, list):
@@ -36,6 +51,14 @@ def apply_debuff(debuffs, amount, targets):
     else:
         for i in range(len(debuffs)):
             entity.gain_debuffs(debuffs[i], amount[i])
+
+def add_card_to_pile(location, card_id, number_of_cards, combat):
+    if isinstance(card_id, int):
+        for i in range(0, number_of_cards):
+            combat.add_card_to_pile(location, card_id)
+
+def draw_cards(num, combat):
+    combat.draw(num)
 
 def small_damage_reduction(damage, cap, *args): # The reduce small damage to 1 effect
     if damage <= cap and damage > 1:
