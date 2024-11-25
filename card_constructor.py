@@ -1,3 +1,18 @@
+attack_card_1 = [1004, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1022, 1023, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1057, 1058, 1059, 1060, 1061, 1062]
+skill_card_1 = [1005, 1006, 1007, 1008, 1017, 1018, 1019, 1020, 1021, 1024, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1063, 1064, 1065, 1066, 1067, 1068]
+power_card_1 = []
+
+def random_card(type, character_class):
+    if type == 'curse':
+        return 'placeholder'
+    elif type == 'status':
+        return 'placeholer'
+    elif type == 'atk':
+        if character_class == 1:
+            return
+        else:
+            return 'placeholder'
+
 class Card():
     def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target):
         self.id = id # Card ID, which is an integer
