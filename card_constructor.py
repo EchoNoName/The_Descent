@@ -1,3 +1,5 @@
+import random
+
 attack_card_1 = [1003, 1004, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1022, 1023, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1057, 1058, 1059, 1060, 1061, 1062]
 skill_card_1 = [1005, 1006, 1007, 1008, 1017, 1018, 1019, 1020, 1021, 1024, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1063, 1064, 1065, 1066, 1067, 1068]
 power_card_1 = [1050, 1051, 1052, 1053, 1054, 1055, 1056, 1069, 1070, 1071, 1072, 1073, 1074]
@@ -30,6 +32,11 @@ class Card():
         self.removable = removable # Whether the card can be removed from the deck
         self.combat_cost = (None, None) #(Cost, Duration of cost (Played, Turn, Combat))
         self.chaotic = False # whether a card is chaotic, represented by boolean
+    
+    def chaos(self):
+        self.combat_cost = random.randint(0, 3)
+    
+    
 
 def create_card(card_id, card_data: tuple):
     return Card(card_id, *card_data)

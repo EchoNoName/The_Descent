@@ -32,7 +32,7 @@ def deal_damage(damage, targets, *args):
 
 def block_gain_card(block, times, context, combat):
     for i in range(0, times):
-        for entity in combat.get_targets(context['target']):
+        for entity in combat.get_targets(context['user']):
             entity.gain_block_card(block)
 
 def block_gain_power(block, targets, *args):
@@ -56,7 +56,20 @@ def apply_debuff(debuffs, amount, context, combat):
 def add_card_to_pile(location, card_id, number_of_cards, context, combat, *args):
     if isinstance(card_id, int):
         for i in range(0, number_of_cards):
-            combat.add_card_to_pile(location, card_id)
+            combat.add_card_to_pile(context[location], card_id, location)
+    else:
+        if card_id in {'atk', 'skill', 'power', 'weak curse', 'average curse', 'strong curse', 'curse', 'status'}:
+            return 'placeholder'
+    
+def lose_hp(amount, context, combat):
+    targets = combat.get_targets(context['target'])
+    if not isinstance(amount, int):
+        amount = len(context[amount])
+    for entity in targets:
+        entity.hp_loss(amount)
+
+def retain_cards(num, context, combat):
+    combat.retain_cards(num)
 
 def draw_cards(num, context, combat):
     combat.draw(num)
@@ -66,6 +79,13 @@ def discard_cards(num, type, context, combat):
         combat.random_discard(num)
     elif type == 'choose':
         combat.choose_discard(num)
+
+def place_card_in_loction(start_pos, num, end_pos, context, combat):
+    combat.hard_card_select(num, context[start_pos])
+    combat.place_selected_cards(context[end_pos])
+
+def card_search(type, num, context, combat):
+    combat.search(num, type)
 
 def conditional_effect(effect, effect_details, context_condition, norm_effect, cond_effect, *args):
     if context_condition == effect(effect_details):
