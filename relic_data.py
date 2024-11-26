@@ -78,7 +78,7 @@ relicsList = {
     'Midas\'s Hand': ('Upon killing an enemy, gain Gold equal to overkill damage done.', 2),
     'Brewing Stand': ('Whenever you rest, obatin a random potion.', 2),
     'Covert Cloak': ('At the start of combat, gain 1 Intangable.', 2),
-    'Magic Mushrooms': ('At the start of combat, gain 1 Flurry.', 2),
+    'Magic Mushrooms': ('At the start of combat, gain 1 Duplicate.', 2),
     'Captain\'s Wheel': ('On the 3rd turn, gain 18 block.', 2),
     'Rusted Plate': ('At the start of combat, gain 4 plated armour.', 2),
     'Ginger': ('You can no longer be Weakened.', 2),

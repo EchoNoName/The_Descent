@@ -38,8 +38,16 @@ import effects
 #Note: When 'exhaust' is put in place for a #, that means # of cards exhausted
 
 Cards = {
-    0: ('Curse of the Blade', 4, 4, 'U', 'When drawn, lose 4, At the end of the turn, lose 2 HP. Retain', False, False, True, False, {'drawn': {'Hp': -4}, 'turn end': {'Hp': -2}}, 0),
+    0: ('Unfocused', 4, 4, 'U', None, True, False, False, True, None, None),
+    1: ('Clumsy', 4, 4, 'U', None, False, False, False, True, None, None),
+    2: ('Writhe', 4, 4, 'U', None, True, False, False, False, None, None),
+    3: ('Cluttered', 4, 4, 'U', None, False, False, True, False, None, None),
+    4: ('Injury', 4, 4, 'U', None, False, False, False, False, None, None),
+    5: ('Doubt', 4, 4, 'U', 'At the end of your turn, gain 1 Weak.', False, False, False, False, {'Turn End': {effects.apply_debuff: (['Weak'], [1])}}, 0),
+    6: ('Shame', 4, 4, 'U', 'At the end of your turn, gain 1 Frail.', False, False, False, False, {'Turn End': {effects.apply_debuff: (['Frail'], [1])}}, 0),
+    7: ('Corroded', 4, 4, 'U', 'At the end of your turn, gain 1 Vulnerable', False, False, False, False, {'Turn End': {effects.apply_debuff: (['Vulnerable'], [1])}}, 0),
 
+    10: ('Curse of the Blade', 4, 4, 'U', 'When drawn, lose 4, At the end of the turn, lose 2 HP. Retain', False, False, True, False, {'drawn': {'Hp': -4}, 'turn end': {'Hp': -2}}, 0),
     1000: ('Slash', 0, 0, 1, 'Deal 6 damage.', False, False, False, False, {effects.deal_attack_damage: (6, 1)}, 1),
     1001: ('Bash', 0, 0, 1, 'Deal 8 damage. Apply 2 Vulnerable.', False, False, False, False, {effects.deal_attack_damage: (8, 1), effects.apply_debuff: (['Vulerable'], [2])}, 1),
     1002: ('Block', 0, 1, 1, 'Gain 5 block.', False, False, False, False, {effects.block_gain_card: (5, 1)}, 0),
