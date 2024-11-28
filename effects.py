@@ -11,6 +11,10 @@ def deal_attack_damage(damage, times, context, combat):
         buffs: list of buffs the entity doing the attack has
         debuffs: list of debufs the entity doing the attack has
     '''
+    actualDamage = 0
+    if not isinstance(damage, int):
+        if damage == 'block':
+            actualDamage = context['user'].block
     actualDamage = damage + context['user'].buffs['Strength'] + context['user'].buffs['Vigour']
     actualDamage = actualDamage - context['user'].debuffs['-Strength']
     if context['user'].debuffs['Weak'] > 0:
@@ -119,6 +123,17 @@ def conditional_effect(effect, effect_details, context_condition, norm_effect, n
     else:
         context['target'] = context['target'][0]
         norm_effect(*norm_effect_details, context, combat)
+
+def modify_effect(effect, modifications, context, combat):
+    combat.playing.effect[effect][0] += modifications
+
+def hand_for_card_exhausted(exhaust_card_type: set, card_type_cond: set, cond_effect: list, cond_effect_details: list, context, combat):
+    cards_exhausted_type = combat.sever(exhaust_card_type)
+    if cards_exhausted_type:
+        for card_type in combat.sever(exhaust_card_type):
+            if card_type in card_type_cond:
+                for i in range(0, len(cond_effect)):
+                    cond_effect[i](*cond_effect_details[i], context, combat)
 
 
 def small_damage_reduction(damage, cap, *args): # The reduce small damage to 1 effect

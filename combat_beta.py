@@ -341,9 +341,30 @@ class Combat():
         for i in range(0, num):
             if self.draw_pile:
                 self.playing = self.draw_pile[-1]
-                
+                if special == True:
+                    self.playing.property_change('exhaust', True)
+                context = {
+                    'user': self.player,
+                    'enemies': self.enemies,
+                    'draw': self.draw_pile,
+                    'discard': self.discard_pile,
+                    'hand': self.hand,
+                    'exhaust': self.exhaust_pile,
+                    'target': 2
+                }
+                self.play_card(context)
+    
+    def sever(self, card_type: set) -> list:
+        cards_exhausted_type = []
+        if self.hand:
+            for card in reversed(self.hand):
+                if card.type in card_type:
+                    cards_exhausted_type.append(card.type)
+                    self.exhaust_pile.append(card)
+                    self.hand.remove(card)
+        return cards_exhausted_type
 
-    def play_card(self):
+    def play_card(self, override = None):
         '''Method used for playing cards in combat
         '''
         context = {
@@ -355,8 +376,10 @@ class Combat():
             'exhaust': self.exhaust_pile,
             'target': self.playing.target
         }
+        if override:
+            context = override
         # Context used for certain effects such as attacking where getting buffs is needed
-        if self.playing.cost == 'U':
+        if self.playing.get_cost(self) == 'U':
             if self.playing.type == 3 and self.mechanics['Playable_Status']:
                 self.exhaust_pile.extend(self.playing)
                 self.playing = None
@@ -365,7 +388,7 @@ class Combat():
                     effect(details, context, self)
                 self.exhaust_pile.extend(self.playing)
                 self.playing = None
-        elif self.playing.cost == 'x':
+        elif self.playing.get_cost(self) == 'X':
             self.playing.play_x_cost(self.energy)
             for effect, details in self.playing.x_cost_effect:
                 effect(*details, context, self)
@@ -376,9 +399,12 @@ class Combat():
         elif self.playing.effect:
             for effect, details in self.playing.effect.items():
                 # Iterates through every effect
-                effect(*details, context, self)
-                #  Performs the effects
-            if self.playing.exhaust == True:
+                if not isinstance(effect, str):
+                    effect(*details, context, self)
+                    #  Performs the effects if its not a conditional
+            if self.type == 2:
+                self.player.power.apppend[self.playing]
+            elif self.playing.exhaust == True:
                 self.exhaust_pile.extend(self.playing)
             else:
                 self.discard_pile.extend(self.playing)
@@ -447,13 +473,15 @@ class Combat():
             else:
                 if len(player_action) == 1:
                     if self.can_play_card == False:
+                        print(f'You cannot play anymore cards!')
                         continue
                     player_action = int(player_action)
                     card = self.hand[player_action]
-                    if card.cost > self.energy:
+                    cost = card.get_cost(self)
+                    if cost > self.energy:
                         print('Not enought energy')
                     else:
-                        new_energy = self.energy - card.cost
+                        new_energy = self.energy - cost
                         self.play_card(card)
                         self.energy = new_energy
                 else: 

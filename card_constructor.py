@@ -39,11 +39,39 @@ class Card():
         self.chaotic = False # whether a card is chaotic, represented by boolean
         self.x_cost_effect = x_cost_effect
     
+    def get_cost(self, combat):
+        if isinstance(self.cost, str):
+            if self.cost == 'U':
+                return 'U'
+            elif self.cost == 'X':
+                return combat.energy
+            elif self.cost == 'c':
+                return 6 - combat.curse_count()
+        elif isinstance(self.combat_cost[0], int):
+            return self.combat_cost[0]
+        else:
+            return self.cost
+
+    def played(self):
+        if isinstance(self.combat_cost[1], str):
+            if self.combat_cost == 'Played':
+                self.combat_cost = (None, None)
+
     def chaos(self):
         self.combat_cost = (random.randint(0, 3), 'combat')
     
     def cost_change(self, cost, duration):
         self.combat_cost = (cost, duration)
+
+    def property_change(self, property, new_value):
+        properties = {
+            'innate': self.innate,
+            'exhaust': self.exhaust,
+            'retain': self.retain,
+            'ethereal': self.ethereal,
+            'chaotic': self.chaotic
+        }
+        properties[property] = new_value
 
     def play_x_cost(self, cost):
         return # Placeholder

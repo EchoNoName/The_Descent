@@ -17,8 +17,9 @@ class Character:
         self.relics = []
         self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Throns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0}
         #Debuffs: Atrophy = lose dex at the end of turn
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0}
-        self.powers = {'Parry': 0, 'Deflect': 0, 'Cursed Ward': 0, 'Feel No Pain': 0, 'Evolve': 0, 'Transfer Pain': 0, 'Dark Embrace': 0, 'Corruption Form': 0, 'Spectral Blades': 0, 'Seeing Red': 0, 'Corruption': 0, 'Clear Mind': 0}
+        self.debuffs = {'Vulerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Parry': 0, 'Deflect': 0}
+        # self.powers = {'Cursed Ward': 0, 'Feel No Pain': 0, 'Evolve': 0, 'Transfer Pain': 0, 'Dark Embrace': 0, 'Corruption Form': 0, 'Spectral Blades': 0, 'Seeing Red': 0, 'Corruption': 0, 'Clear Mind': 0}
+        self.powers = []
     
     def relic_pickup(self, relic):
         self.relics.append(relic)
@@ -40,7 +41,8 @@ class Character:
     def lose_buff(self, buff_type, amount):
         self.buffs[buff_type] -= amount
         if self.buffs[buff_type] < 0:
-            self.debuffs['-' + buff_type] = self.buffs[buff_type]
+            if '-' + buff_type in self.debuffs:
+                self.debuffs['-' + buff_type] = self.buffs[buff_type]
             self.buffs[buff_type] = 0
     
     def gain_debuff(self, debuff_type, amount):
@@ -48,6 +50,8 @@ class Character:
             self.buffs['ArtiFact'] -= 1
         elif debuff_type == "No Draw" or debuff_type == "Chaotic" or debuff_type == 'Last Chance':
             self.debuffs[debuff_type] = 1
+        elif debuff_type in {'-Strength', '-Dexterity'}:
+            self.lose_buff(debuff_type, amount)
         else:
             self.debuffs[debuff_type] += amount
     
