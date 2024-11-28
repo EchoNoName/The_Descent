@@ -11,7 +11,7 @@ class Combat():
         self.relics = relics
         self.potions = potions
         self.combat_type = combat_type
-        self.mechanics = mechanics # {Intent: True/False, Ordered_Draw_Pile: True/False, Turn_End_Discard: True/False, Playable_Curse: Effect/False, Playable_Status: Effect/False, Exhaust_Chance: %, }
+        self.mechanics = mechanics # {Intent: True/False, Ordered_Draw_Pile: True/False, Turn_End_Discard: True/False, Playable_Curse: Effect/False, Playable_Status: True/False, Exhaust_Chance: %, Cards_per_Turn: False/int}
         self.turn = 0
         self.start_of_combat = True
         self.draw_pile = deck
@@ -20,9 +20,13 @@ class Combat():
         self.selected = []
         self.discard_pile = []
         self.exhaust_pile = []
+        self.playing = None
         self.energy_cap = 3
         self.energy = 0
         self.retain = 0
+        self.can_play_card = True
+        self.num_of_cards_played = 0
+        self.combat_active = True
     
     def get_energy_cap(self):
         for relics in self.relics:
@@ -224,6 +228,19 @@ class Combat():
             if len(self.hand) > num:
                 for i in range(0, num):
                     card = random.choice(self.hand)
+                    if card.effect:
+                        if 'Discarded' in card.effect:
+                            context = {
+                                'user': self.player,
+                                'enemies': self.enemies,
+                                'draw': self.draw_pile,
+                                'discard': self.discard_pile,
+                                'hand': self.hand,
+                                'exhaust': self.exhaust_pile,
+                                'target': card.target
+                            }
+                            for effect, details in card.effect['Discarded']:
+                                effect(*details, context, self)
                     self.discard_pile.append(card)
                     self.hand.remove(card)
             else:
@@ -232,11 +249,150 @@ class Combat():
 
     def choose_discard(self, num):
         self.hard_card_select(num, self.hand)
-        self.discard_pile.extend(self.selected)
-        self.selected.clear()
+        if self.selected:
+            for card in self.selected:
+                if card.effect:
+                    if 'Discarded' in card.effect:
+                        context = {
+                                'user': self.player,
+                                'enemies': self.enemies,
+                                'draw': self.draw_pile,
+                                'discard': self.discard_pile,
+                                'hand': self.hand,
+                                'exhaust': self.exhaust_pile,
+                                'target': card.target
+                            }
+                        for effect, details in card.effect['Discarded']:
+                            effect(*details, context, self)
+            self.discard_pile.extend(self.selected)
+            self.selected.clear()
 
-    def play_card(self, card):
+    def exhaust_random_hand(self, num):
+        if self.hand:
+            if len(self.hand) > num:
+                for i in range(0, num):
+                    card = random.choice(self.hand)
+                    if card.effect:
+                        if 'Exhausted' in card.effect:
+                            context = {
+                                'user': self.player,
+                                'enemies': self.enemies,
+                                'draw': self.draw_pile,
+                                'discard': self.discard_pile,
+                                'hand': self.hand,
+                                'exhaust': self.exhaust_pile,
+                                'target': card.target
+                            }
+                            for effect, details in card.effect['Exhausted']:
+                                effect(*details, context, self)
+                    self.exhaust_pile.append(card)
+                    self.hand.remove(card)
+            else:
+                self.exhaust_pile.extend(self.hand)
+                self.hand.clear()
+    
+    def exhaust_choose_hand(self, num):
+        self.hard_card_select(num, self.hand)
+        if self.selected:
+            for card in self.selected:
+                if card.effect:
+                    if 'Exhausted' in card.effect:
+                        context = {
+                                'user': self.player,
+                                'enemies': self.enemies,
+                                'draw': self.draw_pile,
+                                'discard': self.discard_pile,
+                                'hand': self.hand,
+                                'exhaust': self.exhaust_pile,
+                                'target': card.target
+                            }
+                        for effect, details in card.effect['Exhausted']:
+                            effect(*details, context, self)
+            self.exhaust_pile.extend(self.selected)
+            self.selected.clear()
+
+    def retain_cards(self, num):
+        self.retain += num
+
+    def energy_change(self, amount):
+        self.energy += amount
+        if self.energy < 0:
+            self.energy = 0
+
+    def card_limit(self, limit):
+        if limit:
+            if self.num_of_cards_played >= limit:
+                self.can_play_card = False
+            else:
+                if self.mechanics['Cards_per_Turn'] != False:
+                    if self.num_of_cards_played < self.mechanics['Cards_per_Turn']:
+                        self.can_play_card = True
+                else: 
+                    self.can_play_card = True
+
+    def resolve_action(self):
+        for enemy in reversed(self.enemies):
+            if enemy.Hp <= 0:
+                self.enemies.remove(enemy)
+        if not self.enemies:
+            self.combat_active = False
+
+    def havoc(self, num, special):
+        for i in range(0, num):
+            if self.draw_pile:
+                self.playing = self.draw_pile[-1]
+                
+
+    def play_card(self):
         '''Method used for playing cards in combat
+        '''
+        context = {
+            'user': self.player,
+            'enemies': self.enemies,
+            'draw': self.draw_pile,
+            'discard': self.discard_pile,
+            'hand': self.hand,
+            'exhaust': self.exhaust_pile,
+            'target': self.playing.target
+        }
+        # Context used for certain effects such as attacking where getting buffs is needed
+        if self.playing.cost == 'U':
+            if self.playing.type == 3 and self.mechanics['Playable_Status']:
+                self.exhaust_pile.extend(self.playing)
+                self.playing = None
+            elif self.playing.type == 4 and self.mechanics['Playable_Curse']:
+                for effect, details in self.mechanics['Playable_Curse'].items():
+                    effect(details, context, self)
+                self.exhaust_pile.extend(self.playing)
+                self.playing = None
+        elif self.playing.cost == 'x':
+            self.playing.play_x_cost(self.energy)
+            for effect, details in self.playing.x_cost_effect:
+                effect(*details, context, self)
+            if self.playing.exhaust == True:
+                self.exhaust_pile.extend(self.playing)
+            else:
+                self.discard_pile.extend(self.playing)
+        elif self.playing.effect:
+            for effect, details in self.playing.effect.items():
+                # Iterates through every effect
+                effect(*details, context, self)
+                #  Performs the effects
+            if self.playing.exhaust == True:
+                self.exhaust_pile.extend(self.playing)
+            else:
+                self.discard_pile.extend(self.playing)
+        self.playing = None
+        self.num_of_cards_played += 1
+        if self.hand:
+            for card in self.hand:
+                if 'Card Played' in card.effect:
+                    for effect, details in card.effect['Card Played']:
+                        effect(*details, context, self)
+                    self.resolve_action()
+    
+    def use_potion(self, potion):
+        '''Method used for using potions in combat
 
         args:
             card: card object made using card_constructor, contains all data of a card
@@ -248,35 +404,20 @@ class Combat():
             'discard': self.discard_pile,
             'hand': self.hand,
             'exhaust': self.exhaust_pile,
-            'target': card.target
+            'target': potion.target
         }
-        # Context used for certain effects such as attacking where getting buffs is needed
-        for effect, details in card.effect:
-            # Iterates through every effect
-            effect(*details, context, self)
-            #  Performs the effects
-
-    def exhaust_random_hand(self, num):
-        if self.hand:
-            if len(self.hand) > num:
-                for i in range(0, num):
-                    card = random.choice(self.hand)
-                    self.exhaust_pile.append(card)
-                    self.hand.remove(card)
-            else:
-                self.exhaust_pile.extend(self.hand)
-                self.hand.clear()
-    
-    def exhaust_choose_hand(self, num):
-        self.hard_card_select(num, self.hand)
-        self.exhaust_pile.extend(self.selected)
-        self.selected.clear()
-
-    def retain_cards(self, num):
-        self.retain += num
+        if potion.time_of_use in {'combat', 'all'}:
+            for effect, details in potion.effect:
+                effect(*details, context, self)
+        self.potions.remove(potion)
+        global potions
+        potions.remove(potion)
 
     def player_turn_start(self):
+        self.can_play_card = True
+        self.energy = 0
         self.turn += 1
+        self.num_of_cards_played = 0
         if self.player.debuffs['Vulnerable'] > 0:
             self.player.debuffs['Vulnerable'] -= 1
         if self.player.debuffs['Weak'] > 0:
@@ -295,27 +436,63 @@ class Combat():
         self.player.debuffs['Draw Reduction'] = 0
     # Not completed
 
+    def player_turn(self):
+        turn = True
+        while turn:
+            player_action = input('Enter the index of the card you wish to play or P# with # being index of the potion being used or E for end turn.')
+            if player_action == 'E':
+                turn = False
+                self.player_turn_end()
+                break
+            else:
+                if len(player_action) == 1:
+                    if self.can_play_card == False:
+                        continue
+                    player_action = int(player_action)
+                    card = self.hand[player_action]
+                    if card.cost > self.energy:
+                        print('Not enought energy')
+                    else:
+                        new_energy = self.energy - card.cost
+                        self.play_card(card)
+                        self.energy = new_energy
+                else: 
+                    player_action = player_action[1]
+                    player_action = int(player_action)
+                    potion = self.potions[player_action]
+                    self.use_potion(potion)
+            self.resolve_action()
+
     def player_turn_end(self):
-        for card in reversed(self.hand):
-            if 'Turn End' in card.effect:
-                for effect, values in card.effect['Turn End'].items():
-                    context = {
-                        'user': self.player,
-                        'enemies': self.enemies,
-                        'draw': self.draw_pile,
-                        'discard': self.discard_pile,
-                        'hand': self.hand,
-                        'exhaust': self.exhaust_pile,
-                        'target': card.target
-                    }
-                    effect(*values, context, self)
-        if self.mechanics['turn_end_discard']:
-            self.soft_card_select(self.retain, self.hand)
+        context = {
+            'user': self.player,
+            'enemies': self.enemies,
+            'draw': self.draw_pile,
+            'discard': self.discard_pile,
+            'hand': self.hand,
+            'exhaust': self.exhaust_pile,
+            'target': card.target
+        }
+        if self.hand:
             for card in reversed(self.hand):
-                if card.retain:
-                    continue
-                elif card.ethereal:
-                    self.exhaust_pile.append(card)
-                else:
-                    self.discard_pile.append(card)
-                self.hand.remove(card)
+                if 'Turn End' in card.effect:
+                    for effect, values in card.effect['Turn End'].items():
+                        effect(*values, context, self)
+            if self.mechanics['turn_end_discard']:
+                self.soft_card_select(self.retain, self.hand)
+                for card in reversed(self.hand):
+                    if card.retain:
+                        continue
+                    elif card.ethereal:
+                        self.exhaust_pile.append(card)
+                        if card.effect:
+                            if 'Exhausted' in card.effect:
+                                for effect, details in card.effect['Exhausted']:
+                                    effect(*details, context, self)
+                    else:
+                        self.discard_pile.append(card)
+                        for card in self.selected:
+                            if 'Discarded' in card.effect:
+                                for effect, details in card.effect['Discarded']:
+                                    effect(*details, context, self)
+                    self.hand.remove(card)

@@ -28,6 +28,14 @@
 # Chaotic: Location
 
 # 'NAME': ('DESCRIPTION', 'TIME OF USE', ('EFFECT': 'MAGNITUDE'...), 'TARGET')
+class Potion():
+    def __init__(self, name, desciption, time_of_use, effect, target):
+        self.name = name
+        self.description = desciption
+        self.time_of_use = time_of_use
+        self.effect = effect
+        self.target = target
+    
 
 potions = {
     "Attack Potion": ("Add 1 of 3 random Attack cards to your hand, it costs 0 this turn.", 'combat', {'add': ('hand', 'trial atk', 1, 0)}, 0),
@@ -56,7 +64,7 @@ potions = {
     "Chaos Potion": ("Play the top 3 cards of your Draw pile (This doesn't spend Energy).", 'combat', {'play': ('deck', 'top', 3)}, 2),
     "Ritual Potion": ("Gain 1 Ritual.", 'combat', {'buff': (11, 1)}, 0),
     "Entropic Brew": ("Fill all your empty potion slots with random potions.", 'all', {'potion': ('all', 'random')}, 0),
-    "Fairy in a Bottle": ("When you would die, heal to 30% of your Max HP instead and discard this potion.", 'passive', {'Hp': '30'}, 0),
+    "Fairy in a Bottle": ("When you would die, heal to 30% of your Max HP instead and discard this potion.", 'died', {'Hp': '30'}, 0),
     "Fruit Juice": ("Gain 5 Max HP.", 'all', {'MaxHp': 5}, 0),
     "Smoke Bomb": ("Escape from a non-boss combat. Receive no rewards.", 'combat', {'escape': 'non boss'}, 0),
     "Chaotic Potion": ("Draw 5 cards. Randomize the costs of all cards in your hand for the rest of the combat.", 'combat', {'draw': 5, 'chaotic': 'hand'}),

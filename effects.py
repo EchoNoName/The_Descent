@@ -53,13 +53,18 @@ def apply_debuff(debuffs, amount, context, combat):
         for i in range(len(debuffs)):
             entity.gain_debuffs(debuffs[i], amount[i])
 
-def add_card_to_pile(location, card_id, number_of_cards, cost, context, combat, *args):
+def add_card_to_pile(location, card_id, number_of_cards, cost, context, combat):
     if isinstance(card_id, int):
         for i in range(0, number_of_cards):
             combat.add_card_to_pile(context[location], card_id, location, cost)
     else:
         if card_id in {'atk', 'skill', 'power', 'weak curse', 'average curse', 'strong curse', 'curse', 'status'}:
-            return 'placeholder'
+            for i in range(0, number_of_cards):
+                card = card_constructor.random_card(card_id)
+                combat.add_card_to_pile(context[location], card, location, cost)
+
+def havoc(number_of_cards, end, context, combat):
+    combat.havoc(number_of_cards, end)
 
 def exhaust_discard_curse(num, context, combat):
     combat.exhaust_discard_curse(num)
@@ -96,9 +101,25 @@ def place_card_in_loction(start_pos, num, end_pos, cost, context, combat):
 def card_search(type, num, context, combat):
     combat.search(num, type)
 
-def conditional_effect(effect, effect_details, context_condition, norm_effect, cond_effect, *args):
-    if context_condition == effect(effect_details):
-        return
+def energy_manip(amount, context, combat):
+    combat.energy_change(amount)
+
+def card_play_limit(limit, context, combat):
+    combat.card_limit(limit)
+
+def conditional_effect(effect, effect_details, context_condition, norm_effect, norm_effect_details, cond_effect, cond_effect_details, context, combat):
+    cond = effect(*effect_details, context, combat)
+    if cond:
+        if context_condition == cond:
+            context['target'] = context['target'][1]
+            cond_effect(*cond_effect_details, context, combat)
+        else:
+            context['target'] = context['target'][0]
+            norm_effect(*norm_effect_details, context, combat)
+    else:
+        context['target'] = context['target'][0]
+        norm_effect(*norm_effect_details, context, combat)
+
 
 def small_damage_reduction(damage, cap, *args): # The reduce small damage to 1 effect
     if damage <= cap and damage > 1:

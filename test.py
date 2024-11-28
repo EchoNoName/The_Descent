@@ -1,13 +1,17 @@
 import random
 
+potions = ['test', 'other potion']
+
 class card():
-    def __init__(self, name):
+    def __init__(self, name, potion):
         self.name = name
+        self.potion = potion
 
 class combat():
-    def __init__(self, hand, discard_pile):
+    def __init__(self, hand, discard_pile, potion):
         self.hand = hand
         self.discard_pile = discard_pile
+        self.potion = potion
 
     def random_discard(self, num):
         if self.hand:
@@ -20,13 +24,15 @@ class combat():
                 self.discard_pile.extend(self.hand)
                 self.hand.clear()
 
-hand = [card('card 1'), card('card 2'), card('card 3')]
-Combat = combat(hand, [])
-for Card in Combat.hand:
-    print(Card.name)
-Combat.random_discard(1)
-for Card in Combat.hand:
-    print(Card.name)
-print('Discard: ')
-for Card in Combat.discard_pile:
-    print(Card.name)
+    def remove_potion(self, potion):
+        global potions
+        potions.remove(potion)
+
+Cc = combat([], [], potions)
+Cc.remove_potion(Cc.potion[0])
+print(Cc.potion)
+print(potions)
+Cc.potion = 1
+Cc.potion + 1
+
+

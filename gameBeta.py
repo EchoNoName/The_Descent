@@ -5,44 +5,6 @@ import combat_beta
 
 Instances = []
 
-class Relics: # Relic Object Class
-    def __init__(self, name, effect_type, effect_class, condition, consumable, effect_details, targets):
-        self.name = name # Name
-        self.effect_type = effect_type # Effect represented by a function
-        self.effect_class = effect_class # Type of effect represented by a string
-        self.condition = condition # Condition for the effect
-        self.consumable = consumable # If the relic is one time use
-        self.used = None
-        if consumable == True:
-            self.used = False
-        self.effect_details = effect_details # The details of the effect, depends on the arguments of the effect_type
-        self.targets = targets # Targets of the relic's effect, only applies to combat relics that effect entities, other relics will have None
-
-    def applyEff(self, event, context): # Method to apply the effect
-        if event == self.condition: # Check if the condition is met
-            if context != None:    
-                return self.effect_type(context, *self.effect_details) # Apply the effect
-            else:
-                return self.effect_type(*self.effect_details) # Apply the effect
-        return context # Nothing Happens
-    # The above is a place holder, code needs to be changed once things get added
-    def valueModificationEff(self, event, context): # Method to apply the effect
-        if event == self.condition and self.effect_class == 'valueMod': # Check if the condition is met 
-            return self.effect_type(context, *self.effect_details) # Apply the effect
-        return context # Nothing Happens
-    
-    def combatActionEff(self, event, combat):
-        '''Handles relic effects that does an action in combat
-
-        args: 
-            event: The event occuring represented by a string
-            combat: the combat object that holds all data related to a combat instance
-        '''
-        if event == self.condition and self.effect_class == 'combatAct': # Check if the condition is met 
-            target = combat.get_targets(self.targets)
-            self.effect_type(*self.effect_details, target)
-
-
 class Character:
     def __init__(self, name, maxHp, character_class):
         self.name = name
@@ -100,6 +62,8 @@ class Character:
             amount = relic.applyEff('HpLoss', amount)
         self.Hp -= amount
         if amount > 0:
+            if self.died == True:
+                return 'GG' # Placeholder
             return True
         else:
             return False
@@ -119,6 +83,8 @@ class Character:
             damage = -self.block
             self.block = 0
             # If block isn't enough, Hp is used
+            if self.died == True:
+                return 'GG' # Placeholder
             return self.hp_loss(damage)
     
     def died(self):
