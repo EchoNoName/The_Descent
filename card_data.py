@@ -46,16 +46,18 @@ Cards = {
     5: ('Doubt', 4, 4, 'U', 'At the end of your turn, gain 1 Weak.', False, False, False, False, {'Turn End': {effects.apply_debuff: (['Weak'], [1])}}, 0),
     6: ('Shame', 4, 4, 'U', 'At the end of your turn, gain 1 Frail.', False, False, False, False, {'Turn End': {effects.apply_debuff: (['Frail'], [1])}}, 0),
     7: ('Corroded', 4, 4, 'U', 'At the end of your turn, gain 1 Vulnerable', False, False, False, False, {'Turn End': {effects.apply_debuff: (['Vulnerable'], [1])}}, 0),
+    8: ('Decay', 4, 4, 'U', 'At the end of your turn, take 2 damage.', False, False, False, False, {'Turn End': {effects.deal_damage: (2, 1)}}, 0),
+    9: ('Regret', 4, 4, 'U', 'At the end of your turn, lose 1 Hp for each card in your hand. ', False, False, False, False, {'Turn End': {effects.lose_hp: ('hand', )}}, 0),
 
-    10: ('Curse of the Blade', 4, 4, 'U', 'When drawn, lose 4, At the end of the turn, lose 2 HP. Retain', False, False, True, False, {'drawn': {'Hp': -4}, 'turn end': {'Hp': -2}}, 0),
+    20: ('Curse of the Blade', 4, 4, 'U', 'When drawn, lose 4, At the end of the turn, lose 2 HP. Retain', False, False, True, False, {'drawn': {'Hp': -4}, 'turn end': {'Hp': -2}}, 0),
     1000: ('Slash', 0, 0, 1, 'Deal 6 damage.', False, False, False, False, {effects.deal_attack_damage: (6, 1)}, 1),
     1001: ('Bash', 0, 0, 1, 'Deal 8 damage. Apply 2 Vulnerable.', False, False, False, False, {effects.deal_attack_damage: (8, 1), effects.apply_debuff: (['Vulerable'], [2])}, 1),
     1002: ('Block', 0, 1, 1, 'Gain 5 block.', False, False, False, False, {effects.block_gain_card: (5, 1)}, 0),
     1003: ('Inflict Wounds', 0, 0, 0, 'Deal 3 damage. Apply 1 Vulnerable', False, False, False, False, {effects.deal_attack_damage: (3, 1), effects.apply_debuff: (['Vulnerable'], [1])}, 1),
-    1004: ("Rampage", 1, 0, 0, 'Deal 6 damage. Add a copy of this card to your discard pile.', False, False, False, False, {effects.deal_attack_damage: (6, 1), effects.add_card_to_pile: (2, 1004)}, 1), # 0 = hand, 1 = draw pile, 2 = discard pile. 3 = exhaust pile
-    1005: ("Covet", 1, 1, 0, 'Draw 1 card. Discard 1 card, if the card discarded was a Curse, Exhaust it instead.', False, False, False, False, {effects.draw_cards: (1, ), 'discard': 1, 'cond': ('curse', {'exhaust': (1, 'discard', 'top')}, {'NA': 0})}, 0),
+    1004: ("Rampage", 1, 0, 0, 'Deal 6 damage. Add a copy of this card to your discard pile.', False, False, False, False, {effects.deal_attack_damage: (6, 1), effects.add_card_to_pile: (2, 1004, 't')}, 1), # 0 = hand, 1 = draw pile, 2 = discard pile. 3 = exhaust pile
+    1005: ("Covet", 1, 1, 0, 'Draw 1 card. Discard 1 card, if the card discarded was a Curse, Exhaust it instead.', False, False, False, False, {effects.draw_cards: (1, ), effects.exhaust_discard_curse: (1, )}, 0),
     1006: ("Flex", 1, 1, 0, 'Gain 2 Temporary Strength.', False, False, False, False, {effects.apply_buff: (['Strength'], [2]), effects.apply_debuff: (['Chained'], [2])}, 0),
-    1007: ("War cry", 1, 1, 0, 'Draw 1 card, place 1 card on top of the draw pile, gain 3 Vigour.', False, False, False, False, {effects.draw_cards: (1, ), effects.place_card_in_loction: ('hand', 1, 'draw')}, 0),
+    1007: ("War cry", 1, 1, 0, 'Draw 1 card, place 1 card on top of the draw pile, gain 3 Vigour.', False, False, False, False, {effects.draw_cards: (1, ), effects.place_card_in_loction: ('hand', 1, 'draw', 't')}, 0),
     1008: ("To Basics", 1, 1, 0, 'Add 1 Common card from your draw pile into your hand.', False, False, False, False, {effects.card_search: ('common', 1)}, 0),
     1009: ("Sword beam", 1, 0, 1, 'Deal 9 damage to all enemies.', False, False, False, False, {effects.deal_attack_damage: (9, 1)}, 3),
     1010: ("Grudge", 1, 0, 1, 'Exhaust a card in your hand, deal 9 damage. if the card exhausted was a curse, deal 12 damage to all enemies instead.', False, False, False, False, {'exhuast': (1, 'hand', 'choice'), 'cond': ('curse', {'dmg': (12, 1, 3)}, {'dmg': (9, 1)}) }, 1),

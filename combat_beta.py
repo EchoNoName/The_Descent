@@ -42,18 +42,21 @@ class Combat():
         else:
             raise ValueError(f"Unknown target code: {target_code}")
     
-    def add_card_to_pile(self, location, card_id, location_name):
+    def add_card_to_pile(self, location, card_id, location_name, cost):
         '''adds a certain card to a certain pile
 
         args: 
             loctaion: represents which pile to add the card, 0 = hand, 1 = draw pile, 2 = discard pile. 3 = exhaust pile
             card: An object that represents the card
         '''
+        card = card_constructor.create_card(card_id, *card_data.Cards[card_id])
+        if cost != 't':
+            card.cost_change(*cost)
         if location:
             if location_name == 'draw':
-                location.insert(random.randint(0, len(location) - 1), card_constructor.create_card(card_id, *card_data.Cards[card_id]))
+                location.insert(random.randint(0, len(location) - 1), card)
             else:
-                location.append(card_constructor.create_card(card_id, *card_data.Cards[card_id]))
+                location.append(card)
         else:
             raise ValueError(f'Unknown location: {location_name}')
     
@@ -172,8 +175,11 @@ class Combat():
                                 random.shuffle(pile)
                             return len(self.selected)
 
-    def place_selected_cards(self, end_pile):
+    def place_selected_cards(self, end_pile, cost):
         if self.selected:
+            if cost != 't':
+                for card in self.selected:
+                    card.cost_change(*cost)
             end_pile.extend(self.selected)
             self.selected.clear()
     
@@ -201,6 +207,28 @@ class Combat():
         elif type in {'atk', 'skill', 'power'}:
             return None
         # Placeholder
+        
+    def exhaust_discard_curse(self, num):
+        self.hard_card_select(num, self.hand)
+        if self.selected:
+            for card in reversed(self.selected):
+                if card.type == 4:
+                    self.exhaust_pile.append(card)
+                    self.selected.remove(card)
+                else:
+                    self.discard_pile.append(card)
+                    self.selected.remove(card)
+
+    def random_discard(self, num):
+        if self.hand:
+            if len(self.hand) > num:
+                for i in range(0, num):
+                    card = random.choice(self.hand)
+                    self.discard_pile.append(card)
+                    self.hand.remove(card)
+            else:
+                self.discard_pile.extend(self.hand)
+                self.hand.clear()
 
     def choose_discard(self, num):
         self.hard_card_select(num, self.hand)
@@ -227,6 +255,22 @@ class Combat():
             # Iterates through every effect
             effect(*details, context, self)
             #  Performs the effects
+
+    def exhaust_random_hand(self, num):
+        if self.hand:
+            if len(self.hand) > num:
+                for i in range(0, num):
+                    card = random.choice(self.hand)
+                    self.exhaust_pile.append(card)
+                    self.hand.remove(card)
+            else:
+                self.exhaust_pile.extend(self.hand)
+                self.hand.clear()
+    
+    def exhaust_choose_hand(self, num):
+        self.hard_card_select(num, self.hand)
+        self.exhaust_pile.extend(self.selected)
+        self.selected.clear()
 
     def retain_cards(self, num):
         self.retain += num

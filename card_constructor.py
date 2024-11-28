@@ -34,9 +34,12 @@ class Card():
         self.chaotic = False # whether a card is chaotic, represented by boolean
     
     def chaos(self):
-        self.combat_cost = random.randint(0, 3)
+        self.combat_cost = (random.randint(0, 3), 'combat')
     
+    def cost_change(self, cost, duration):
+        self.combat_cost = (cost, duration)
     
+
 
 def create_card(card_id, card_data: tuple):
     return Card(card_id, *card_data)

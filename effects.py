@@ -53,14 +53,23 @@ def apply_debuff(debuffs, amount, context, combat):
         for i in range(len(debuffs)):
             entity.gain_debuffs(debuffs[i], amount[i])
 
-def add_card_to_pile(location, card_id, number_of_cards, context, combat, *args):
+def add_card_to_pile(location, card_id, number_of_cards, cost, context, combat, *args):
     if isinstance(card_id, int):
         for i in range(0, number_of_cards):
-            combat.add_card_to_pile(context[location], card_id, location)
+            combat.add_card_to_pile(context[location], card_id, location, cost)
     else:
         if card_id in {'atk', 'skill', 'power', 'weak curse', 'average curse', 'strong curse', 'curse', 'status'}:
             return 'placeholder'
-    
+
+def exhaust_discard_curse(num, context, combat):
+    combat.exhaust_discard_curse(num)
+
+def exhaust_from_hand(num, context, combat):
+    combat.exhaust_choose_hand(num)
+
+def exhaust_random_from_hand(num, context, combat):
+    combat.exhaust_random_hand(num)
+
 def lose_hp(amount, context, combat):
     targets = combat.get_targets(context['target'])
     if not isinstance(amount, int):
@@ -80,9 +89,9 @@ def discard_cards(num, type, context, combat):
     elif type == 'choose':
         combat.choose_discard(num)
 
-def place_card_in_loction(start_pos, num, end_pos, context, combat):
+def place_card_in_loction(start_pos, num, end_pos, cost, context, combat):
     combat.hard_card_select(num, context[start_pos])
-    combat.place_selected_cards(context[end_pos])
+    combat.place_selected_cards(context[end_pos], cost)
 
 def card_search(type, num, context, combat):
     combat.search(num, type)
