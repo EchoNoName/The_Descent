@@ -19,7 +19,6 @@ class Character:
         #Debuffs: Atrophy = lose dex at the end of turn
         self.debuffs = {'Vulerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Parry': 0, 'Deflect': 0}
         # self.powers = {'Cursed Ward': 0, 'Feel No Pain': 0, 'Evolve': 0, 'Transfer Pain': 0, 'Dark Embrace': 0, 'Corruption Form': 0, 'Spectral Blades': 0, 'Seeing Red': 0, 'Corruption': 0, 'Clear Mind': 0}
-        self.powers = []
     
     def relic_pickup(self, relic):
         self.relics.append(relic)
@@ -58,9 +57,6 @@ class Character:
     def lose_debuff(self, debuff_type, amount):
         self.debuffs[debuff_type] -= amount
 
-    def gain_power(self, power, amount):
-        self.powers[power] += amount
-
     def hp_loss(self, amount):
         for relic in self.relics:
             amount = relic.applyEff('HpLoss', amount)
@@ -71,6 +67,9 @@ class Character:
             return True
         else:
             return False
+    
+    def hp_recovery(self, amount):
+        self.Hp = min(self.Hp + amount, self.maxHp)
 
     def damage_taken(self, damage):
         '''

@@ -16,12 +16,12 @@ def random_card(type, character_class = None):
         return 'placeholer'
     elif type == 'atk':
         if character_class == 1:
-            return
+            return random.choice(attack_card_1)
         else:
             return 'placeholder'
 
 class Card():
-    def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, removable = True, x_cost_effect = None):
+    def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, removable = True, x_cost_effect = {}):
         self.id = id # Card ID, which is an integer
         self.name = name # Name of the card, a string
         self.rarity = rarity # rarity represented by an integer
@@ -39,6 +39,13 @@ class Card():
         self.chaotic = False # whether a card is chaotic, represented by boolean
         self.x_cost_effect = x_cost_effect
     
+    def modify_effect(self, effect, modifications):
+        new_eff = []
+        for eff in self.effect[effect]:
+            new_eff.append(eff)
+        new_eff[0] += modifications
+        self.effect = tuple(new_eff)
+
     def get_cost(self, combat):
         if isinstance(self.cost, str):
             if self.cost == 'U':
@@ -74,7 +81,8 @@ class Card():
         properties[property] = new_value
 
     def play_x_cost(self, cost):
-        return # Placeholder
+        for effect, details in self.effect.items():
+            self.x_cost_effect[effect] = [i if i != 'X' else cost for i in details]
 
 
 def create_card(card_id, card_data: tuple):

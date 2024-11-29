@@ -27,7 +27,26 @@ class Combat():
         self.can_play_card = True
         self.num_of_cards_played = 0
         self.combat_active = True
+        self.powers = []
     
+    def power_check_and_exe(self, cond):
+        if self.powers:
+            for card in self.powers:
+                context = {
+                    'user': self.player,
+                    'enemies': self.enemies,
+                    'draw': self.draw_pile,
+                    'discard': self.discard_pile,
+                    'hand': self.hand,
+                    'exhaust': self.exhaust_pile,
+                    'target': card.target
+                }
+                if 'Power' in card.effect:
+                    for power_cond, effect in card.effect['Power'].items():
+                        if cond == power_cond:
+                            for effects, effect_details in effect.items():
+                                effects(*effect_details, context, self)
+
     def get_energy_cap(self):
         for relics in self.relics:
             if relics.effect_class == 'Energy Relic':
@@ -54,7 +73,7 @@ class Combat():
             card: An object that represents the card
         '''
         card = card_constructor.create_card(card_id, *card_data.Cards[card_id])
-        if cost != 't':
+        if cost != 'na':
             card.cost_change(*cost)
         if location:
             if location_name == 'draw':
@@ -181,7 +200,7 @@ class Combat():
 
     def place_selected_cards(self, end_pile, cost):
         if self.selected:
-            if cost != 't':
+            if cost != 'na':
                 for card in self.selected:
                     card.cost_change(*cost)
             end_pile.extend(self.selected)
@@ -309,7 +328,14 @@ class Combat():
                         for effect, details in card.effect['Exhausted']:
                             effect(*details, context, self)
             self.exhaust_pile.extend(self.selected)
-            self.selected.clear()
+            self.selected = None
+
+    def exhaust_selected(self):
+        if self.selected:
+            self.exhaust_pile.extend(self.selected)
+            self.selected = None
+            return True
+        return False
 
     def retain_cards(self, num):
         self.retain += num
@@ -364,6 +390,12 @@ class Combat():
                     self.hand.remove(card)
         return cards_exhausted_type
 
+    def exhaust_entire_pile(self, pile):
+        if pile:
+            for card in reversed(pile):
+                self.exhaust_pile.append(card)
+                pile.remove(card)
+
     def play_card(self, override = None):
         '''Method used for playing cards in combat
         '''
@@ -403,7 +435,7 @@ class Combat():
                     effect(*details, context, self)
                     #  Performs the effects if its not a conditional
             if self.type == 2:
-                self.player.power.apppend[self.playing]
+                self.powers.append[self.playing]
             elif self.playing.exhaust == True:
                 self.exhaust_pile.extend(self.playing)
             else:
