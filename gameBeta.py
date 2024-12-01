@@ -81,13 +81,12 @@ class Character:
             damage = relic.applyEff('damageTaken', damage)
         self.block -= damage
         if self.block >= 0:
-            return False
+            return 0
         else:
             damage = -self.block
             self.block = 0
             # If block isn't enough, Hp is used
-            if self.died == True:
-                return 'GG' # Placeholder
+            self.died
             return self.hp_loss(damage)
     
     def died(self):
