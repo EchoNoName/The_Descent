@@ -1,4 +1,5 @@
 import effects
+import enemy_data
 import card_data
 import card_constructor
 import random
@@ -27,6 +28,7 @@ class Combat():
         self.can_play_card = True # If the player can play cards
         self.combat_active = True # Whether the player is in this combat
         self.powers = [] # The powers the player has gained
+        self.enemy_turn = False
     
     def power_check_and_exe(self, cond: str):
         '''Method to check if a power's condition is met and activates its effect if it is
@@ -65,33 +67,57 @@ class Combat():
                 self.energy_cap += 1
                 # Add 1 energy to the cap
 
-    def get_targets(self, target_code: int):
+    def get_targets(self, context):
         '''Retrieves the target of a card based on the cards target code
 
         ### args:
             target_code (int): An int corresponding to a specific target or targets
         '''
-        if target_code == 0:
-            # If its 0
-            return [self.player]
-            # Returns the player
-        elif target_code == 1:
-            # If its 1
-            i = int(input('Enter the index of the enemy'))
-            # Asks the player for which enemy to target
-            return [self.enemies[i]]
-            # returns that target
-        elif target_code == 2:
-            # if its 2
-            return [self.enemies[random.randint(0, len(self.enemies) - 1)]]
-            # Returns a random enemy
-        elif target_code == 3:
-            # if its 3
-            return self.enemies
-            # Returns all the enemies
+        target_code = context['target']
+        if self.enemy_turn == False:
+            # If its the players turn
+            if target_code == 0:
+                # If its 0
+                return [context['user']]
+                # Returns the player
+            elif target_code == 1:
+                # If its 1
+                i = int(input('Enter the index of the enemy'))
+                # Asks the player for which enemy to target
+                return [self.enemies[i]]
+                # returns that target
+            elif target_code == 2:
+                # if its 2
+                return [self.enemies[random.randint(0, len(self.enemies) - 1)]]
+                # Returns a random enemy
+            elif target_code == 3:
+                # if its 3
+                return self.enemies
+                # Returns all the enemies
+            else:
+                raise ValueError(f"Unknown target code: {target_code}")
+                # Errors
         else:
-            raise ValueError(f"Unknown target code: {target_code}")
-            # Errors
+            # If its the enemies turn
+            if target_code == 0:
+                # If its 0
+                return [context['user']]
+                # Returns the player
+            elif target_code == 1:
+                # If its 1
+                return [self.player]
+                # returns that player
+            elif target_code == 2:
+                # if its 2
+                return [self.enemies[random.randint(0, len(self.enemies) - 1)]]
+                # Returns a random enemy
+            elif target_code == 3:
+                # if its 3
+                return self.enemies
+                # Returns all the enemies
+            else:
+                raise ValueError(f"Unknown target code: {target_code}")
+                # Errors
     
     def add_card_to_pile(self, location, card_id, location_name, cost):
         '''adds a certain card to a certain pile
@@ -642,7 +668,7 @@ class Combat():
         '''Resolves an action done by the player, mainly just checks for deaths of enemies and if a end of combat condition is met'''
         for enemy in reversed(self.enemies):
             # Goes throught every enemy
-            if enemy.died == True:
+            if enemy.died(self) == True:
                 # If they're dead
                 self.enemies.remove(enemy)
                 # Remove them from the enemy list
@@ -964,3 +990,52 @@ class Combat():
                     # Add them back to hand
                     self.selected.clear()
                     # empty selected
+        
+    def enemy_action(self):
+        '''Execute all enemy actions
+        '''
+        for enemy in self.enemies:
+            # Go through every enemy
+            if enemy.intent[0]:
+                # If the enemy has an intent
+                context = {
+                    # Default info to pass on for executing effects
+                    'user': enemy, # The enemy doing the action
+                    'enemies': self.enemies, # List of enemies
+                    'target': enemy.intent[1] # the target of the card, This is mainly the one that gets overrided
+                }
+                for effect, details in enemy.intent[0].items():
+                    effect(*details, context, self)
+                # Execute the ffects
+
+    def summon_enemies(self, enemies: list):
+        '''Function for adding more enemies to the combat session
+        
+        ### args:
+            enemies: A list of new enemy objects to be added
+        '''
+
+    def split(self, slime_type, hp):
+        '''Function for larger slimes splitting when they hit half health
+        
+        ### args: 
+            slime_type: the type of slime that is splitting
+            hp: health of the slimes the bigger slime split into
+        '''
+        if slime_type == 'Slime Boss':
+            # if the slime boss is splitting
+            enemies = [enemy_data.LargeBlueSlime(hp), enemy_data.LargeGreenSlime(hp)]
+            self.enemies.extend(enemies)
+            # Add 2 smaller slimes of the each type with the current hp of the bigger slime
+        elif slime_type == 'Blue':
+            # If a large Blue slime is splitting
+            enemies = [enemy_data.MediumBlueSlime(hp), enemy_data.MediumBlueSlime(hp)]
+            self.enemies.extend(enemies)
+            # Add 2 smaller slimes of the same type with the current hp of the bigger slime
+        elif slime_type == 'Green':
+            # If a large green slime is splitting
+            enemies = [enemy_data.MediumGreenSlime(hp), enemy_data.MediumGreenSlime(hp)]
+            self.enemies.extend(enemies)
+            # Add 2 smaller slimes of the same type with the current hp of the bigger slime
+        else:
+            raise ValueError(f'Unknown slime type {slime_type}')

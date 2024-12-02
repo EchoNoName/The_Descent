@@ -36,15 +36,24 @@ def deal_attack_damage(damage, times : int, context, combat):
     if context['target'] == 2:
         # If the target is random
         for i in range(0, times):
-            attack_damage_dealt += random.choice(context['enemies']).damage_taken(actualDamage)
+            entity = random.choice(context['enemies'])
+            attack_damage_dealt += entity.damage_taken(actualDamage)
             # Causes random target to take damage and saves amount dealt
+            if entity.buffs['Thorns'] > 0:
+                # If the enemy has thorns
+                context['user'].damage_taken(entity.buffs['Thorns'])
+                # Take damage equal to throns of the attacked
     else:
-        enemies = combat.get_targets(context['target'])
+        enemies = combat.get_targets(context)
         # Aquires target of the card
         for i in range(0, times):
             for target in enemies:
                 attack_damage_dealt += target.damage_taken(actualDamage)
                 # Deals damage to targets and saves damage dealt
+                if entity.buffs['Thorns'] > 0:
+                # If the enemy has thorns
+                    context['user'].damage_taken(entity.buffs['Thorns'])
+                    # Take damage equal to throns of the attacked
     return attack_damage_dealt
     # Used for certain effects
 
@@ -56,7 +65,7 @@ def deal_damage(damage, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    targets = combat.get_targets(context['target'])
+    targets = combat.get_targets(context)
     # Gets the target of the effect
     for entity in targets:
         entity.damage_taken(damage)
@@ -118,6 +127,21 @@ def block_gain_power(block, context, combat):
     context['user'].gain_block_power(block)
     # grants the user block
 
+def enemy_block_gain(block, context, combat):
+    '''Gaining block for enemies
+    
+    ### args:
+        block: the amount of block being gained
+        context: Information related to targets
+        combat: The current combat session
+    '''
+    targets = combat.get_targets(context)
+    # Aquire targets
+    for entity in targets:
+        # Loop through all targets
+        entity.gain_block(block)
+        # Give them block
+
 def apply_buff(buffs: list, amount: list, context, combat):
     '''Grants a buff to the target
     
@@ -127,7 +151,7 @@ def apply_buff(buffs: list, amount: list, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    for entity in combat.get_targets(context['target']):
+    for entity in combat.get_targets(context):
         # Go through all targets
         for i in range(len(buffs)):
             entity.gain_buffs(buffs[i], amount[i])
@@ -142,7 +166,7 @@ def apply_debuff(debuffs: list, amount: list, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    for entity in combat.get_targets(context['target']):
+    for entity in combat.get_targets(context):
         # Go through all the targets
         for i in range(len(debuffs)):
             entity.gain_debuffs(debuffs[i], amount[i])
@@ -271,7 +295,7 @@ def lose_hp(amount, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    targets = combat.get_targets(context['target'])
+    targets = combat.get_targets(context)
     # Aquire the target using function in combat
     if not isinstance(amount, int):
         # If the amount lost is not a number
@@ -491,11 +515,26 @@ def FINAL_GAMBIT(x, additional, context, combat):
     # Exhaust everything
     place_card_in_loction('exhaust', x, 'hand', 0, context, combat)
     # add x cards from the discard pile to the hand and make them cost 0
-    apply_debuff(['Final Gambit'], [1], context, combat)
+    apply_debuff(['Last Chance'], [1], context, combat)
     # Apply the Final Gambit debuff to the user
 
 def discover(card_type, cost, context, combat):
     return # Placeholder
+
+def split(slime_type, context, combat):
+    '''Function for slime splitting into smaller slimes
+    
+    ### args:
+        slime_type: The type of slime splitting
+        context: Info related to the combat
+        combat: the current combat session
+    '''
+    hp = context['user'].hp
+    # Get hp of the big slime
+    combat.enemies.remove(context['user'])
+    # Remove the big slime
+    combat.split(slime_type, hp)
+    # Use function in combat to add 2 more slimes
 
 def small_damage_reduction(damage, cap, *args): 
     '''Reduces damage small enought to 1
