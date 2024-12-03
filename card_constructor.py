@@ -84,6 +84,5 @@ class Card():
         for effect, details in self.effect.items():
             self.x_cost_effect[effect] = [i if i != 'X' else cost for i in details]
 
-
 def create_card(card_id, card_data: tuple):
     return Card(card_id, *card_data)

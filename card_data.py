@@ -37,7 +37,7 @@ import effects
 
 #Note: When 'exhaust' is put in place for a #, that means # of cards exhausted
 
-Cards = {
+card_info = {
     0: ('Unfocused', 4, 4, 'U', None, True, False, False, True, None, None),
     1: ('Clumsy', 4, 4, 'U', None, False, False, False, True, None, None),
     2: ('Writhe', 4, 4, 'U', None, True, False, False, False, None, None),
@@ -219,3 +219,4 @@ Cards = {
     1832: ("Flaming Strike+5", 2, 0, 2, 'Deal 72 damage. Can be Upgraded up to 1 more time.', False, False, False, False, {'dmg': (72, 1)}, 1),
     1932: ("Flaming Strike+5", 2, 0, 2, 'Deal 84 damage.', False, False, False, False, {'dmg': (84, 1)}, 1),
 }
+

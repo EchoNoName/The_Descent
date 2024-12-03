@@ -1,10 +1,10 @@
 import random
 import effects
 
-class Enemy():
+class Enemy:
     def __init__(self) -> None:
         pass
-
+    
     def damage_taken(self, damage):
         '''
         Handles damage taken by the entity
@@ -57,7 +57,7 @@ class Enemy():
         # Add to block
 
     def gain_buff(self, buff_type, amount):
-        '''Function for gaining buffs
+        '''Method for gaining buffs
         
         ### args:
             buff_type: The type of buff being gained
@@ -80,7 +80,7 @@ class Enemy():
         # Add amount to corresponding buff
     
     def lose_buff(self, buff_type, amount):
-        '''Function for losing buffs
+        '''Method for losing buffs
         
         ### args:
             buff_type: type of buff being lost
@@ -98,7 +98,7 @@ class Enemy():
             # Set amount of buffs to 0
     
     def gain_debuff(self, debuff_type, amount):
-        '''Function for gaining debuffs
+        '''Method for gaining debuffs
         
         ### args:
             buff_type: The type of debuff being gained
@@ -117,7 +117,7 @@ class Enemy():
             # Add the amount to debuff
     
     def lose_debuff(self, debuff_type, amount):
-        '''Function for Losing debuffs
+        '''Method for Losing debuffs
         
         ### args:
             debuff_type: The type of debuff being lost
@@ -327,7 +327,7 @@ class LargeGreenSlime(Enemy):
         return self.intent
     
     def died(self, combat):
-        '''Override function for the died function, used to determain if the slime will split'''
+        '''Override Method for the died Method, used to determain if the slime will split'''
         if self.hp <= 0:
             # If the slime has no hp left
             return True
@@ -485,7 +485,7 @@ class LargeBlueSlime(Enemy):
         return self.intent
     
     def died(self, combat):
-        '''Override function for the died function, used to determain if the slime will split'''
+        '''Override Method for the died Method, used to determain if the slime will split'''
         if self.hp <= 0:
             # If the slime has no hp left
             return True
@@ -563,26 +563,32 @@ class MadGoblin(Enemy):
         self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
-    def hp_loss(self, amount):
-        '''Handles enemy losing Hp in anyway
-        
-        ### args: 
-            amount: The amount of hp being lost
-        
-        ### returns: 
-            the amount of hp lost, accounting for negatives'''
-        self.hp -= amount
-        # Subtract amount from hp
-        if amount > 0:
-            self.gain_buff('Strength', 1)
-            # From anger buff
-            if self.died == True:
-                return amount + self.hp
-            else:
-                return amount
-        else:
+    def damage_taken(self, damage):
+        '''
+        Handles damage taken by the entity
+        '''
+        damage = damage
+        self.block -= damage
+        # Deal damage to block first
+        if self.block >= 0:
+            # If there is still block left or exacly enough block was spent
             return 0
-        # Returns actual amount of hp loss 
+            # return 0 for no attack damage dealt
+        else:
+            damage = -self.block
+            # Update damage to only amount unblocked
+            if self.buffs['Plated Armour'] > 0:
+                self.buffs['Plated Armour'] -= 1
+            # Remove 1 plated armour for taking damage 
+            if self.buffs['Anger'] > 0:
+                self.gain_buff('Strength', self.buffs['Anger'])
+            # Gain Strength for taking damage
+            self.block = 0
+            # If block isn't enough, Hp is used
+            self.died
+            # Update entity status
+            return self.hp_loss(damage)
+            # Hp loss
     
     def intent_get(self, combat):
         '''Gets what the enemy intends to do
@@ -681,7 +687,7 @@ class InfestedCorpes(Enemy):
         return self.intent
 
     def died(self, combat):
-        '''Override function for the died function, used to determain if the slime will split'''
+        '''Override Method for the died Method, used to determain if the slime will split'''
         if self.hp <= 0:
             # If the enemy has no hp left
             combat.player.gain_debuff('Vulnerable', 2)
@@ -913,27 +919,33 @@ class GreenLouse(Enemy):
         # Update intent to correct move
         return self.intent
     
-    def hp_loss(self, amount):
-        '''Handles enemy losing Hp in anyway
-        
-        ### args: 
-            amount: The amount of hp being lost
-        
-        ### returns: 
-            the amount of hp lost, accounting for negatives'''
-        self.hp -= amount
-        # Subtract amount from hp
-        if amount > 0:
-            if self.died == True:
-                return amount + self.hp
-            else:
+    def damage_taken(self, damage):
+        '''
+        Handles damage taken by the entity
+        '''
+        damage = damage
+        self.block -= damage
+        # Deal damage to block first
+        if self.block >= 0:
+            # If there is still block left or exacly enough block was spent
+            return 0
+            # return 0 for no attack damage dealt
+        else:
+            damage = -self.block
+            # Update damage to only amount unblocked
+            if self.buffs['Plated Armour'] > 0:
+                self.buffs['Plated Armour'] -= 1
+            # Remove 1 plated armour for taking damage 
+            self.block = 0
+            # If block isn't enough, Hp is used
+            if self.buffs['Curl Up'] > 0:
                 self.block = self.buffs['Curl Up']
                 self.buffs['Curl Up'] = 0
-                # Consume curl up after taking damage to gain block
-                return amount
-        else:
-            return 0
-        # Returns actual amount of hp loss 
+            # Consume curl up after taking damage to gain block
+            self.died
+            # Update entity status
+            return self.hp_loss(damage)
+            # Hp loss
 
 class RedLouse(Enemy):
     def __init__(self) -> None:
@@ -994,27 +1006,33 @@ class RedLouse(Enemy):
         # Update intent to correct move
         return self.intent
     
-    def hp_loss(self, amount):
-        '''Handles enemy losing Hp in anyway
-        
-        ### args: 
-            amount: The amount of hp being lost
-        
-        ### returns: 
-            the amount of hp lost, accounting for negatives'''
-        self.hp -= amount
-        # Subtract amount from hp
-        if amount > 0:
-            if self.died == True:
-                return amount + self.hp
-            else:
+    def damage_taken(self, damage):
+        '''
+        Handles damage taken by the entity
+        '''
+        damage = damage
+        self.block -= damage
+        # Deal damage to block first
+        if self.block >= 0:
+            # If there is still block left or exacly enough block was spent
+            return 0
+            # return 0 for no attack damage dealt
+        else:
+            damage = -self.block
+            # Update damage to only amount unblocked
+            if self.buffs['Plated Armour'] > 0:
+                self.buffs['Plated Armour'] -= 1
+            # Remove 1 plated armour for taking damage 
+            self.block = 0
+            # If block isn't enough, Hp is used
+            if self.buffs['Curl Up'] > 0:
                 self.block = self.buffs['Curl Up']
                 self.buffs['Curl Up'] = 0
-                # Consume curl up after taking damage to gain block
-                return amount
-        else:
-            return 0
-        # Returns actual amount of hp loss 
+            # Consume curl up after taking damage to gain block
+            self.died
+            # Update entity status
+            return self.hp_loss(damage)
+            # Hp loss
 
 class SentryA(Enemy):
     def __init__(self):

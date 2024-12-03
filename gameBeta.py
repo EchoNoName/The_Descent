@@ -1,7 +1,10 @@
+import random
 import card_data
 import card_constructor
 import effects
 import combat_beta
+import potion_data
+import enemy_data
 
 Instances = []
 
@@ -27,6 +30,49 @@ class Character:
     def potion_pickup(self, potion):
         if self.potions.count(None) > 0:
             self.potions[self.potions.index(None)] = potion
+    
+    def gain_rand_potion(self):
+        '''Method for filling a empty slot with a random potion
+        '''
+        potion_name, potion_details = random.choice(list(potion_data.potions.items()))
+        potion = potion_data.Potion(potion_name, *potion_details)
+        self.potion_pickup(potion)
+        # Fill the an empty potion slot with a random potion if there is one
+    
+    def use_potion(self, potion):
+        '''Method to use non combat based potions
+        
+        ### args:
+            potion: The potion to be used
+        '''
+        for effect, details in potion.effect.items():
+                effect(*details, self)
+                # Execute effects
+        self.potions.remove(potion)
+    
+    def heal(self, amount):
+        '''Method to heal the player by an amount or percentage
+        
+        ### args:
+            amount: Int for a fixed value, string for percentage'''
+        if isinstance(amount, str):
+            # If its a string
+            percentage = int(amount)
+            percentage = percentage / 100
+            self.hp = min(self.maxHp, self.hp + int(self.maxHp * percentage))
+            # Add a percentage of of max hp to your own hp
+        else:
+            self.hp = min(self.maxHp, self.hp + amount)
+            # Add fixed amount of hp up to max hp
+    
+    def increase_max_hp(self, amount):
+        '''Method for increasing max hp from effects
+        
+        ### args:
+            amount = Amount to increase by'''
+        self.maxHp += amount
+        self.hp += amount
+        # Increase max hp by amount, when max hp is gained the equal amount of hp is gained
 
     def gain_block_card(self, amount):
         '''Getting block from playing cards
@@ -45,7 +91,7 @@ class Character:
         # Add more block
     
     def gain_buff(self, buff_type, amount):
-        '''Function for gaining buffs
+        '''Method for gaining buffs
         
         ### args:
             buff_type: The type of buff being gained
@@ -68,7 +114,7 @@ class Character:
         # Add amount to corresponding buff
     
     def lose_buff(self, buff_type, amount):
-        '''Function for losing buffs
+        '''Method for losing buffs
         
         ### args:
             buff_type: type of buff being lost
@@ -86,7 +132,7 @@ class Character:
             # Set amount of buffs to 0
     
     def gain_debuff(self, debuff_type, amount):
-        '''Function for gaining debuffs
+        '''Method for gaining debuffs
         
         ### args:
             buff_type: The type of debuff being gained
@@ -103,13 +149,13 @@ class Character:
         elif debuff_type in {'-Strength', '-Dexterity'}:
             # If its Str and Dex where the player can have positive values in buffs
             self.lose_buff(debuff_type, amount)
-            # use the lose buff function instead
+            # use the lose buff method instead
         else:
             self.debuffs[debuff_type] += amount
             # Add the amount to debuff
     
     def lose_buff(self, buff_type, amount):
-        '''Function for losing buffs
+        '''Method for losing buffs
         
         ### args:
             buff_type: type of buff being lost
@@ -152,6 +198,9 @@ class Character:
         if self.block >= 0:
             return 0
         else:
+            if self.buffs['Plated Armour'] > 0:
+                self.buffs['Plated Armour'] -= 1
+            # Remove 1 plated armour for taking damage
             damage = -self.block
             self.block = 0
             # If block isn't enough, Hp is used

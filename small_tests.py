@@ -1,11 +1,6 @@
-class obj():
-    def __init__(self, name, value):
-        self.name = name
-        self.value = value
-    
-    def incre(self, num):
-        self.value += num
-        return num
+def test(args):
+    print('test successful')
 
-test = '-Str'
-print(test[1:])
+obj = test
+obj_run = ()
+obj(*obj_run, 1)

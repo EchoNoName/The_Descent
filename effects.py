@@ -213,6 +213,28 @@ def havoc(number_of_cards : int, special : bool, context, combat):
     combat.havoc(number_of_cards, special)
     # Use the havoc function in combat to perform this effect
 
+def entropic(player):
+    '''Function for filling all empty potion slots with random potions
+    
+    ### args:
+        player: The player using the effect'''
+    empty_slots = player.potions.count(None)
+    # get number of empty slots
+    for i in range(0, empty_slots):
+        player.gain_rand_potion()
+        # Fill all empty slots
+
+def blood(amount, player):
+    '''Function for healing for a percentage of hp
+    
+    ### args:
+        amount: the percentage that needs to be healed
+        player: The player using the effect'''
+    player.heal(amount)
+    # heal for the percentage
+
+def gamble():
+
 def adapt(num, context, combat):
     '''The adapt power effect
     
@@ -519,7 +541,60 @@ def FINAL_GAMBIT(x, additional, context, combat):
     # Apply the Final Gambit debuff to the user
 
 def discover(card_type, cost, context, combat):
-    return # Placeholder
+    '''Function for a discover effect (Select from 3 random cards of a type)
+    
+    ### args: 
+        card_type: The type of cards being discovered
+        cost: The cost change if needed
+        context: Info related to targets and the user
+        combat: The combat session
+    '''
+    card_list = {}
+    # Initialize set of cards to pick from
+    if card_type in {'Attack', 'Skill', 'Power'}:
+        # If its a type of card
+        if context['user'].character_class == 1:
+            # If the user is the Class 1
+            if card_type == 'Attack':
+                # Attack cards
+                card_list = set(card_constructor.attack_card_1)
+            elif card_type == 'Skill':
+                # Skill cards
+                card_list = set(card_constructor.skill_card_1)
+            else:
+                # Power cards
+                card_list = set(card_constructor.power_card_1)
+    cards = []
+    for i in range(0, 3):
+        card = random.choice(card_list)
+        cards.append(card)
+        card_list.remove(card)
+    # Choose 3 random cards from valid list
+    combat.discover(cards, cost)
+    # Use function in combat for user to choose one of the three
+    # Unfinished
+
+def upgrade(target, context, combat):
+    '''Function for upgrading cards in combat
+    
+    ### args:
+        target: the cards to be upgraded
+    '''
+    if target in {'hand', 'draw', 'discard', 'exhaust'}:
+        # If the target is a pile
+        combat.upgrade(context[target])
+        # Upgrade all cards of that pile
+    elif target == 'all':
+        combat.upgrade(context['draw'])
+        combat.upgrade(context['hand'])
+        combat.upgrade(context['discard'])
+        combat.upgrade(context['exhaust'])
+        # Upgrade all cards
+    else:
+        combat.hard_card_select(1, context['hand'])
+        combat.upgrade(combat.selected)
+        combat.hand.append(combat.selected)
+        # Choose 1 card in hand and upgrade it
 
 def split(slime_type, context, combat):
     '''Function for slime splitting into smaller slimes

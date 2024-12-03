@@ -4,7 +4,7 @@ import card_data
 import card_constructor
 import random
 
-class Combat():
+class Combat:
     def __init__(self, player, deck, relics, potions, enemies, combat_type, mechanics):
         self.player = player # The Player 
         self.enemies = enemies # The Enemies in a combat encounter
@@ -126,7 +126,7 @@ class Combat():
             loctaion (int): represents which pile to add the card, 0 = hand, 1 = draw pile, 2 = discard pile. 3 = exhaust pile
             card (object): An object that represents the card
         '''
-        card = card_constructor.create_card(card_id, *card_data.Cards[card_id])
+        card = card_constructor.create_card(card_id, *card_data.card_info[card_id])
         # Creates a card object using methods in card_constructor and data in card_data
         if cost != 'na':
             # If a cost change is needed
@@ -377,7 +377,7 @@ class Combat():
                             # Returns the number of cards selected
 
     def place_selected_cards(self, end_pile, cost):
-        '''Function for placing a selected card into a specific pile
+        '''Method for placing a selected card into a specific pile
 
         ### args: 
             end_pile: The location the selected cards end up
@@ -678,7 +678,7 @@ class Combat():
             # End the combat
 
     def havoc(self, num: int, special: bool):
-        '''Havoc referrs to playing the top card of the draw pile, this function will do that action a number of times
+        '''Havoc referrs to playing the top card of the draw pile, this Method will do that action a number of times
         
         ### args:
             num: Number of times to havoc
@@ -732,6 +732,24 @@ class Combat():
                     # remove the card from hand
         return cards_exhausted_type
         # Returns the list of types of all the cards exhausted, used for executing conditional effects on certain cards
+    
+    def mulligan(self):
+        '''Method for performing a mulligan which refers to discarding any number of cards from the hand and drawing that many back
+        '''
+        if self.hand:
+            # If the player even has cards in the hand
+            self.soft_card_select(len(self.hand), self.hand)
+            # Selected as many cards in hand as the player wants
+            if self.selected:
+                # If there were cards selected
+                amount = len(self.selected)
+                # Save amount of cards selected
+                for card in reversed(self.selected):
+                    self.discard_pile.append(card)
+                    self.selected.remove(card)
+                # Add cards to discard pile
+                self.draw(amount)
+                # Draw same amount back
 
     def exhaust_entire_pile(self, pile):
         '''Exhausts an entire pile
@@ -850,7 +868,7 @@ class Combat():
             'exhaust': self.exhaust_pile,
             'target': potion.target
         }
-        if potion.time_of_use in {'combat', 'all'}:
+        if potion.time_of_use == 'combat':
             # If the potion that is being used can be used during combat
             for effect, details in potion.effect.items():
                 effect(*details, context, self)
@@ -859,9 +877,16 @@ class Combat():
             global potions
             potions.remove(potion)
             # Remove the potion from combat and the player object
+        elif potion.time_of_use == 'all':
+            self.player.use_potion(potion)
+            self.potions.remove(potion)
+            # Use potion using player method
+        else:
+            print(f'Invalid time of use: {potion.time_of_use}')
+            # Invalid time of use
 
     def player_turn_start(self):
-        '''Function for doing everything that needs to be done at the start of combat'''
+        '''Method for doing everything that needs to be done at the start of combat'''
         self.can_play_card = True
         # Set the ability to play cards to be true
         self.energy = 0
@@ -991,6 +1016,47 @@ class Combat():
                     self.selected.clear()
                     # empty selected
         
+    def discover(self, cards, cost):
+        '''Ask user to add to hand one of the 3 cards given
+        
+        ### args:
+            cards: A list of 3 cards to choose from
+            cost: cost modifications to the cards
+        '''
+        self.hard_card_select(1, cards)
+        # Select 1 card from the list
+        if self.hand:
+            if len(self.hand) == 10:
+                # If the player is at hand size
+                self.discard_pile.append(self.selected)
+                self.selected.clear()
+                # Add to discard pile
+            else:
+                self.hand.append(self.selected)
+                self.selected.clear()
+                # Add to hand instead
+        else:
+            self.hand.append(self.selected)
+            self.selected.clear()
+            # Add to hand instead
+        if cost != 'na':
+            # If the cost needs to be modified
+            self.hand[-1].cost_change(cost, 'Turn')
+            # Change the cost until end of turn
+
+    def upgrade(self, cards):
+        '''Method to upgrade cards temporily for the combat
+        
+        ### args:
+            cards: a list of cards to upgrade
+        '''
+        if cards:
+            # If there are cards to be upgraded
+            for card in cards:
+                # go through every card
+                card = card_constructor.create_card(card.id + 100, card_data.card_info[card.id + 100])
+                # upgrade the card by making its id and effects of the card 100 higher
+
     def enemy_action(self):
         '''Execute all enemy actions
         '''
@@ -1009,14 +1075,14 @@ class Combat():
                 # Execute the ffects
 
     def summon_enemies(self, enemies: list):
-        '''Function for adding more enemies to the combat session
+        '''Method for adding more enemies to the combat session
         
         ### args:
             enemies: A list of new enemy objects to be added
         '''
 
     def split(self, slime_type, hp):
-        '''Function for larger slimes splitting when they hit half health
+        '''Method for larger slimes splitting when they hit half health
         
         ### args: 
             slime_type: the type of slime that is splitting
