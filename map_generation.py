@@ -63,25 +63,32 @@ def createMap(asc):
                     connection = random.randint(-1, 0)
                 else:
                     connection = random.randint(-1, 1)
+                # Creates a random connection to the rooms above and makes sure connection doesn't go outside the map
                 if connection == 0:
                     break
+                # If it goes straight up, doesn't need to check for crossing paths
                 else:
                     if (floor, room + connection) not in path:
                         break
                     else:
                         if [floor + 1, room] not in path[floor, room + connection]:
                             break
+                # Checks for crossing paths
             return connection
         start = [0, 1, 2, 3, 4, 5, 6]
         for i in range(0, 6):
+            # Repeat the a process six times
             floor = 1
             if i < 2:
                 room = random.choice(start)
                 start.remove(room)
+                # For the first 2 rooms selected, it makes sure its 2 different starting rooms
             else:
                 room = random.randint(0, 6)
+                # If not first 2 rooms than duplicate starting rooms are fine
             while floor < 15:
                 connection = nonOverlapPath(path, room, floor)
+                # Create a connection
                 if room not in map[floor]:
                     if floor == 1:
                         map[floor][room] = 1
@@ -91,6 +98,7 @@ def createMap(asc):
                         map[floor][room] = 6
                     else:
                         map[floor][room] = 0
+                    # Certain floors have fixed room types
                 if (room + connection) not in map[floor + 1]:
                     if floor + 1 == 9:
                         map[floor + 1][room + connection] = 5
@@ -98,14 +106,17 @@ def createMap(asc):
                         map[floor + 1][room + connection] = 6
                     else:
                         map[floor + 1][room + connection] = 0
+                    # Certain floors have fixed room types
                 if (floor, room) in path:
                     if [floor + 1, room + connection] not in path[floor, room]:
                         path[floor, room].append([floor + 1, room + connection])
                 else: 
                     path[floor, room] = []
                     path[floor, room].append([floor + 1, room + connection])
+                # Adds connected rooms coordinates to a rooms list in path dictonary for determaining whether a room connects to another room
                 floor += 1
                 room = room + connection
+                # Change the room to the newly generated and connected room
         return path, map
     
     path, map = compPathGen()
@@ -402,12 +413,4 @@ def createMap(asc):
         mapDisplay.append(floorDisplay)
         if floor < 15:
             mapDisplay.append(''.join(pathDisplay[floor - 1]))
-
-
-
     return map, path, mapDisplay
-map, path, mapDisplay = createMap(1)
-for i in reversed(mapDisplay):
-    print(i)
-print(map)
-print(path)

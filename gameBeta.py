@@ -12,17 +12,26 @@ class Character:
     def __init__(self, name, maxHp, character_class):
         self.name = name
         self.maxHp = maxHp
-        self.Hp = maxHp
+        self.hp = maxHp
         self.character_class = character_class
         self.block = 0
         self.deck = []
+        self.gold = 100
         self.potions = [None, None, None]
         self.relics = []
         self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0}
         #Debuffs: Atrophy = lose dex at the end of turn
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Parry': 0, 'Deflect': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Parry': 0, 'Deflect': 0}
         # self.powers = {'Cursed Ward': 0, 'Feel No Pain': 0, 'Evolve': 0, 'Transfer Pain': 0, 'Dark Embrace': 0, 'Corruption Form': 0, 'Spectral Blades': 0, 'Seeing Red': 0, 'Corruption': 0, 'Clear Mind': 0}
     
+    def gold_modification(self, amount):
+        '''Method to change amount of gold the player has
+        
+        ### args:
+            amount: amount of gold gained or lost'''
+        self.gold += amount
+        # Add amount
+
     def relic_pickup(self, relic):
         self.relics.append(relic)
         relic.applyEff('pickup', None)
@@ -79,7 +88,7 @@ class Character:
         
         ### args:
             amount: amount gained'''
-        self.block += amount + self.buff['Dexterity']
+        self.block += amount + self.buffs['Dexterity']
         # add more block and adding the dexterity bonus
     
     def gain_block_power(self, amount):
@@ -99,17 +108,17 @@ class Character:
         '''
         if buff_type not in {'Strength', 'Dexterity'}:
             # If its not Str or Dex
-            self.buff[buff_type] += amount
+            self.buffs[buff_type] += amount
             # Just add the amount
         else:
             # If it is
-            if self.debuff['-' + buff_type] > 0:
-                self.debuff['-' + buff_type] -= amount
-                if self.debuff['-' + buff_type] < 0:
-                    self.buff[buff_type] = -self.debuff['-' + buff_type]
-                    self.debuff['-' + buff_type] = 0
+            if self.debuffs['-' + buff_type] > 0:
+                self.debuffs['-' + buff_type] -= amount
+                if self.debuffs['-' + buff_type] < 0:
+                    self.buffs[buff_type] = -self.debuffs['-' + buff_type]
+                    self.debuffs['-' + buff_type] = 0
             else:
-                self.buff[buff_type] += amount
+                self.buffs[buff_type] += amount
             # Accounts for negative Str or Dex when adding the buffs
         # Add amount to corresponding buff
     
@@ -175,7 +184,7 @@ class Character:
     def hp_loss(self, amount):
         for relic in self.relics:
             amount = relic.applyEff('HpLoss', amount)
-        self.Hp -= amount
+        self.hp -= amount
         if amount > 0:
             if self.died == True:
                 return 'GG' # Placeholder
@@ -184,7 +193,7 @@ class Character:
             return False
     
     def hp_recovery(self, amount):
-        self.Hp = min(self.Hp + amount, self.maxHp)
+        self.hp = min(self.hp + amount, self.maxHp)
 
     def damage_taken(self, damage):
         '''
@@ -208,13 +217,28 @@ class Character:
             return self.hp_loss(damage)
     
     def died(self):
-        if self.Hp <= 0:
+        if self.hp <= 0:
             for relic in self.relics:
                 if relic.condition == 'dead' and relic.used == False:
-                    self.Hp = relic.applyEff('dead', self.maxHp)
+                    self.hp = relic.applyEff('dead', self.maxHp)
                     relic.used = True
                     return False
             return False
         else:
             return True
 
+player = Character('Test', 1000, 1)
+player.deck.append(card_constructor.create_card(1000, card_data.card_info[1000]))
+player.deck.append(card_constructor.create_card(1000, card_data.card_info[1000]))
+player.deck.append(card_constructor.create_card(1001, card_data.card_info[1001]))
+player.deck.append(card_constructor.create_card(1001, card_data.card_info[1001]))
+player.deck.append(card_constructor.create_card(1067, card_data.card_info[1067]))
+enemy = enemy_data.AncientMech()
+combat = combat_beta.Combat(player, player.deck, [], [], [enemy], 'Boss', {'Intent': True, 'Ordered_Draw_Pile': False, 'turn_end_discard': False, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False})
+while combat.combat_active == True:
+    combat.player_turn_start()
+    combat.player_turn()
+    combat.player_turn_end()
+    combat.enemy_turn_start()
+    combat.enemy_action()
+    combat.enemy_turn_end()

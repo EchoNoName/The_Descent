@@ -5,11 +5,44 @@ class Enemy:
     def __init__(self) -> None:
         pass
     
+    def turn_start(self):
+        '''Method for actions done at the start of turn'''
+        if self.debuffs['Vulnerable'] > 0:
+            self.debuffs['Vulnerable'] -= 1
+        if self.debuffs['Weak'] > 0:
+            self.debuffs['Weak'] -= 1
+        # Lower some debuff counters by 1 for all enemies
+        if self.buffs['Ritual'] > 0:
+            self.gain_buff('Strength', self.buffs['Ritual'])
+        # Gain 1 strength for every ritual
+        if self.debuffs['Poison'] > 0:
+            self.hp_loss(self.debuffs['Poison'])
+        # Lose 1 Hp for every poison
+        self.block = 0
+        # Lose all block on turn start
+    
+    def turn_end(self):
+        '''Method for actions done at the end of turn'''
+        self.gain_block(self.buffs['Plated Armour'] + self.buffs['Metalicize'])
+        self.hp_heal(self.buffs['Regen'])
+        if self.debuffs['Poison'] > 0:
+            self.debuffs['Poison'] -= 1
+        # Execute buffs and debuffs
+
+    def hp_heal(self, amount):
+        '''method for healing
+        
+        ### args:
+            amount: amount to heal by'''
+        self.hp = min(self.max_hp, self.hp + amount)
+
     def damage_taken(self, damage):
         '''
         Handles damage taken by the entity
         '''
         damage = damage
+        if self.debuffs['Vulnerable'] > 0:
+            damage = int(damage * 1.5)
         self.block -= damage
         # Deal damage to block first
         if self.block >= 0:
@@ -65,17 +98,17 @@ class Enemy:
         '''
         if buff_type not in {'Strength', 'Dexterity'}:
             # If its not Str or Dex
-            self.buff[buff_type] += amount
+            self.buffs[buff_type] += amount
             # Just add the amount
         else:
             # If it is
-            if self.debuff['-' + buff_type] > 0:
-                self.debuff['-' + buff_type] -= amount
-                if self.debuff['-' + buff_type] < 0:
-                    self.buff[buff_type] = -self.debuff['-' + buff_type]
-                    self.debuff['-' + buff_type] = 0
+            if self.debuffs['-' + buff_type] > 0:
+                self.debuffs['-' + buff_type] -= amount
+                if self.debuffs['-' + buff_type] < 0:
+                    self.buffs[buff_type] = -self.debuff['-' + buff_type]
+                    self.debuffs['-' + buff_type] = 0
             else:
-                self.buff[buff_type] += amount
+                self.buffs[buff_type] += amount
             # Accounts for negative Str or Dex when adding the buffs
         # Add amount to corresponding buff
     
@@ -151,7 +184,7 @@ class SmallGreenSlime(Enemy):
         self.intent = None
         self.actions_done = []
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -193,7 +226,7 @@ class MediumGreenSlime(Enemy):
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
 
     def intent_get(self, combat):
@@ -267,7 +300,7 @@ class LargeGreenSlime(Enemy):
         }
         self.intent = None
         self.buffs = {'Split': 1, 'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
 
     def intent_get(self, combat):
@@ -354,7 +387,7 @@ class SmallBlueSlime(Enemy):
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -379,7 +412,7 @@ class MediumBlueSlime(Enemy):
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
 
     def intent_get(self, combat):
@@ -439,7 +472,7 @@ class LargeBlueSlime(Enemy):
         }
         self.intent = None
         self.buffs = {'Split': 1, 'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
 
     def intent_get(self, combat):
@@ -512,7 +545,7 @@ class SneakyGoblin(Enemy):
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -536,7 +569,7 @@ class FatGoblin(Enemy):
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -560,7 +593,7 @@ class MadGoblin(Enemy):
         }
         self.intent = None
         self.buffs = {'Anger': 1, 'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def damage_taken(self, damage):
@@ -612,7 +645,7 @@ class ShieldGoblin(Enemy):
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -641,7 +674,7 @@ class InfestedCorpes(Enemy):
         }
         self.intent = None
         self.buffs = {'Infestation': 2, 'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
 
     def intent_get(self, combat):
@@ -710,7 +743,7 @@ class Cultist(Enemy):
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -743,7 +776,7 @@ class RedArachnid(Enemy):
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -803,7 +836,7 @@ class BlueArachnid(Enemy):
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -875,7 +908,7 @@ class GreenLouse(Enemy):
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
         self.buffs['Curl Up'] = random.randint(3, 7)
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
     
     def intent_get(self, combat):
         '''Gets what the enemy intends to do
@@ -962,7 +995,7 @@ class RedLouse(Enemy):
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
         self.buffs['Curl Up'] = random.randint(3, 7)
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
     
     def intent_get(self, combat):
         '''Gets what the enemy intends to do
@@ -1048,7 +1081,7 @@ class SentryA(Enemy):
         self.intent = None
         self.actions_done = []
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 1, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -1085,7 +1118,7 @@ class SentryB(Enemy):
         self.intent = None
         self.actions_done = []
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 1, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -1125,7 +1158,7 @@ class GiantLouse(Enemy):
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 8, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0, 'Asleep': 1}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0, 'Asleep': 1}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):
@@ -1185,13 +1218,13 @@ class GoblinGiant(Enemy):
         self.block = 0
         self.actions_done = []
         self.actions = {
-            'Skull Bash': ({effects.deal_attack_damage: (6, 1), effects.apply_debuff: (['Vulernable'], [2])}, 1, 'Debuff Attack'),
+            'Skull Bash': ({effects.deal_attack_damage: (6, 1), effects.apply_debuff: (['Vulnerable'], [2])}, 1, 'Debuff Attack'),
             'Rush': ({effects.deal_attack_damage: (14, 1)}, 1, 'Attack'),
             'Bellow': ({effects.apply_buff: (['Enraged'], [2])}, 0, 'Buff')
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0, 'Enraged': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
     
     def intent_get(self, combat):
         '''Gets what the enemy intends to do
@@ -1252,13 +1285,13 @@ class AncientMech(Enemy):
             'Laser Barrage': ({effects.deal_attack_damage: (5, 6)}, 1, 'Multi Attack'),
             'Sword Sweep': ({effects.deal_attack_damage: (6, 2)}, 1, 'Multi Attack'),
             'Mode Shift: Defense': ({effects.enemy_block_gain: (20, )}, 0, 'Special'),
-            'Defensive Shock ': ({effects.enemy_block_gain: (15, ), effects.add_card_to_pile: ('discard', 53, 2, 'na')}, 0, 'Debuff Block'),
+            'Defensive Shock': ({effects.enemy_block_gain: (15, ), effects.add_card_to_pile: ('discard', 53, 2, 'na')}, 0, 'Debuff Block'),
             'Sonic Pulse': ({effects.apply_debuff: (['Weak', 'Frail'], [3, 3])}, 1, 'Mega Debuff'),
-            'Mode Shift: Offense': ({effects.apply_buff: (['Stength'], [3])}, 0, 'Special')
+            'Mode Shift: Offense': ({effects.apply_buff: (['Strength'], [3])}, 0, 'Special')
         }
         self.intent = None
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'Vulerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, '-Strength': 0, 'Chained': 0, 'Poison': 0}
         # Initilize Properties of an enemy
     
     def intent_get(self, combat):

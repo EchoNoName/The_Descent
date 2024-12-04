@@ -62,14 +62,14 @@ potions = {
     "Regen Potion": ("Gain 5 Regeneration.", 'combat', {effects.apply_buff: (['Regen'], [5])}, 0),
     "Memory Potion": ("Choose 1 card from the discard pile and add it to the hand, it costs 0 this turn.", 'combat', {effects.place_card_in_loction: ('discard', 1, 'hand', 0)}, 0),
     "Duplicate Potion": ("Your next card is played twice.", 'combat', {effects.apply_buff: (['Duplicate'], [1])}, 0),
-    "Gambler's Potion": ("Discard any number of cards, then draw that many.", 'combat', {'gamble': 1}),
+    "Gambler's Potion": ("Discard any number of cards, then draw that many.", 'combat', {effects.gamble: ()}),
     "Chaos Potion": ("Play the top 3 cards of your Draw pile (This doesn't spend Energy).", 'combat', {effects.havoc: (3, False)}, 2),
     "Ritual Potion": ("Gain 1 Ritual.", 'combat', {effects.apply_buff: (['Ritual'], [1])}, 0),
-    "Entropic Brew": ("Fill all your empty potion slots with random potions.", 'all', {'potion': ('all', 'random')}, 0),
+    "Entropic Brew": ("Fill all your empty potion slots with random potions.", 'all', {effects.entropic: ()}, 0),
     "Fairy in a Bottle": ("When you would die, heal to 30% of your Max HP instead and discard this potion.", 'died', {effects.revive: (30, )}, 0),
-    "Fruit Juice": ("Gain 5 Max HP.", 'all', {'MaxHp': 5}, 0),
-    "Smoke Bomb": ("Escape from a non-boss combat. Receive no rewards.", 'combat', {'escape': 'non boss'}, 0),
+    "Fruit Juice": ("Gain 5 Max HP.", 'all', {effects.max_hp_change: (5, )}, 0),
+    "Smoke Bomb": ("Escape from a non-boss combat. Receive no rewards.", 'combat', {effects.smoke_bomb: ()}, 0),
     "Chaotic Potion": ("Draw 5 cards. Randomize the costs of all cards in your hand for the rest of the combat.", 'combat', {effects.draw_cards: (5, ), 'Placeholder': ()}),
-    "Blood Potion": ("Heal for 20% of your Max Hp", 'all', {'Hp': '20'}),
-    "Holy Water": ("Exhaust any number of cards in your hand.", 'combat', {'exhaust': ('any', 'hand', 'choice')}, 0)
+    "Blood Potion": ("Heal for 20% of your Max Hp", 'all', {effects.blood: ('20', )}),
+    "Holy Water": ("Exhaust any number of cards in your hand.", 'combat', {effects.purity: ()}, 0)
 }

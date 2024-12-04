@@ -33,27 +33,14 @@ def deal_attack_damage(damage, times : int, context, combat):
     if context['user'].debuffs['Weak'] > 0:
         actualDamage = actualDamage // 4
     # Damage Calcs
-    if context['target'] == 2:
-        # If the target is random
-        for i in range(0, times):
-            entity = random.choice(context['enemies'])
-            attack_damage_dealt += entity.damage_taken(actualDamage)
-            # Causes random target to take damage and saves amount dealt
-            if entity.buffs['Thorns'] > 0:
-                # If the enemy has thorns
-                context['user'].damage_taken(entity.buffs['Thorns'])
+    for i in range(0, times):
+        for target in context['target']:
+            attack_damage_dealt += target.damage_taken(actualDamage)
+            # Deals damage to targets and saves damage dealt
+            if target.buffs['Thorns'] > 0:
+            # If the enemy has thorns
+                context['user'].damage_taken(target.buffs['Thorns'])
                 # Take damage equal to throns of the attacked
-    else:
-        enemies = combat.get_targets(context)
-        # Aquires target of the card
-        for i in range(0, times):
-            for target in enemies:
-                attack_damage_dealt += target.damage_taken(actualDamage)
-                # Deals damage to targets and saves damage dealt
-                if entity.buffs['Thorns'] > 0:
-                # If the enemy has thorns
-                    context['user'].damage_taken(entity.buffs['Thorns'])
-                    # Take damage equal to throns of the attacked
     return attack_damage_dealt
     # Used for certain effects
 
@@ -65,9 +52,8 @@ def deal_damage(damage, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    targets = combat.get_targets(context)
     # Gets the target of the effect
-    for entity in targets:
+    for entity in context['target']:
         entity.damage_taken(damage)
         # Deal the damage to all targets
 
@@ -135,9 +121,8 @@ def enemy_block_gain(block, context, combat):
         context: Information related to targets
         combat: The current combat session
     '''
-    targets = combat.get_targets(context)
     # Aquire targets
-    for entity in targets:
+    for entity in context['target']:
         # Loop through all targets
         entity.gain_block(block)
         # Give them block
@@ -151,10 +136,10 @@ def apply_buff(buffs: list, amount: list, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    for entity in combat.get_targets(context):
+    for entity in context['target']:
         # Go through all targets
         for i in range(len(buffs)):
-            entity.gain_buffs(buffs[i], amount[i])
+            entity.gain_buff(buffs[i], amount[i])
             # Grants the targets the buffs
 
 def apply_debuff(debuffs: list, amount: list, context, combat):
@@ -166,10 +151,10 @@ def apply_debuff(debuffs: list, amount: list, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    for entity in combat.get_targets(context):
+    for entity in context['target']:
         # Go through all the targets
         for i in range(len(debuffs)):
-            entity.gain_debuffs(debuffs[i], amount[i])
+            entity.gain_debuff(debuffs[i], amount[i])
             # Applies the debuffs to the target
 
 def add_card_to_pile(location: str, card_id, number_of_cards: int, cost, context, combat):
@@ -211,7 +196,7 @@ def havoc(number_of_cards : int, special : bool, context, combat):
         combat: The current combat
     '''
     combat.havoc(number_of_cards, special)
-    # Use the havoc function in combat to perform this effect
+    # Use the havoc method in combat to perform this effect
 
 def entropic(player):
     '''Function for filling all empty potion slots with random potions
@@ -224,6 +209,23 @@ def entropic(player):
         player.gain_rand_potion()
         # Fill all empty slots
 
+def purity(context, combat):
+    '''Function for choosing and exhauting any number of cards from hand
+    
+    ### args:
+        context: combat related info
+        combat: Instance of the combat class'''
+    if combat.hand:
+        combat.soft_card_select(len(combat.hand))
+    # Selected as many cards as the player wants in hand
+    combat.exhaust_selected()
+    # Exhausts all selected card
+
+def smoke_bomb(context, combat):
+    '''Function for the smoke bomb potion'''
+    combat.escape()
+    # Use the escape method in combat
+
 def blood(amount, player):
     '''Function for healing for a percentage of hp
     
@@ -233,7 +235,10 @@ def blood(amount, player):
     player.heal(amount)
     # heal for the percentage
 
-def gamble():
+def gamble(context, combat):
+    '''Function for performing a Mulligan in combat'''
+    combat.mulligan()
+    # Uses the mulligan method in combat
 
 def adapt(num, context, combat):
     '''The adapt power effect
@@ -285,7 +290,7 @@ def exhaust_discard_curse(num : int, context, combat):
         combat: The current combat
     '''
     combat.exhaust_discard_curse(num)
-    # Uses the function in combat
+    # Uses the method in combat
 
 def exhaust_from_hand(num : int, context, combat):
     '''Effect for choosing and exhausting selected cards from the hand
@@ -296,7 +301,7 @@ def exhaust_from_hand(num : int, context, combat):
         combat: The current combat
     '''
     combat.exhaust_choose_hand(num)
-    # Uses fucntion in combat
+    # Uses method in combat
 
 def exhaust_random_from_hand(num : int, context, combat):
     '''Effect exhausting random cards from the hand
@@ -307,7 +312,7 @@ def exhaust_random_from_hand(num : int, context, combat):
         combat: The current combat
     '''
     combat.exhaust_random_hand(num)
-    # uses function in combat
+    # uses method in combat
 
 def lose_hp(amount, context, combat):
     '''Effect for losing HP
@@ -317,8 +322,8 @@ def lose_hp(amount, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    targets = combat.get_targets(context)
-    # Aquire the target using function in combat
+    targets = context['target']
+    # Aquire the target using method in combat
     if not isinstance(amount, int):
         # If the amount lost is not a number
         amount = len(context[amount])
@@ -336,7 +341,7 @@ def retain_cards(num : int, context, combat):
         combat: The current combat
     '''
     combat.retain_cards(num)
-    # Uses function in combat
+    # Uses method in combat
 
 def draw_cards(num : int, context, combat):
     '''Effect for drawing more cards
@@ -347,7 +352,7 @@ def draw_cards(num : int, context, combat):
         combat: The current combat
     '''
     combat.draw(num)
-    # Uses function in combat
+    # Uses method in combat
 
 def double_block(num : int, context, combat):
     '''Effect for doubling the amount of block the user has
@@ -403,7 +408,7 @@ def card_search(type, num, context, combat):
         combat: The current combat
     '''
     combat.search(num, type)
-    # uses function from combat
+    # uses method from combat
 
 def energy_manip(amount : int, context, combat):
     '''Effect for manipulating energy
@@ -414,7 +419,7 @@ def energy_manip(amount : int, context, combat):
         combat: The current combat
     '''
     combat.energy_change(amount)
-    # Uses function from combat
+    # Uses method from combat
 
 def card_play_limit(limit, context, combat):
     '''Effect limiting number of cards that can be played
@@ -425,7 +430,7 @@ def card_play_limit(limit, context, combat):
         combat: The current combat
     '''
     combat.card_limit(limit)
-    # Uses function from combat
+    # Uses method from combat
 
 def conditional_effect(effect, effect_details, context_condition, norm_effect, norm_effect_details, cond_effect, cond_effect_details, context, combat):
     '''Complex effects where the first effect is executed and based on the result of that, a non conditional or conditional effect is executed
@@ -472,7 +477,7 @@ def modify_effect(effect, modifications, context, combat):
         combat: The current combat
     '''
     combat.playing.modify_effect(effect, modifications)
-    # Uses function from combat
+    # Uses method from combat
 
 def hand_for_card_exhausted(exhaust_card_type: set, card_type_cond: set, cond_effect: list, cond_effect_details: list, context, combat):
     '''Effect for exhausting all cards of a certain type in hand and executing effects if the type of the card matches the condtion
@@ -535,7 +540,7 @@ def FINAL_GAMBIT(x, additional, context, combat):
     combat.exhaust_entire_pile(context['draw'])
     combat.exhaust_entire_pile(context['discard'])
     # Exhaust everything
-    place_card_in_loction('exhaust', x, 'hand', 0, context, combat)
+    place_card_in_loction('exhaust', x, 'hand', (0, 'Turn'), context, combat)
     # add x cards from the discard pile to the hand and make them cost 0
     apply_debuff(['Last Chance'], [1], context, combat)
     # Apply the Final Gambit debuff to the user
@@ -571,7 +576,7 @@ def discover(card_type, cost, context, combat):
         card_list.remove(card)
     # Choose 3 random cards from valid list
     combat.discover(cards, cost)
-    # Use function in combat for user to choose one of the three
+    # Use method in combat for user to choose one of the three
     # Unfinished
 
 def upgrade(target, context, combat):
@@ -609,7 +614,7 @@ def split(slime_type, context, combat):
     combat.enemies.remove(context['user'])
     # Remove the big slime
     combat.split(slime_type, hp)
-    # Use function in combat to add 2 more slimes
+    # Use method in combat to add 2 more slimes
 
 def small_damage_reduction(damage, cap, *args): 
     '''Reduces damage small enought to 1
@@ -642,6 +647,15 @@ def hp_loss_reduction(hp_loss, reduction, *args): # Hp Loss Reduction Effect
     '''
     return hp_loss - reduction
     # Apply reduction
+
+def max_hp_change(amount, player):
+    '''Function for gaining max hp from certain effects
+    
+    ### args:
+        amount: amount of max hp gained
+        player: the player using the effect'''
+    player.increase_max_hp(amount)
+    # Uses method in player class to perform the action
 
 def revive(revive_percentage, max_hp, *args): # Revive effect
     '''Revives the player when dead
