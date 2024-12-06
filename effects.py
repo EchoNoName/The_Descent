@@ -22,30 +22,47 @@ def deal_attack_damage(damage, times : int, context, combat):
     if not isinstance(damage, int):
         # If the damage isn't a number
         if damage == 'block':
-            actualDamage = context['user'].block
+            damage = context['user'].block
             # Execute start of combat effects of relics
         else:
             raise ValueError(f'Unknown damage value {damage}')
             # Invalid damage value error foe bebugging
     actualDamage = damage + context['user'].buffs['Strength'] + context['user'].buffs['Vigour']
     # Add user's buffs
+    context['user'].buffs['Vigour'] = 0
     actualDamage = actualDamage - context['user'].debuffs['-Strength']
     if context['user'].debuffs['Weak'] > 0:
         actualDamage = actualDamage // 4
     # Damage Calcs
+    if combat.enemy_turn == True:
+        targets = combat.get_targets(context, context['target'])
+    else:
+        targets = context['target']
+    # Player's target is predetermained
+        # players have targets determained before executing effects
     for i in range(0, times):
-        for target in context['target']:
+        for target in targets:
             attack_damage_dealt += target.damage_taken(actualDamage)
             # Deals damage to targets and saves damage dealt
             if target.buffs['Thorns'] > 0:
             # If the enemy has thorns
-                context['user'].damage_taken(target.buffs['Thorns'])
+                context['user'].true_damage_taken(target.buffs['Thorns'])
                 # Take damage equal to throns of the attacked
+            if 'Parry' in target.buffs:
+                if target.buffs['Parry'] > 0:
+                # If the target has parry
+                    context['user'].gain_debuff('Vulnerable', target.buffs['Parry'])
+                    # Attacker gets applied 1 Vuln for every parry
+            if 'Deflect' in target.buffs:
+                if target.buffs['Deflect'] > 0:
+                    # If the target has deflect
+                    context['user'].true_damage_taken(target.buffs['Deflect'])
+                    # Attacker takes damage for every stack of deflect
     return attack_damage_dealt
     # Used for certain effects
 
 def deal_damage(damage, context, combat):
-    '''Repsonsable for card effects that deal attack danage
+    '''Repsonsable for card effects that deal damage
 
     ### args:
         damage: an integer representing damage
@@ -54,7 +71,7 @@ def deal_damage(damage, context, combat):
     '''
     # Gets the target of the effect
     for entity in context['target']:
-        entity.damage_taken(damage)
+        entity.true_damage_taken(damage)
         # Deal the damage to all targets
 
 def feed(damage : int, max_hp_increase : int, context, combat):
@@ -122,7 +139,8 @@ def enemy_block_gain(block, context, combat):
         combat: The current combat session
     '''
     # Aquire targets
-    for entity in context['target']:
+    targets = combat.get_targets(context, context['target'])
+    for entity in targets:
         # Loop through all targets
         entity.gain_block(block)
         # Give them block
@@ -136,7 +154,12 @@ def apply_buff(buffs: list, amount: list, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    for entity in context['target']:
+    if combat.enemy_turn == True:
+        targets = combat.get_targets(context, context['target'])
+    else:
+        targets = context['target']
+    # Player's target is predetermained
+    for entity in targets:
         # Go through all targets
         for i in range(len(buffs)):
             entity.gain_buff(buffs[i], amount[i])
@@ -151,7 +174,12 @@ def apply_debuff(debuffs: list, amount: list, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    for entity in context['target']:
+    if combat.enemy_turn == True:
+        targets = combat.get_targets(context, context['target'])
+    else:
+        targets = context['target']
+    # Player's target is predetermained
+    for entity in targets:
         # Go through all the targets
         for i in range(len(debuffs)):
             entity.gain_debuff(debuffs[i], amount[i])
@@ -322,7 +350,11 @@ def lose_hp(amount, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    targets = context['target']
+    if combat.enemy_turn == True:
+        targets = combat.get_targets(context, context['target'])
+    else:
+        targets = context['target']
+    # Player's target is predetermained
     # Aquire the target using method in combat
     if not isinstance(amount, int):
         # If the amount lost is not a number
@@ -331,6 +363,17 @@ def lose_hp(amount, context, combat):
     for entity in targets:
         entity.hp_loss(amount)
     # All targets lose Hp
+
+def hp_cost(amount, context, combat):
+    '''Effect for losing HP
+    
+    ### args: 
+        amount: amount of Hp being lost
+        context: Information related to the current combat 
+        combat: The current combat
+    '''
+    context['user'].hp_loss(amount)
+    # Make user lose hp
 
 def retain_cards(num : int, context, combat):
     '''Effect retaining more cards in hand at the end of the turn
@@ -432,40 +475,6 @@ def card_play_limit(limit, context, combat):
     combat.card_limit(limit)
     # Uses method from combat
 
-def conditional_effect(effect, effect_details, context_condition, norm_effect, norm_effect_details, cond_effect, cond_effect_details, context, combat):
-    '''Complex effects where the first effect is executed and based on the result of that, a non conditional or conditional effect is executed
-    
-    ### args: 
-        effect: Effect the condition will be based on (Ex: deal_attack_damage, etc)
-        effect_details: The specifics of the effect being executed
-        context_condtion: The condition based on the first effect (Ex: Type of card exhausted, number of cards exhausted, etc)
-        norm_effect: effect for if the condition is not met
-        norm_effect_details: The specifics of the normal effect
-        cond_effect: effect for if the condtion is met
-        cond_effect_details: The specifics of the conditional effect
-        context: Information related to the current combat 
-        combat: The current combat
-    '''
-    cond = effect(*effect_details, context, combat)
-    # Executes first effect and retreives result
-    if cond:
-        # If a result was retrieved
-        if context_condition == cond:
-            # If the condition is met
-            context['target'] = context['target'][1]
-            # Retreives the target for conditional effect
-            cond_effect(*cond_effect_details, context, combat)
-            # Execute the conditional effect
-        else:
-            context['target'] = context['target'][0]
-            # Retreives target for normal effect
-            norm_effect(*norm_effect_details, context, combat)
-            # Execute normal effect
-    else:
-        context['target'] = context['target'][0]
-        # Retreives target for normal effect
-        norm_effect(*norm_effect_details, context, combat)
-        # Executes normal effect 
 
 def modify_effect(effect, modifications, context, combat):
     '''Modifies the effect of a card
@@ -536,14 +545,19 @@ def FINAL_GAMBIT(x, additional, context, combat):
     '''
     x = x + additional
     # add additional to x
-    combat.exhaust_entire_pile(context['hand'])
-    combat.exhaust_entire_pile(context['draw'])
-    combat.exhaust_entire_pile(context['discard'])
-    # Exhaust everything
-    place_card_in_loction('exhaust', x, 'hand', (0, 'Turn'), context, combat)
-    # add x cards from the discard pile to the hand and make them cost 0
-    apply_debuff(['Last Chance'], [1], context, combat)
+    if combat.player.debuffs['Last Chance'] == 0:
+        # If another final gambit has not been played this turn
+        combat.exhaust_entire_pile(context['hand'])
+        combat.exhaust_entire_pile(context['draw'])
+        combat.exhaust_entire_pile(context['discard'])
+        # Exhaust everything
+        place_card_in_loction('exhaust', x, 'hand', (0, 'Played'), context, combat)
+        # add x cards from the discard pile to the hand and make them cost 0
+        apply_debuff(['Last Chance'], [1], context, combat)
     # Apply the Final Gambit debuff to the user
+    else:
+        energy_manip(x - additional, context, combat)
+        # Refund energy back if final gambit has been played already
 
 def discover(card_type, cost, context, combat):
     '''Function for a discover effect (Select from 3 random cards of a type)

@@ -61,6 +61,24 @@ class Enemy:
             # Update entity status
             return self.hp_loss(damage)
             # Hp loss
+    
+    def true_damage_taken(self, damage):
+        '''
+        Handles taking true damage that is uneffected by debuffs
+        '''
+        damage = damage
+        self.block -= damage
+        # Deal damage to block first
+        if self.block < 0:
+            # If block wasn't enough
+            damage = -self.block
+            # Update damage to only amount unblocked
+            self.block = 0
+            # If block isn't enough, Hp is used
+            self.died
+            # Update entity status
+            self.hp_loss(damage)
+            # Hp loss
         
     def hp_loss(self, amount):
         '''Handles enemy losing Hp in anyway

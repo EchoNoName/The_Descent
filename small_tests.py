@@ -1,6 +1,11 @@
-def test(args):
-    print('test successful')
+class test:
+    def __init__(self):
+        pass
 
-obj = test
-obj_run = ()
-obj(*obj_run, 1)
+obj = test()
+a = []
+a.append(obj)
+b = []
+b.append(a[0])
+b.remove(obj)
+print(a)

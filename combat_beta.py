@@ -22,7 +22,7 @@ class Combat:
         self.discard_pile = [] # Discard pile
         self.exhaust_pile = [] # Exhaust pile
         self.playing = None # The card being played
-        self.energy_cap = 3 # Energy gained at the start of the turn
+        self.energy_cap = 10 # Energy gained at the start of the turn
         self.energy = 0 # Current energy
         self.retain = 0 # num of cards to keep at the end of the turn
         self.can_play_card = True # If the player can play cards
@@ -67,6 +67,28 @@ class Combat:
                 # If its an energy relic
                 self.energy_cap += 1
                 # Add 1 energy to the cap
+
+    def curse_count(self):
+        '''Counts the number of curses in play'''
+        curse = 0
+        if self.draw_pile:
+            for card in self.draw_pile:
+                if card.type == 4:
+                    curse += 1
+        if self.discard_pile:
+            for card in self.discard_pile:
+                if card.type == 4:
+                    curse += 1
+        if self.hand:
+            for card in self.hand:
+                if card.type == 4:
+                    curse += 1
+        if self.exhaust_pile:
+            for card in self.exhaust_pile:
+                if card.type == 4:
+                    curse += 1
+        return curse
+        # counts the number of curses in play
 
     def get_targets(self, context, target_code):
         '''Retrieves the target of a card based on the cards target code
@@ -154,16 +176,16 @@ class Combat:
                 # Add the discard pile to the draw pile
                 random.shuffle(self.draw_pile)
                 # Shuffle the draw pile
-                self.discard_pile = []
+                self.discard_pile[:] = []
                 # Empty the discard pile
         else:
             if self.discard_pile:
                 # If the discard pile is not empty
-                self.draw_pile = self.discard_pile
+                self.draw_pile.extend(self.discard_pile)
                 # Make the draw pile the discard pile
                 random.shuffle(self.draw_pile)
                 # Shuffle the draw pile
-                self.discard_pile = []
+                self.discard_pile[:] = []
                 # Empty the discard pile
         for relic in self.relics:
             # Go through every relic
@@ -197,27 +219,28 @@ class Combat:
             else:
                 self.hand.append(self.draw_pile[-1])
                 # "draw" a card
-                if 'Drawn' in self.hand[-1].effect:
-                    # If the card has a when drawn effect
-                    for effect, details in self.hand[-1].effect['Drawn'].items():
-                        context = {
-                            # Basic info to be passed on for executing effects
-                            'user': self.player,
-                            'enemies': self.enemies,
-                            'draw': self.draw_pile,
-                            'discard': self.discard_pile,
-                            'hand': self.hand,
-                            'exhaust': self.exhaust_pile,
-                            'target': self.hand[-1].target
-                        }
-                        effect(*details, context, self)
-                        # Execute the drawn effect
+                if self.hand[-1].effect:
+                    if 'Drawn' in self.hand[-1].effect:
+                        # If the card has a when drawn effect
+                        for effect, details in self.hand[-1].effect['Drawn'].items():
+                            context = {
+                                # Basic info to be passed on for executing effects
+                                'user': self.player,
+                                'enemies': self.enemies,
+                                'draw': self.draw_pile,
+                                'discard': self.discard_pile,
+                                'hand': self.hand,
+                                'exhaust': self.exhaust_pile,
+                                'target': self.hand[-1].target
+                            }
+                            effect(*details, context, self)
+                            # Execute the drawn effect
                 self.draw_pile.pop(-1)
                 # Remove the top card of the draw pile as thats where we drew from
                 num -= 1
                 # One less card to draw
     
-    def soft_card_select(self, num : int, pile : list):
+    def soft_card_select(self, num : int, pile : list): # Needs to be changed to match hard card select
         '''A soft card select refers to when the game needs the player to select up to x amount of cards but can choose to select below x amount of cards or none at all
         
         ### args:
@@ -227,6 +250,7 @@ class Combat:
         ### Returns:
             Number of cards selected (If more than 1) or the type of card selected (If 1 card was selected) or None (No cards were selected)
             '''
+        cards_selected = []
         if not pile:
             # If the pile to select from is empty
             return None
@@ -242,28 +266,27 @@ class Combat:
                         # Prints all cards in the pile with relevent detail
                         print(f'{i}: {card.name}, cost: {card.combat_cost}, effect: {card.effect}')
                         i += 1
-                if self.selected:
-                    i = 0
+                if cards_selected:
                     # If there has been cards already selected
-                    for card in self.selected:
-                        # Prints all cards in the selected pile with relevent detail
-                        print('selected: ')
-                        print(f'{i}: {card.name}, cost: {card.combat_cost}, effect: {card.effect}')
-                        i += 1
+                    print('selected: ')
+                    print(cards_selected)
                 select = input(f"Enter the index of the card u wish to select or unselect by typing the index and cs to confirm choices, you can selected up to {num} cards.")
                 # Request for player input
-                if len(select) == 1:
+                if select != 'cs' and 'r' not in select:
                     # Select another card
-                    if pile[int(select)] in self.selected:
+                    select = int(select)
+                    if pile[select] in self.selected:
                         # Card is already selected
-                        self.selected.remove(pile[int(select)])
+                        self.selected.remove(pile[select])
+                        cards_selected.remove(select)
                         # Unselected the card
                     elif len(self.selected) == num:
                         # If they already selected the max num of cards
                         continue
                         # Do nothing
                     else:
-                        self.selected.append(self.hand[int(select)])
+                        self.selected.append(pile[select])
+                        cards_selected.append(select)
                         # Add the chosen card to selected
                 else:
                     confirm = False
@@ -299,6 +322,7 @@ class Combat:
         ### Returns:
             Number of cards selected (If more than 1) or the type of card selected (If 1 card was selected) or None (No cards were selected)
         '''
+        selected_cards = []
         if not pile:
             # If the pile to select from is empty
             return None
@@ -307,7 +331,7 @@ class Combat:
             # If the # of cards in pile is equal to or less then the # of cards that needs to be selected
             self.selected.extend(pile)
             # Add all cards in pile to selected
-            pile = []
+            pile[:] = []
             # Empty the pile
             if num == 1:
                 return self.selected[0].type
@@ -326,28 +350,28 @@ class Combat:
                         # Prints all cards in the pile with relevent detail
                         print(f'{i}: {card.name}, cost: {card.combat_cost}, effect: {card.effect}')
                         i += 1
-                i = 0
-                if self.selected:
+                if selected_cards:
                     # If there has been cards already selected
-                    for card in self.selected:
-                        # Prints all cards in the selected pile with relevent detail
-                        print('selected: ')
-                        print(f'{i}: {card.name}, cost: {card.combat_cost}, effect: {card.effect}')
-                        i += 1
+                    print('selected: ')
+                    print(selected_cards)
+                    # Prints the indexes of all selected cards
                 select = input("Enter the index of the card u wish to select or unselect by typine r followed by the index and cs to confirm choices")
                 # Request for player input
-                if isinstance(select, int):
+                if select != 'cs' and 'r' not in select:
                     # Select another card
+                    select = int(select)
                     if pile[int(select)] in self.selected:
                         # Card is already selected
-                        self.selected.remove(pile[int(select)])
+                        self.selected.remove(pile[select])
+                        selected_cards.remove(select)
                         # Unselected the card
                     elif len(self.selected) == num:
                         # If they already selected the max num of cards
                         continue
                         # Do nothing
                     else:
-                        self.selected.append(self.hand[int(select)])
+                        self.selected.append(pile[select])
+                        selected_cards.append(select)
                         # Add the chosen card to selected
                 else:
                     if len(self.selected) < num:
@@ -391,7 +415,7 @@ class Combat:
                     card.cost_change(*cost)
             end_pile.extend(self.selected)
             # Adds all selected cards to the top of the end pile
-            self.selected = []
+            self.selected[:] = []
             # Empty selected cards
     
     def search(self, num, type = 'all'):
@@ -441,7 +465,7 @@ class Combat:
                     else:
                         self.discard_pile.extend(self.selected)
                         # Add remaining cards the discard pile
-                        self.selected = []
+                        self.selected[:] = []
                         # Empty selected cards
                         break
                         # Exit the loop
@@ -588,7 +612,7 @@ class Combat:
                 self.if_card_cond(card, 'Exhausted')
             self.exhaust_pile.extend(self.selected)
             # Add all selected cards to exhaust pile
-            self.selected = []
+            self.selected[:] = []
             # Empty selected cards
             return True
         return False
@@ -675,6 +699,9 @@ class Combat:
             # If there are no more enemies
             self.combat_active = False
             # End the combat
+        if self.player.died == True:
+            self.combat_active = False
+        # Checks if the player has died and end sthe combat if so
 
     def havoc(self, num: int, special: bool):
         '''Havoc referrs to playing the top card of the draw pile, this Method will do that action a number of times
@@ -686,13 +713,18 @@ class Combat:
             # Iterate a certain amount of times
             if self.draw_pile:
                 # If there are cards in the draw pile
+                holding = None
+                # Initialize holding
+                if self.playing:
+                    holding = self.playing
+                # temporily holds the current playing card
                 self.playing = self.draw_pile[-1]
                 # Make the top card the card being played
                 self.draw_pile.pop(-1)
                 # Remove the top card of the draw pile
                 if special == True:
                     # If the played card needs to be exhausted
-                    self.playing.property_change('exhaust', True)
+                    self.playing.exhaust = True
                     # Make the card exhaust
                 context = {
                     # Info to be passed on for executing effects
@@ -704,8 +736,11 @@ class Combat:
                     'exhaust': self.exhaust_pile,
                     'target': 2
                 }
+                context['target'] = self.get_targets(context, 2)
                 self.play_card(context)
                 # Play the card
+                if holding:
+                    self.playing = holding
             else:
                 break
                 # end the loop
@@ -847,6 +882,9 @@ class Combat:
             else:
                 self.discard_pile.append(self.playing)
                 # Add the card to the discard pile
+        if self.playing.combat_cost[1] == 'Played':
+            self.playing.combat_cost = (None, None)
+        # Update cost of cards after being played
         self.playing = None
         # Empty the currently playing card
         self.cards_played += 1
@@ -946,7 +984,7 @@ class Combat:
                 # If the intent has not been determained yet
                 enemy.intent_get(self)
                 # Determain intent
-            print(f'{enemy.name}, Hp: {enemy.hp} / {enemy.max_hp}, intent: {enemy.intent[2]}. ', end='')
+            print(f'{enemy.name}, Hp: {enemy.hp} / {enemy.max_hp}, intent: {enemy.intent[2]}. Buffs: {enemy.buffs}. Debuffs: {enemy.debuffs}', end='')
             # Print enemy information
             if 'Attack' in enemy.intent[2]:
                 # If the enemy is intending to attack
@@ -968,8 +1006,16 @@ class Combat:
                 print('Discard Pile:')
                 for card in self.discard_pile:
                     print(card.name)
+            if self.exhaust_pile:
+                print('Exhaust Pile:')
+                for card in self.exhaust_pile:
+                    print(card.name)
             # While its still the player's turn
             print(f'Hp: {self.player.hp}, block: {self.player.block} ')
+            for buff_type, buff in self.player.buffs.items():
+                if buff > 0:
+                    print(f'{buff_type}: {buff}, ', end='')
+            print('')
             if self.hand:
                 # If there are cards in hand
                 i = 0
@@ -1031,6 +1077,11 @@ class Combat:
 
     def player_turn_end(self):
         '''Executes actions of the player's turn ending'''
+        if self.player.debuffs['Last Chance'] > 0:
+            self.exhaust_entire_pile(self.hand)
+            self.exhaust_entire_pile(self.discard_pile)
+            self.exhaust_entire_pile(self.draw_pile)
+            self.player.debuffs['Last Chance'] = 0
         if self.hand:
             # If the hand isn't empty
             for card in reversed(self.hand):
@@ -1039,33 +1090,38 @@ class Combat:
                 # Execute turn end effects
             if self.mechanics['turn_end_discard']:
                 # Check if the player needs to discard their hand
-                self.soft_card_select(self.retain, self.hand)
+                if self.retain > 0:
+                    self.soft_card_select(self.retain, self.hand)
+                self.retain = 0
                 # Select a number of cards to keep
-            for card in reversed(self.hand):
-                # goes through everycard in hand
-                if card.retain:
-                    # If its retain
-                    continue
-                    # skip over
-                elif card.ethereal:
-                    # if its ethereal
-                    self.exhaust_pile.append(card)
-                    # Exhaust the card
-                    self.if_card_cond(card, 'Exhaust')
-                    # Activate Exhausted effects
-                else:
-                    self.discard_pile.append(card)
-                    # Discard the card
-                    self.if_card_cond(card, 'Discarded')
-                    # Activate discarded effects
-                self.hand.remove(card)
-                # removes the card from hand
-            if self.selected:
-                # If cards were selected to be retained
-                self.hand.extend(self.selected)
-                # Add them back to hand
-                self.selected = []
-                # empty selected
+                for card in reversed(self.hand):
+                    # goes through everycard in hand
+                    if card.retain:
+                        # If its retain
+                        continue
+                        # skip over
+                    elif card.ethereal:
+                        # if its ethereal
+                        self.exhaust_pile.append(card)
+                        # Exhaust the card
+                        self.if_card_cond(card, 'Exhaust')
+                        # Activate Exhausted effects
+                    else:
+                        self.discard_pile.append(card)
+                        # Discard the card
+                        self.if_card_cond(card, 'Discarded')
+                        # Activate discarded effects
+                    self.hand.remove(card)
+                    # removes the card from hand
+                if self.selected:
+                    # If cards were selected to be retained
+                    self.hand.extend(self.selected)
+                    # Add them back to hand
+                    self.selected[:] = []
+                    # empty selected
+        if self.player.debuffs['Chained'] > 0:
+            self.player.lose_buff('Strength', self.player.debuffs['Chained'])
+            self.player.debuffs['Chained'] = 0
         self.enemy_turn = True
         
     def discover(self, cards, cost):
@@ -1081,15 +1137,15 @@ class Combat:
             if len(self.hand) == 10:
                 # If the player is at hand size
                 self.discard_pile.append(self.selected)
-                self.selected = []
+                self.selected[:] = []
                 # Add to discard pile
             else:
                 self.hand.append(self.selected)
-                self.selected = []
+                self.selected[:] = []
                 # Add to hand instead
         else:
             self.hand.append(self.selected)
-            self.selected = []
+            self.selected[:] = []
             # Add to hand instead
         if cost != 'na':
             # If the cost needs to be modified
@@ -1145,6 +1201,8 @@ class Combat:
                 # Execute the ffects
             enemy.intent = None
             # Clear intent
+        self.resolve_action
+        # Resolves action
 
     def summon_enemies(self, enemies: list):
         '''Method for adding more enemies to the combat session

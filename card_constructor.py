@@ -39,12 +39,18 @@ class Card():
         self.chaotic = False # whether a card is chaotic, represented by boolean
         self.x_cost_effect = x_cost_effect
     
-    def modify_effect(self, effect, modifications):
-        new_eff = []
-        for eff in self.effect[effect]:
-            new_eff.append(eff)
-        new_eff[0] += modifications
-        self.effect = tuple(new_eff)
+    def modify_effect(self, effect_change, modifications):
+
+
+        new_eff = {}
+        for effect, details in self.effect.items():
+            if effect == effect_change:
+                new_magnitude = [*details]
+                new_magnitude[0] += modifications
+                new_eff[effect] = tuple(new_magnitude)
+            else:
+                new_eff[effect] = details
+        self.effect = new_eff
 
     def get_cost(self, combat):
         if isinstance(self.cost, str):
@@ -53,7 +59,7 @@ class Card():
             elif self.cost == 'X':
                 return combat.energy
             elif self.cost == 'c':
-                return 6 - combat.curse_count()
+                return max(0, 6 - combat.curse_count())
         elif isinstance(self.combat_cost[0], int):
             return self.combat_cost[0]
         else:
