@@ -4,6 +4,31 @@ import effects
 class Enemy:
     def __init__(self) -> None:
         pass
+
+    def __str__(self):
+        '''Override for String representation'''
+        return f'{self.name}   HP: {self.hp}/{self.max_hp}'
+
+    def __repr__(self):
+        return self.__str__()
+
+    def combat_info(self):
+        buffs = []
+        for buff, amount in self.buffs.items():
+            if amount > 0:
+                buffs.append(f'{buff}: {amount}')
+        buffs = str(', '.join(buffs))
+        debuffs = []
+        for debuff, amount in self.debuffs.items():
+            if amount > 0:
+                debuffs.append(f'{debuff}: {amount}')
+        debuffs = str(', '.join(debuffs))
+        intent = ''
+        if self.intent != None:
+            intent = self.intent[-1]
+            if 'Attack' in intent:
+                intent += f': {self.intent[0][effects.deal_attack_damage][0]} x {self.intent[0][effects.deal_attack_damage][1]}'
+        return self.__repr__() + f'   Intent: {intent}   Buffs: {buffs}   Debuffs: {debuffs}'
     
     def turn_start(self):
         '''Method for actions done at the start of turn'''

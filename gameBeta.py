@@ -24,6 +24,26 @@ class Character:
         self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Parry': 0, 'Deflect': 0}
         # self.powers = {'Cursed Ward': 0, 'Feel No Pain': 0, 'Evolve': 0, 'Transfer Pain': 0, 'Dark Embrace': 0, 'Corruption Form': 0, 'Spectral Blades': 0, 'Seeing Red': 0, 'Corruption': 0, 'Clear Mind': 0}
     
+    def __str__(self):
+        '''Override for String representation'''
+        return f'{self.name}   HP: {self.hp}/{self.maxHp}   Gold: {self.gold}   Potions: {self.potions}   Relics: {self.relics}'
+
+    def __repr__(self):
+        return self.__str__()
+
+    def combat_info(self):
+        buffs = []
+        for buff, amount in self.buffs.items():
+            if amount > 0:
+                buffs.append(f'{buff}: {amount}')
+        buffs = str(', '.join(buffs))
+        debuffs = []
+        for debuff, amount in self.debuffs.items():
+            if amount > 0:
+                debuffs.append(f'{debuff}: {amount}')
+        debuffs = str(', '.join(debuffs))
+        return self.__repr__() + f'   Buffs: {buffs}   Debuffs: {debuffs}'
+
     def gold_modification(self, amount):
         '''Method to change amount of gold the player has
         
@@ -228,7 +248,7 @@ class Character:
             return False
 
 player = Character('Test', 1, 1)
-c = 1035
+c = 1045
 for i in range(c, c + 5):
     card = card_constructor.create_card(i, card_data.card_info[i])
     player.deck.append(card)

@@ -7,7 +7,7 @@ weak_curse = [0, 1, 2, 3, 4, 5, 6]
 medium_curse = [8, 12]
 strong_curse = [9, 10, 11]
 
-def random_card(type, character_class = None):
+def random_card(type, character = None):
     if type == 'curse':
         return random.choice(weak_curse + medium_curse + strong_curse)
     elif type == 'weak curse':
@@ -15,7 +15,7 @@ def random_card(type, character_class = None):
     elif type == 'status':
         return 'placeholer'
     elif type == 'atk':
-        if character_class == 1:
+        if character.character_class == 1:
             return random.choice(attack_card_1)
         else:
             return 'placeholder'
@@ -38,10 +38,53 @@ class Card():
         self.combat_cost = (None, None) #(Cost, Duration of cost (Played, Turn, Combat))
         self.chaotic = False # whether a card is chaotic, represented by boolean
         self.x_cost_effect = x_cost_effect
-    
+        # rarity:(0 = starter, 1 = common, 2 = uncommon, 3 = rare, 4 = other), type: (0 = atk, 1 = skill, 2 = power, 3 = status, 4 = curse)
+
+    def __str__(self):
+        card_descrip = []
+        if self.cost == 'U':
+            card_descrip.append('Unplayable')
+        if self.innate == True:
+            card_descrip.append('Innate')
+        if self.retain == True:
+            card_descrip.append('Retain')
+        if self.card_text != None:
+            card_descrip.append(self.card_text)
+        if self.removable == False:
+            card_descrip.append('Cannot be removed from your deck')
+        if self.ethereal == True:
+            card_descrip.append('Ethereal')
+        if self.exhaust == True:
+            card_descrip.append('Exhaust')
+        card_descrip = str('. '.join(card_descrip))
+        if card_descrip[-1] != ' ' and card_descrip[-2] != '.':
+            card_descrip += '. '
+        rarity = {
+            0: 'Starter',
+            1: 'Common',
+            2: 'Uncommon',
+            3: 'Rare',
+        }
+        if self.rarity in rarity:
+            rarity = rarity[self.rarity]
+        elif self.removable == True:
+            rarity = 'Normal'
+        else:
+            rarity = 'Special'
+        type = {
+            0: 'Attack',
+            1: 'Skill',
+            2: 'Power',
+            3: 'Status',
+            4: 'Curse'
+        }
+        type = type[self.type]
+        return f'{self.name}: {rarity} {type}. {card_descrip}Cost: {self.get_cost()}'
+
+    def __repr__(self):
+        return self.__str__()
+
     def modify_effect(self, effect_change, modifications):
-
-
         new_eff = {}
         for effect, details in self.effect.items():
             if effect == effect_change:
@@ -52,8 +95,13 @@ class Card():
                 new_eff[effect] = details
         self.effect = new_eff
 
-    def get_cost(self, combat):
-        if isinstance(self.cost, str):
+    def get_cost(self, combat = None):
+        if combat == None:
+            if self.cost == 'c':
+                return 6
+            else: 
+                return self.cost
+        elif isinstance(self.cost, str):
             if self.cost == 'U':
                 return 'U'
             elif self.cost == 'X':

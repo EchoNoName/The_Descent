@@ -534,7 +534,7 @@ def for_card_type_in_hand(effect, effect_details, card_type: set, context, comba
         effect(*effect_details, context, combat)
         # Execute the effect a certain number of times
 
-def FINAL_GAMBIT(x, additional, context, combat):
+def final_gambit(x, additional, context, combat):
     '''Effect for the card final gambit
     
     ### args: 

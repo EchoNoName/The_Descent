@@ -659,7 +659,7 @@ class Combat:
         
         ### args:
             amount: The number to change the energu by, can be positive or negative'''
-        self.energy = min(0, self.energy + amount)
+        self.energy = max(0, self.energy + amount)
         # Adds amount to energy, if energy becomes negative, becomes 0 instead
 
     def card_limit(self, limit = False):
@@ -984,14 +984,8 @@ class Combat:
                 # If the intent has not been determained yet
                 enemy.intent_get(self)
                 # Determain intent
-            print(f'{enemy.name}, Hp: {enemy.hp} / {enemy.max_hp}, intent: {enemy.intent[2]}. Buffs: {enemy.buffs}. Debuffs: {enemy.debuffs}', end='')
+            print(enemy.combat_info())
             # Print enemy information
-            if 'Attack' in enemy.intent[2]:
-                # If the enemy is intending to attack
-                print(f'Attacking for {enemy.intent[0][effects.deal_attack_damage][0]} x {enemy.intent[0][effects.deal_attack_damage][1]}')
-                # Displays how much the enemy is attacking for
-            else:
-                print('')
 
     def player_turn(self):
         '''Execute actions the player does during their turn'''
@@ -1011,20 +1005,17 @@ class Combat:
                 for card in self.exhaust_pile:
                     print(card.name)
             # While its still the player's turn
-            print(f'Hp: {self.player.hp}, block: {self.player.block} ')
-            for buff_type, buff in self.player.buffs.items():
-                if buff > 0:
-                    print(f'{buff_type}: {buff}, ', end='')
-            print('')
+            print(self.player.combat_info())
+            # print player info
             if self.hand:
                 # If there are cards in hand
                 i = 0
                 for card in self.hand:
                     # For every card in hand
-                    print(f'{i}: {card.name}, {card.card_text}, cost: {card.get_cost(self)}')
+                    print(f'{i}: {card}')
                     i += 1
                     # Print details of card
-            player_action = input(f'Enter the index of the card you wish to play or P# with # being index of the potion being used or END for end turn. You have {self.energy} left.')
+            player_action = input(f'Enter the index of the card you wish to play or P# with # being index of the potion being used or END for end turn. You have {self.energy} energy left.')
             # Asks player for input on what to do
             if player_action == 'END':
                 # If the player wants to end the turn
@@ -1054,13 +1045,12 @@ class Combat:
                         # Gives feedback
                         continue
                     else:
-                        new_energy = self.energy - cost
                         # Hold the updated energy
                         self.playing = card
                         self.hand.remove(card)
                         self.play_card()
                         # play the card
-                        self.energy = new_energy
+                        self.energy -= cost
                         # Update energy
                 else: 
                     # For potions
@@ -1162,7 +1152,9 @@ class Combat:
             # If there are cards to be upgraded
             for card in cards:
                 # go through every card
-                card = card_constructor.create_card(card.id + 100, card_data.card_info[card.id + 100])
+                if card.id + 100 in card_data.card_info:
+                    # If a card can be upgraded
+                    card = card_constructor.create_card(card.id + 100, card_data.card_info[card.id + 100])
                 # upgrade the card by making its id and effects of the card 100 higher
 
     def enemy_turn_start(self):
