@@ -49,7 +49,7 @@ class Combat:
                     'exhaust': self.exhaust_pile,
                     'target': card.target
                 }
-                if 'Power' in card.effect:
+                if 'Power' in card.effect and card.effect['Power'] != None:
                     # The power effect in a card
                     for power_cond, effect in card.effect['Power'].items():
                         # for every condition and effect
@@ -96,6 +96,8 @@ class Combat:
         ### args:
             target_code (int): An int corresponding to a specific target or targets
         '''
+        if target_code == None:
+            return None
         if self.enemy_turn == False:
             # If its the players turn
             if target_code == 0:
@@ -264,7 +266,7 @@ class Combat:
                     # If the pile to select from isn't empty
                     for card in pile:
                         # Prints all cards in the pile with relevent detail
-                        print(f'{i}: {card.name}, cost: {card.combat_cost}, effect: {card.effect}')
+                        print(f'{i}: {card}')
                         i += 1
                 if cards_selected:
                     # If there has been cards already selected
@@ -348,7 +350,7 @@ class Combat:
                     # If the pile to select from isn't empty
                     for card in pile:
                         # Prints all cards in the pile with relevent detail
-                        print(f'{i}: {card.name}, cost: {card.combat_cost}, effect: {card.effect}')
+                        print(f'{i}: {card}')
                         i += 1
                 if selected_cards:
                     # If there has been cards already selected
@@ -862,17 +864,27 @@ class Combat:
             else:
                 self.discard_pile.append(self.playing)
                 # Add the card to the discard pile
-        elif self.playing.effect:
-            # If the card has an effect
-            for effect, details in self.playing.effect.items():
-                # Iterates through every effect
-                if not isinstance(effect, str):
-                    effect(*details, context, self)
-                    #  Performs the effects if its not a conditional
+        else: 
+            if self.playing.effect:
+                # If the card has an effect
+                for effect, details in self.playing.effect.items():
+                    # Iterates through every effect
+                    if not isinstance(effect, str):
+                        effect(*details, context, self)
+                        #  Performs the effects if its not a conditional
             if self.playing.type == 2:
                 # If the card played was a power
-                self.powers.append(self.playing)
-                # Add the card played to the player powers
+                if 'Power' in self.playing.effect:
+                    # If the power card played has an actual effect that isn't just giving an normal buff
+                    self.powers.append(self.playing)
+                    # Add the card played to the player powers
+                    if f'{self.playing.name}' in self.player.buffs:
+                        # If the power has been recorded in buffs
+                        self.player.buffs[f'{self.playing.name}'] += 1
+                        # add 1 for the player to see
+                    else:
+                        self.player.buffs[f'{self.playing.name}'] = 1
+                        # Record that a power was played so the player knows what powers they have active
             elif self.playing.exhaust == True:
                 # If the card played exhausts
                 self.exhaust_pile.append(self.playing)
@@ -944,13 +956,6 @@ class Combat:
         # Increase turn counter
         self.cards_played = 0
         # Set cards played to 0
-        if self.player.debuffs['Vulnerable'] > 0:
-            self.player.debuffs['Vulnerable'] -= 1
-        if self.player.debuffs['Weak'] > 0:
-            self.player.debuffs['Weak'] -= 1
-        if self.player.debuffs['Frail'] > 0:
-            self.player.debuffs['Frail'] -= 1
-        # Lower some debuff counters by 1
         self.player.block = 0
         # Lose all block at the start of turn
         if self.start_of_combat == True:
@@ -973,6 +978,8 @@ class Combat:
         # Said buff resets
         self.player.debuffs['Draw Reduction'] = 0
         # Said debuff resets
+        self.power_check_and_exe('Turn Start')
+        # Check for powers that activate at the start of a turn
         self.display_intent()
     # Not completed
 
@@ -1021,8 +1028,6 @@ class Combat:
                 # If the player wants to end the turn
                 turn = False
                 # Turn to false
-                self.player_turn_end()
-                # Executes turn end actions
                 break
                 # Exits the loop
             else:
@@ -1039,8 +1044,19 @@ class Combat:
                     # Retrieve the card that is attempting to be played
                     cost = card.get_cost(self)
                     # Retreive the cost of the card
-                    if cost > self.energy:
-                        # If the cist is higher then the energy the player has
+                    if cost == 'U':
+                        if (self.mechanics['Playable_Curse'] == True and card.type == 4) or (self.mechanics['Playable_Status'] == True and card.type == 3):
+                            # If its an unplayble card but the mechanics permit it
+                            self.playing = card
+                            self.hand.remove(card)
+                            self.play_card()
+                            # play the card
+                            self.energy -= cost
+                        else:
+                            print('Card is Unplayable')
+                            # If the card is unplayable
+                    elif cost > self.energy:
+                        # If the cost is higher then the energy the player has
                         print('Not enought energy')
                         # Gives feedback
                         continue
@@ -1067,11 +1083,19 @@ class Combat:
 
     def player_turn_end(self):
         '''Executes actions of the player's turn ending'''
+        if self.player.debuffs['Vulnerable'] > 0:
+            self.player.debuffs['Vulnerable'] -= 1
+        if self.player.debuffs['Weak'] > 0:
+            self.player.debuffs['Weak'] -= 1
+        if self.player.debuffs['Frail'] > 0:
+            self.player.debuffs['Frail'] -= 1
+        # Lower some debuff counters by 1
         if self.player.debuffs['Last Chance'] > 0:
             self.exhaust_entire_pile(self.hand)
             self.exhaust_entire_pile(self.discard_pile)
             self.exhaust_entire_pile(self.draw_pile)
             self.player.debuffs['Last Chance'] = 0
+        self.power_check_and_exe('Turn End')
         if self.hand:
             # If the hand isn't empty
             for card in reversed(self.hand):
@@ -1099,8 +1123,6 @@ class Combat:
                     else:
                         self.discard_pile.append(card)
                         # Discard the card
-                        self.if_card_cond(card, 'Discarded')
-                        # Activate discarded effects
                     self.hand.remove(card)
                     # removes the card from hand
                 if self.selected:
@@ -1112,7 +1134,7 @@ class Combat:
         if self.player.debuffs['Chained'] > 0:
             self.player.lose_buff('Strength', self.player.debuffs['Chained'])
             self.player.debuffs['Chained'] = 0
-        self.enemy_turn = True
+        # Chained effect
         
     def discover(self, cards, cost):
         '''Ask user to add to hand one of the 3 cards given
@@ -1159,6 +1181,7 @@ class Combat:
 
     def enemy_turn_start(self):
         '''Method for the enemy turn starting'''
+        self.enemy_turn = True
         for enemy in self.enemies:
             # For every enemy
             enemy.turn_start()

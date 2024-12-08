@@ -34,7 +34,8 @@ def deal_attack_damage(damage, times : int, context, combat):
     if context['user'].debuffs['Weak'] > 0:
         actualDamage = actualDamage // 4
     # Damage Calcs
-    if combat.enemy_turn == True:
+    targets = []
+    if isinstance(context['target'], int):
         targets = combat.get_targets(context, context['target'])
     else:
         targets = context['target']
@@ -70,7 +71,12 @@ def deal_damage(damage, context, combat):
         combat: The current combat
     '''
     # Gets the target of the effect
-    for entity in context['target']:
+    targets = []
+    if isinstance(context['target'], int):
+        targets = combat.get_targets(context, context['target'])
+    else:
+        targets = context['target']
+    for entity in targets:
         entity.true_damage_taken(damage)
         # Deal the damage to all targets
 
@@ -154,7 +160,8 @@ def apply_buff(buffs: list, amount: list, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    if combat.enemy_turn == True:
+    targets = []
+    if isinstance(context['target'], int):
         targets = combat.get_targets(context, context['target'])
     else:
         targets = context['target']
@@ -174,7 +181,8 @@ def apply_debuff(debuffs: list, amount: list, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    if combat.enemy_turn == True:
+    targets = []
+    if isinstance(context['target'], int):
         targets = combat.get_targets(context, context['target'])
     else:
         targets = context['target']
@@ -350,11 +358,11 @@ def lose_hp(amount, context, combat):
         context: Information related to the current combat 
         combat: The current combat
     '''
-    if combat.enemy_turn == True:
+    targets = []
+    if isinstance(context['target'], int):
         targets = combat.get_targets(context, context['target'])
     else:
         targets = context['target']
-    # Player's target is predetermained
     # Aquire the target using method in combat
     if not isinstance(amount, int):
         # If the amount lost is not a number

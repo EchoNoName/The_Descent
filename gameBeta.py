@@ -26,7 +26,7 @@ class Character:
     
     def __str__(self):
         '''Override for String representation'''
-        return f'{self.name}   HP: {self.hp}/{self.maxHp}   Gold: {self.gold}   Potions: {self.potions}   Relics: {self.relics}'
+        return f'{self.name}   HP: {self.hp}/{self.maxHp}   Block: {self.block}   Gold: {self.gold}   Potions: {self.potions}   Relics: {self.relics}'
 
     def __repr__(self):
         return self.__str__()
@@ -235,6 +235,24 @@ class Character:
             # If block isn't enough, Hp is used
             self.died
             return self.hp_loss(damage)
+        
+    def true_damage_taken(self, damage):
+        '''
+        Handles taking true damage that is uneffected by debuffs
+        '''
+        damage = damage
+        self.block -= damage
+        # Deal damage to block first
+        if self.block < 0:
+            # If block wasn't enough
+            damage = -self.block
+            # Update damage to only amount unblocked
+            self.block = 0
+            # If block isn't enough, Hp is used
+            self.died
+            # Update entity status
+            self.hp_loss(damage)
+            # Hp loss
     
     def died(self):
         if self.hp <= 0:
@@ -246,12 +264,13 @@ class Character:
             return True
         else:
             return False
-
 player = Character('Test', 1, 1)
-c = 1045
+c = 1070
 for i in range(c, c + 5):
     card = card_constructor.create_card(i, card_data.card_info[i])
     player.deck.append(card)
+card = card_constructor.create_card(10, card_data.card_info[10])
+player.deck.append(card)
 enemy = enemy_data.AncientMech()
 combat = combat_beta.Combat(player, player.deck, [], [], [enemy], 'Boss', {'Intent': True, 'Ordered_Draw_Pile': False, 'turn_end_discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False})
 while combat.combat_active == True:
