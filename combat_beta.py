@@ -31,8 +31,8 @@ class Combat:
         self.enemy_turn = False
         self.escaped = False
     
-    def power_check_and_exe(self, cond: str):
-        '''Method to check if a power's condition is met and activates its effect if it is
+    def passive_check_and_exe(self, cond: str):
+        '''Method to check if a power's condition or relic's condition is met and activates its effect if it is
 
         ### args:
             cond (string): The event that is occuring
@@ -57,6 +57,11 @@ class Combat:
                             for effects, effect_details in effect.items():
                                 effects(*effect_details, context, self)
                                 # Execute the power's effect
+        if self.relics:
+            for relic in self.relics:
+                # Go through all relics
+                relic.combatActionEff(cond)
+                # Execute condisional effects of relics
 
     def get_energy_cap(self):
         '''Gets the energy cap of the player
@@ -239,6 +244,15 @@ class Combat:
                             # Execute the drawn effect
                 self.draw_pile.pop(-1)
                 # Remove the top card of the draw pile as thats where we drew from
+                if self.hand[-1].type in {3, 4}:
+                    # If the card drawn is a negative card
+                    self.passive_check_and_exe('Draw Negative')
+                    # Check for effects
+                    if self.hand[-1].type == 3:
+                        self.passive_check_and_exe('Draw Status')
+                    elif self.hand[-1].type == 4:
+                        self.passive_check_and_exe('Draw Curse')
+                    # If they drew a status or a curse and check for effects
                 num -= 1
                 # One less card to draw
     
@@ -503,6 +517,7 @@ class Combat:
                     # Executes exhausted effects
                     self.selected.remove(card)
                     # Remove the card from selected
+                    self.passive_check_and_exe('Exhaust')
                 else:
                     self.discard_pile.append(card)
                     # Add the card to the discard pile
@@ -582,6 +597,7 @@ class Combat:
                     # Add the card to the Exhausted pile
                     self.hand.remove(card)
                     # Remove the card from hand
+                    self.passive_check_and_exe('Exhaust')
             else:
                 for card in reversed(self.hand):
                     # Go throught every card
@@ -592,6 +608,7 @@ class Combat:
                     # Add the card to the Exhausted pile
                     self.hand.remove(card)
                     # Remove the card from hand
+                    self.passive_check_and_exe('Exhaust')
     
     def exhaust_choose_hand(self, num : int):
         '''Exhaust a number choosen cards from hand
@@ -609,13 +626,14 @@ class Combat:
             True or False depending on if a card was exhausted'''
         if self.selected:
             # If there are selected cards
-            for card in self.selected:
+            for card in reversed(self.selected):
                 # Go through every selected card
                 self.if_card_cond(card, 'Exhausted')
-            self.exhaust_pile.extend(self.selected)
-            # Add all selected cards to exhaust pile
-            self.selected[:] = []
-            # Empty selected cards
+                self.exhaust_pile.append(card)
+                self.selected.remove(card)
+                # Exhaust all selected cards
+                self.passive_check_and_exe('Exhaust')
+                # check for effects
             return True
         return False
     
@@ -766,6 +784,7 @@ class Combat:
                     # Add the card to the exhaust pile
                     self.hand.remove(card)
                     # remove the card from hand
+                    self.passive_check_and_exe('Exhaust')
         return cards_exhausted_type
         # Returns the list of types of all the cards exhausted, used for executing conditional effects on certain cards
     
@@ -809,6 +828,8 @@ class Combat:
                 # Add the card to the exhaust pile
                 pile.remove(card)
                 # remove the card from the pile
+                self.passive_check_and_exe('Exhaust')
+                # Check for effects
 
     def play_card(self, override = None):
         '''Method used for playing cards in combat
@@ -841,6 +862,8 @@ class Combat:
                 # Add the card to the exhaust pile
                 self.playing = None
                 # Empty the playing card
+                self.passive_check_and_exe('Exhaust')
+                # Check for effects
             elif self.playing.type == 4 and self.mechanics['Playable_Curse']:
                 # If the type of card is a Curse and the mechanic Playable_Curse is activated
                 for effect, details in self.mechanics['Playable_Curse'].items():
@@ -848,6 +871,8 @@ class Combat:
                     # Execute the effect for playing a curse
                 self.exhaust_pile.append(self.playing)
                 # Add the card to the exhaust pile
+                self.passive_check_and_exe('Exhaust')
+                # Check for effects
         elif self.playing.cost == 'X':
             # If you are playing an X cost card (A card that spends all you energy and has effects scale off of energy spent)
             self.playing.play_x_cost(self.energy)
@@ -861,6 +886,8 @@ class Combat:
                 # Add the card to the exhaust pile 
                 self.if_card_cond(self.playing, 'Exhausted')
                 # Execute Exhausted effects
+                self.passive_check_and_exe('Exhaust')
+                # Check for effects
             else:
                 self.discard_pile.append(self.playing)
                 # Add the card to the discard pile
@@ -891,6 +918,8 @@ class Combat:
                 # Add the card to the exhaust pile
                 self.if_card_cond(self.playing, 'Exhausted')
                 # Execute Exhausted effects
+                self.passive_check_and_exe('Exhaust')
+                # Check for effects
             else:
                 self.discard_pile.append(self.playing)
                 # Add the card to the discard pile
@@ -962,14 +991,8 @@ class Combat:
             # If its the start of combat
             self.get_energy_cap()
             # Retrieve the enery cap for this combat
-            for relic in self.relics:
-                # Go through all relics
-                relic.combatActionEff('Combat Start')
-                # Execute start of combat effects of relics
-        for relic in self.relics:
-            # Go through all relics
-            relic.combatActionEff('Turn Start')
-            # Execute start of turn effects of relics
+            self.passive_check_and_exe('Combat Start')
+            # Execute start of combat effects of passives
         self.energy += self.energy_cap
         # Add energy cap to energy
         self.draw(5 + self.player.buffs['Draw Card'] - self.player.debuffs['Draw Reduction'])
@@ -978,7 +1001,7 @@ class Combat:
         # Said buff resets
         self.player.debuffs['Draw Reduction'] = 0
         # Said debuff resets
-        self.power_check_and_exe('Turn Start')
+        self.passive_check_and_exe('Turn Start')
         # Check for powers that activate at the start of a turn
         self.display_intent()
     # Not completed
@@ -1083,6 +1106,8 @@ class Combat:
 
     def player_turn_end(self):
         '''Executes actions of the player's turn ending'''
+        self.passive_check_and_exe('Turn End')
+        # Execute all end of turn passives
         if self.player.debuffs['Vulnerable'] > 0:
             self.player.debuffs['Vulnerable'] -= 1
         if self.player.debuffs['Weak'] > 0:
@@ -1120,6 +1145,8 @@ class Combat:
                         # Exhaust the card
                         self.if_card_cond(card, 'Exhaust')
                         # Activate Exhausted effects
+                        self.passive_check_and_exe('Exhaust')
+                        # Check for effects
                     else:
                         self.discard_pile.append(card)
                         # Discard the card

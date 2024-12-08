@@ -265,11 +265,11 @@ class Character:
         else:
             return False
 player = Character('Test', 1, 1)
-c = 1070
+c = 1050
 for i in range(c, c + 5):
     card = card_constructor.create_card(i, card_data.card_info[i])
     player.deck.append(card)
-card = card_constructor.create_card(10, card_data.card_info[10])
+card = card_constructor.create_card(1046, card_data.card_info[1046])
 player.deck.append(card)
 enemy = enemy_data.AncientMech()
 combat = combat_beta.Combat(player, player.deck, [], [], [enemy], 'Boss', {'Intent': True, 'Ordered_Draw_Pile': False, 'turn_end_discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False})

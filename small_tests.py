@@ -1,11 +1,6 @@
-class test:
-    def __init__(self):
-        pass
-
-obj = test()
-a = []
-a.append(obj)
-b = []
-b.append(a[0])
-b.remove(obj)
-print(a)
+x = 10
+y = 20
+print("Before input...")
+name = input("Enter your name: ")
+z = x + y
+print(f"Hello, {name}. The sum of x and y is {z}.")

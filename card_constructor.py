@@ -48,7 +48,7 @@ class Card():
             card_descrip.append('Innate')
         if self.retain == True:
             card_descrip.append('Retain')
-        if self.card_text != None:
+        if self.card_text != None and self.effect != None:
             card_descrip.append(self.card_text)
         if self.removable == False:
             card_descrip.append('Cannot be removed from your deck')
