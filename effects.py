@@ -136,6 +136,18 @@ def block_gain_power(block, context, combat):
     context['user'].gain_block_power(block)
     # grants the user block
 
+def rob(context, combat):
+    '''Function for robbing the player of gold
+    
+    ### args:
+        context: Info related to the user and combat
+        combat: combat session currently'''
+    gold_stolen = max(combat.player.gold, context['user'].buffs['Thievery'])
+    combat.player.gold -= gold_stolen
+    combat.player.thieved += gold_stolen
+    context['user'].buffs['Stolen'] += gold_stolen
+    # Steal gold from the player
+
 def enemy_block_gain(block, context, combat):
     '''Gaining block for enemies
     
@@ -145,7 +157,11 @@ def enemy_block_gain(block, context, combat):
         combat: The current combat session
     '''
     # Aquire targets
-    targets = combat.get_targets(context, context['target'])
+    targets = 0
+    if context['target'] == 0:
+        targets = [context['user']]
+    else:
+        targets = combat.get_targets(context, context['target'])
     for entity in targets:
         # Loop through all targets
         entity.gain_block(block)
@@ -261,6 +277,11 @@ def smoke_bomb(context, combat):
     '''Function for the smoke bomb potion'''
     combat.escape()
     # Use the escape method in combat
+
+def bandit_escape(context, combat):
+    '''Function for bandits escaping combat'''
+    combat.bandit_run(context)
+    # Use bandit run method in combat
 
 def blood(amount, player):
     '''Function for healing for a percentage of hp

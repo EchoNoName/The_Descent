@@ -5,6 +5,7 @@ import effects
 import combat_beta
 import potion_data
 import enemy_data
+import map_generation
 
 Instances = []
 
@@ -17,6 +18,7 @@ class Character:
         self.block = 0
         self.deck = []
         self.gold = 100
+        self.thieved = 0
         self.potions = [None, None, None]
         self.relics = []
         self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0, 'Parry': 0, 'Deflect': 0}
@@ -264,15 +266,33 @@ class Character:
             return True
         else:
             return False
-player = Character('Test', 1, 1)
-c = 1050
-for i in range(c, c + 5):
-    card = card_constructor.create_card(i, card_data.card_info[i])
-    player.deck.append(card)
-card = card_constructor.create_card(1046, card_data.card_info[1046])
-player.deck.append(card)
-enemy = enemy_data.AncientMech()
-combat = combat_beta.Combat(player, player.deck, [], [], [enemy], 'Boss', {'Intent': True, 'Ordered_Draw_Pile': False, 'turn_end_discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False})
+        
+classes = {
+    1: ('Wandering Samerai', 80, 1)
+}
+
+def main_menu():
+    main = True
+    while main:
+        print('Selected any of the below options')
+        print('1: New Run')
+        print('2: Card Library')
+        # Other options to be added
+        input = int(input(''))
+        if input == 1:
+            return 'Run'
+        elif input == 2:
+            return 'Cards'
+        else:
+            print('Invalid Menu Option')
+        # To be continued
+
+def run_start():
+    run = True
+    act = 1
+    current_room = [0, 0]
+
+
 while combat.combat_active == True:
     if combat.combat_active == True:
         combat.player_turn_start()

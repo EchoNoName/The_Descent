@@ -10,7 +10,17 @@ class Enemy:
 
     def __str__(self):
         '''Override for String representation'''
-        return f'{self.name}   HP: {self.hp}/{self.max_hp}'
+        buffs = []
+        for buff, amount in self.buffs.items():
+            if amount > 0:
+                buffs.append(f'{buff}: {amount}')
+        buffs = str(', '.join(buffs))
+        debuffs = []
+        for debuff, amount in self.debuffs.items():
+            if amount > 0:
+                debuffs.append(f'{debuff}: {amount}')
+        debuffs = str(', '.join(debuffs))
+        return f'{self.name}   HP: {self.hp}/{self.max_hp}   Buffs: {buffs}   Debuffs: {debuffs}'
 
     def __repr__(self):
         return self.__str__()
@@ -219,6 +229,80 @@ class Enemy:
         else:
             return False
 
+class JawWorm(Enemy):
+    def __init__(self) -> None:
+        super().__init__()
+        self.name = 'Goblin Giant'
+        self.max_hp = random.randint(40, 44)
+        self.hp = self.max_hp
+        self.block = 0
+        self.actions_done = []
+        self.actions = {
+            'Chomp': ({effects.deal_attack_damage: (11, 1)}, 1, 'Attack'),
+            'Thrash': ({effects.deal_attack_damage: (7, 1), effects.enemy_block_gain: (5, )}, 1, 'Block Attack'),
+            'Bellow': ({effects.apply_buff: (['Strength'], [3]), effects.enemy_block_gain: (6, )}, 0, 'Block Buff')
+        }
+        self.intent = None
+    
+    def intent_get(self, combat):
+        '''Gets what the enemy intends to do
+    
+        ### args: 
+        combat: the combat session currently in
+        '''
+        if combat.turn == 1:
+            self.intent = self.actions['Chomp']
+            self.actions_done.append('Chomp')
+            # Always bellow on turn 1
+            return self.intent
+        rng = random.randint(1, 100)
+        # Generate a random number from 1 - 100 for percentage based actions
+        action = ''
+        # Initialize action variable
+        while not action:
+            # Loop until condition is met and the loop is broken
+            if rng <= 25:
+                # 67% chance move
+                if self.actions_done:
+                    # If there were previous actions
+                    if len(self.actions_done) >= 1:
+                        if 'Chomp' == self.actions_done[-1]:
+                            continue
+                        else:
+                            action = 'Chomp'
+                            self.actions_done.append(action)
+                    else:
+                        action = 'Chomp'
+                        self.actions_done.append(action)
+                # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
+            elif rng <= 70: 
+                if self.actions_done:
+                    if len(self.actions_done) >= 1:
+                        if 'Bellow' == self.actions_done[-1]:
+                            continue
+                        else:
+                            action = 'Bellow'
+                            self.actions_done.append(action)
+                    else:
+                        action = 'Bellow'
+                        self.actions_done.append(action)
+                # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
+            else:
+                if self.actions_done:
+                    if len(self.actions_done) >= 2:
+                        if 'Thrash' == self.actions_done[-1] and 'Thrash' == self.actions_done[-2]:
+                            continue
+                        else:
+                            action = 'Thrash'
+                            self.actions_done.append(action)
+                    else:
+                        action = 'Thrash'
+                        self.actions_done.append(action)
+                # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
+        self.intent = self.actions[action]
+        # Update intent to correct move
+        return self.intent
+
 class SmallGreenSlime(Enemy):
     def __init__(self, max_hp = random.randint(8, 12)):
         super().__init__()
@@ -298,6 +382,9 @@ class MediumGreenSlime(Enemy):
                     else:
                         action = 'Tackle'
                         self.actions_done.append(action)
+                else:
+                    action = 'Tackle'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             elif rng <= 70:
                 # 30% chance move
@@ -312,6 +399,9 @@ class MediumGreenSlime(Enemy):
                     else:
                         action = 'Lick'
                         self.actions_done.append(action)
+                else:
+                    action = 'Lick'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             else: 
                 if self.actions_done:
@@ -324,6 +414,9 @@ class MediumGreenSlime(Enemy):
                     else:
                         action = 'Corrosive Spit'
                         self.actions_done.append(action)
+                else:
+                    action = 'Corrosive Spit'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
         self.intent = self.actions[action]
         # Update intent to correct move
@@ -372,6 +465,9 @@ class LargeGreenSlime(Enemy):
                     else:
                         action = 'Tackle'
                         self.actions_done.append(action)
+                else:
+                    action = 'Tackle'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             elif rng <= 70:
                 # 30% chance move
@@ -386,6 +482,9 @@ class LargeGreenSlime(Enemy):
                     else:
                         action = 'Lick'
                         self.actions_done.append(action)
+                else:
+                    action = 'Lick'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             else: 
                 if self.actions_done:
@@ -398,6 +497,9 @@ class LargeGreenSlime(Enemy):
                     else:
                         action = 'Corrosive Spit'
                         self.actions_done.append(action)
+                else:
+                    action = 'Corrosive Spit'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
         self.intent = self.actions[action]
         # Update intent to correct move
@@ -480,6 +582,9 @@ class MediumBlueSlime(Enemy):
                     else:
                         action = 'Lick'
                         self.actions_done.append(action)
+                else:
+                    action = 'Lick'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             else: 
                 if self.actions_done:
@@ -492,6 +597,9 @@ class MediumBlueSlime(Enemy):
                     else:
                         action = 'Flame Tackle'
                         self.actions_done.append(action)
+                else:
+                    action = 'Flame Tackle'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
         self.intent = self.actions[action]
         # Update intent to correct move
@@ -539,6 +647,9 @@ class LargeBlueSlime(Enemy):
                     else:
                         action = 'Lick'
                         self.actions_done.append(action)
+                else:
+                    action = 'Lick'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             else: 
                 if self.actions_done:
@@ -551,6 +662,9 @@ class LargeBlueSlime(Enemy):
                     else:
                         action = 'Flame Tackle'
                         self.actions_done.append(action)
+                else:
+                    action = 'Flame Tackle'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
         self.intent = self.actions[action]
         # Update intent to correct move
@@ -614,6 +728,35 @@ class FatGoblin(Enemy):
             combat: the combat session currently in'''
         self.intent = self.actions['Smash']
         # Only has one move
+        return self.intent
+
+class WizardGoblin(Enemy):
+    def __init__(self) -> None:
+        super().__init__()
+        self.name = 'Wizard Goblin'
+        self.max_hp = random.randint(23, 25)
+        self.hp = self.max_hp
+        self.block = 0
+        self.actions = {
+            'Charging': (None, 0, 'Special'),
+            'Ultimate Blast': ({effects.deal_attack_damage: (25, 1)}, 1, 'Attack'),
+        }
+        self.charge = 0
+        self.intent = None
+        # Initilize Properties of an enemy
+    
+    def intent_get(self, combat):
+        '''Gets what the enemy intends to do
+        
+        ### args: 
+            combat: the combat session currently in'''
+        if self.charge < 2:
+            self.intent = self.actions['Charging']
+            self.charge += 1
+        else:
+            self.intent = self.actions['Ultimate Blast']
+            self.charge = 0
+        # 2 turns of charging then ultimate blast
         return self.intent
 
 class MadGoblin(Enemy):
@@ -692,6 +835,48 @@ class ShieldGoblin(Enemy):
         # Protect if there are other enemies, attack if there isn't
         return self.intent
 
+class Looter(Enemy):
+    def __init__(self):
+        super().__init__()
+        self.name = 'Looter'
+        self.max_hp = random.randint(44, 48)
+        self.hp = self.max_hp
+        self.block = 0
+        self.actions = {
+            'Mug': ({effects.enemy_block_gain: (10, ), effects.rob: ()}, 1, 'Attack'),
+            'Lunge': ({effects.deal_attack_damage: (12, 1), effects.rob: ()}, 1, 'Attack'),
+            'Smoke Bomb': ({effects.enemy_block_gain: (6, )}, 0, 'Block'),
+            'Escape': ({effects.bandit_escape: ()}, 0, 'Escape')
+        }
+        self.buffs['Thievery'] = 15
+        self.buffs['Stolen'] = 0
+        self.smoked = False
+        self.intent = None
+        # Initilize Properties of an enemy
+    
+    def intent_get(self, combat):
+        '''Gets what the enemy intends to do
+        
+        ### args: 
+            combat: the combat session currently in'''
+        if combat.turn < 3:
+            self.intent = self.actions['Mug']
+        elif combat.turn == 3:
+            rng = random.randint(0, 1)
+            if rng == 0:
+                self.intent = self.actions['Lunge']
+            else:
+                self.intent = self.actions['Smoke Bomb']
+                self.smoked = True
+        else:
+            if self.smoked == True:
+                self.intent = self.actions['Escape']
+            else:
+                self.intent = self.actions['Smoke Bomb']
+                self.smoked = True
+        return self.intent
+            
+
 class InfestedCorpes(Enemy):
     def __init__(self) -> None:
         super().__init__()
@@ -733,6 +918,9 @@ class InfestedCorpes(Enemy):
                     else:
                         action = 'Bite'
                         self.actions_done.append(action)
+                else:
+                    action = 'Bite'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             else: 
                 if self.actions_done:
@@ -745,6 +933,9 @@ class InfestedCorpes(Enemy):
                     else:
                         action = 'Grow'
                         self.actions_done.append(action)
+                else:
+                    action = 'Grow'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
         self.intent = self.actions[action]
         # Update intent to correct move
@@ -831,6 +1022,9 @@ class RedArachnid(Enemy):
                     else:
                         action = 'Stab'
                         self.actions_done.append(action)
+                else:
+                    action = 'Stab'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             else: 
                 if self.actions_done:
@@ -843,6 +1037,9 @@ class RedArachnid(Enemy):
                     else:
                         action = 'Scrape'
                         self.actions_done.append(action)
+                else:
+                    action = 'Scrape'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
         self.intent = self.actions[action]
         # Update intent to correct move
@@ -958,6 +1155,9 @@ class GreenLouse(Enemy):
                     else:
                         action = 'Bite'
                         self.actions_done.append(action)
+                else:
+                    action = 'Bite'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             else: 
                 if self.actions_done:
@@ -970,6 +1170,9 @@ class GreenLouse(Enemy):
                     else:
                         action = 'Grow'
                         self.actions_done.append(action)
+                else:
+                    action = 'Grow'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
         self.intent = self.actions[action]
         # Update intent to correct move
@@ -1043,6 +1246,9 @@ class RedLouse(Enemy):
                     else:
                         action = 'Bite'
                         self.actions_done.append(action)
+                else:
+                    action = 'Bite'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             else: 
                 if self.actions_done:
@@ -1055,6 +1261,9 @@ class RedLouse(Enemy):
                     else:
                         action = 'Spit Web'
                         self.actions_done.append(action)
+                else:
+                    action = 'Spit Web'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
         self.intent = self.actions[action]
         # Update intent to correct move
@@ -1273,6 +1482,9 @@ class GoblinGiant(Enemy):
                     else:
                         action = 'Rush'
                         self.actions_done.append(action)
+                else:
+                    action = 'Rush'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             else: 
                 if self.actions_done:
@@ -1285,6 +1497,9 @@ class GoblinGiant(Enemy):
                     else:
                         action = 'Skull Bash'
                         self.actions_done.append(action)
+                else:
+                    action = 'Skull Bash'
+                    self.actions_done.append(action)
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
         self.intent = self.actions[action]
         # Update intent to correct move
@@ -1342,3 +1557,58 @@ class AncientMech(Enemy):
                 self.counter = 0
             return self.intent
         # Repeats this loop over and over
+
+def act_1_easy_pool():
+    '''Function for generating the act 1 easy encounter pool'''
+    pool = [[Cultist], [JawWorm]]
+    rng = random.randint(0, 1)
+    if rng == 0:
+        pool.append([MediumBlueSlime, SmallGreenSlime])
+    else:
+        pool.append([MediumGreenSlime, SmallBlueSlime])
+    louse_encounter = []
+    for i in range(0, 2):
+        rng = random.randint(0, 1)
+        if rng == 0:
+            louse_encounter.append(RedLouse)
+        else:
+            louse_encounter.append(GreenLouse)
+    pool.append(louse_encounter)
+    return random.shuffle(pool)
+
+def act_1_pool():
+    '''Function for generating the act 1 normal fight pool'''
+    pool = [[SmallBlueSlime, SmallBlueSlime, SmallBlueSlime, SmallGreenSlime, SmallGreenSlime], [RedArachnid], [BlueArachnid], [InfestedCorpes, InfestedCorpes], [Looter]]
+    goblin_pool = [MadGoblin, MadGoblin, SneakyGoblin, SneakyGoblin, FatGoblin, FatGoblin, ShieldGoblin, WizardGoblin]
+    fight = []
+    for i in range(0, 4):
+        enemy = random.choice(goblin_pool)
+        fight.append(enemy)
+        goblin_pool.remove(enemy)
+    pool.append(fight)
+    slime = [random.choice([LargeBlueSlime, LargeGreenSlime])]
+    pool.append(slime)
+    louses = []
+    for i in range(0, 3):
+        rng = random.randint(0, 1)
+        if rng == 0:
+            louses.append(RedLouse)
+        else:
+            louses.append(GreenLouse)
+    pool.append(louses)
+    pool.append([random.choice([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime]), random.choices([Looter, Cultist, RedArachnid, BlueArachnid])])
+    pool.append([random.choice([InfestedCorpes, JawWorm]), random.choices([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime])])
+    return random.shuffle(pool)
+
+def act_1_elite():
+    pool = [[GoblinGiant], [GiantLouse], [SentryA, SentryB, SentryA]]
+    pool2 = [[GoblinGiant], [GiantLouse], [SentryA, SentryB, SentryA]]
+    pool3 = [[GoblinGiant], [GiantLouse], [SentryA, SentryB, SentryA]]
+    random.shuffle(pool)
+    random.shuffle(pool2)
+    random.shuffle(pool3)
+    pool.extend(pool2.extend(pool3))
+    return pool
+
+def act_1_boss():
+    return [random.choice([AncientMech])]

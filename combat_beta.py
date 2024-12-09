@@ -1008,14 +1008,25 @@ class Combat:
 
     def display_intent(self):
         '''Method for displating all enemy intents to the player'''
-        for enemy in self.enemies:
-            # for every enemy
-            if enemy.intent == None:
-                # If the intent has not been determained yet
-                enemy.intent_get(self)
-                # Determain intent
-            print(enemy.combat_info())
-            # Print enemy information
+        if self.mechanics['Intent'] == True:
+            # If intents are enabled
+            for enemy in self.enemies:
+                # for every enemy
+                if enemy.intent == None:
+                    # If the intent has not been determained yet
+                    enemy.intent_get(self)
+                    # Determain intent
+                print(enemy.combat_info())
+                # Print enemy information
+        else:
+            for enemy in self.enemies:
+                # for every enemy
+                if enemy.intent == None:
+                    # If the intent has not been determained yet
+                    enemy.intent_get(self)
+                    # Determain intent
+                print(enemy)
+                # Print enemy information without intent
 
     def player_turn(self):
         '''Execute actions the player does during their turn'''
@@ -1238,13 +1249,23 @@ class Combat:
                     'hand': self.hand,
                     'exhaust': self.exhaust_pile
                 }
-                for effect, details in enemy.intent[0].items():
-                    effect(*details, context, self)
+                if enemy.intent[0] != None:
+                    for effect, details in enemy.intent[0].items():
+                        effect(*details, context, self)
                 # Execute the ffects
             enemy.intent = None
             # Clear intent
         self.resolve_action
         # Resolves action
+
+    def bandit_run(self, context):
+        '''Method for a bandit escape
+        
+        ### args:
+        context: info related to the user and state of game'''
+        self.player.thieved -= context['user'].buffs['Stolen']
+        self.enemies.remove(context['user'])
+        # Update info related to stolen gold and remove the escaping enemy
 
     def summon_enemies(self, enemies: list):
         '''Method for adding more enemies to the combat session
@@ -1252,6 +1273,7 @@ class Combat:
         ### args:
             enemies: A list of new enemy objects to be added
         '''
+        return # Placeholder
 
     def split(self, slime_type, hp):
         '''Method for larger slimes splitting when they hit half health

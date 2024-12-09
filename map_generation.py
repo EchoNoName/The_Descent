@@ -413,4 +413,67 @@ def createMap(asc):
         mapDisplay.append(floorDisplay)
         if floor < 15:
             mapDisplay.append(''.join(pathDisplay[floor - 1]))
+    map[16] = {4: 7}
+    paths_needed = {i for i in map[15].keys()}
+    sorted(paths_needed)
+    boss_path = {
+        1: [' ' for _ in range(13)],
+        2: [' ' for _ in range(13)],
+        3: [' ' for _ in range(13)],
+        4: [' ' for _ in range(13)],
+        5: [' ' for _ in range(13)]
+    }
+    floor16 = '      7      '
+    i = 1
+    if 0 in paths_needed:
+        for path_boss in boss_path.values():
+            path_boss[i] = '/'
+            i += 1
+    i = 3
+    if 1 in paths_needed:
+        for path_boss in boss_path.values():
+            if i <= 5:
+                path_boss[i] = '/'
+                i += 1
+            else:
+                path_boss[6] = '|'
+    i = 5
+    if 2 in paths_needed:
+        for path_boss in boss_path.values():
+            if i <= 5:
+                path_boss[i] = '/'
+                i += 1
+            else:
+                path_boss[6] = '|'
+    if 3 in paths_needed:
+        for path_boss in boss_path.values():
+            path_boss[6] = '|'
+    i = 7
+    if 4 in paths_needed:
+        for path_boss in boss_path.values():
+            if i > 6:
+                path_boss[i] = '\\'
+                i -= 1
+            else:
+                path_boss[6] = '|'
+    i = 9
+    if 5 in paths_needed:
+        for path_boss in boss_path.values():
+            if i > 6:
+                path_boss[i] = '\\'
+                i -= 1
+            else:
+                path_boss[6] = '|'
+    i = 11
+    if 6 in paths_needed:
+        for path_boss in boss_path.values():
+            path_boss[i] = '\\'
+            i -= 1
+    for pathDis in boss_path.values():
+        path_boss = ''.join(pathDis)
+        mapDisplay.append(path_boss)
+    # Adding paths to the boss room to map display
+    mapDisplay.append(floor16)
+    for room_num in map[15].keys():
+        path[(15, room_num)] = [[16, 4]]
     return map, path, mapDisplay
