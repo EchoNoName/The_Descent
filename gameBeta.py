@@ -17,6 +17,7 @@ class Character:
         self.character_class = character_class
         self.block = 0
         self.deck = []
+        self.deck_view = []
         self.gold = 100
         self.thieved = 0
         self.potions = [None, None, None]
@@ -287,10 +288,16 @@ def main_menu():
             print('Invalid Menu Option')
         # To be continued
 
-def run_start():
+def run_start(previous_run = None, asc = 0):
     run = True
     act = 1
     current_room = [0, 0]
+    easy_pool = enemy_data.act_1_easy_pool()
+    normal_pool = enemy_data.act_1_pool()
+    elite_pool = enemy_data.act_1_elite()
+    boss = enemy_data.act_1_boss()
+    map_data, path, map_display = map_generation.createMap(asc)
+
 
 
 while combat.combat_active == True:

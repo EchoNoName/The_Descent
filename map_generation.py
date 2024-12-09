@@ -477,3 +477,7 @@ def createMap(asc):
     for room_num in map[15].keys():
         path[(15, room_num)] = [[16, 4]]
     return map, path, mapDisplay
+
+a, b, c = createMap(1)
+for mapLine in reversed(c):
+    print(mapLine)

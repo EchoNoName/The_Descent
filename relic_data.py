@@ -1,10 +1,9 @@
-# Effects include: pickup, passive, reward, mechanic, restrict, energy relic, combat start, counter
-# Counter: (goal, condition, effect, reset condition)
+import effects
 
 class Relics: # Relic Object Class
-    def __init__(self, name, effect_type, effect_class, condition, consumable, effect_details, targets):
+    def __init__(self, name, effect_type, effect_class, condition, consumable, effect_details, targets, counter = None, count_needed = None, counter_type = None):
         self.name = name # Name
-        self.effect_type = effect_type # Effect represented by a function
+        self.effect_type = effect_type # Effect represented by a function can also be a list of effects for upon pickups effects
         self.effect_class = effect_class # Type of effect represented by a string
         self.condition = condition # Condition for the effect
         self.consumable = consumable # If the relic is one time use
@@ -13,14 +12,10 @@ class Relics: # Relic Object Class
             self.used = False
         self.effect_details = effect_details # The details of the effect, depends on the arguments of the effect_type
         self.targets = targets # Targets of the relic's effect, only applies to combat relics that effect entities, other relics will have None
-
-    def applyEff(self, event, context): # Method to apply the effect
-        if event == self.condition: # Check if the condition is met
-            if context != None:    
-                return self.effect_type(context, *self.effect_details) # Apply the effect
-            else:
-                return self.effect_type(*self.effect_details) # Apply the effect
-        return context # Nothing Happens
+        self.counter = counter
+        self.count_needed = count_needed
+        self.counter_type = counter_type
+    
     # The above is a place holder, code needs to be changed once things get added
     def valueModificationEff(self, event, context): # Method to apply the effect
         if event == self.condition and self.effect_class == 'valueMod': # Check if the condition is met 
@@ -34,9 +29,37 @@ class Relics: # Relic Object Class
             event: The event occuring represented by a string
             combat: the combat object that holds all data related to a combat instance
         '''
-        if event == self.condition and self.effect_class == 'combatAct': # Check if the condition is met 
-            target = combat.get_targets(self.targets)
-            self.effect_type(*self.effect_details, target)
+        context = {
+            # Default info to pass on for executing effects
+            'user': combat.player, # The player is playing the card
+            'enemies': combat.enemies, # List of enemies
+            'draw': combat.draw_pile, # The draw pile
+            'discard': combat.discard_pile, # The discard pile
+            'hand': combat.hand, # the hand
+            'exhaust': combat.exhaust_pile, # The exhaust pile
+            'target': None # the target of the card, This is mainly the one that gets overrided
+        }
+        context['target'] = combat.player_targeting(self.targets)
+        if self.counter != None:
+            if event == self.condition and self.effect_class == 'combatAct': # Check if the condition is met 
+                self.effect_type(*self.effect_details, context, combat)
+        else:
+            if event == self.condition:
+                self.counter += 1
+                if self.counter == self.count_needed:
+                    self.effect_type(*self.effect_details, context, combat)
+                    self.counter = 0
+
+    def pickUp(self, player):
+        '''Method for handling on pickup effects of relics'''
+        if self.effect_class == 'pickUp':
+            for i in range(0, len(self.effect_type)):
+                self.effect_type[i](*self.effect_details[i], player)
+    
+    def eventBonus(self, event, player):
+        if self.effect_class == 'eventBonus' and self.condition == event:
+            self.effect_type(*self.effect_details, player)
+
 
 relicsList = {
     'Pandora\'s Box': ('Upon pickup, Transform all Basic cards.', 1),
@@ -44,7 +67,7 @@ relicsList = {
     'Rabbit\'s Foot': ('Elites now drop 2 relics instead of 1.', 1),
     'Alchemical Workbench': ('Potion effects are doubled.', 1), 
     'Stasis Chamber': ('You no longer discard your hand at the end of your turn.', 1),
-    'Cursed Talisman': ('Obtain 1 common relic, 1 uncommon relic, 1 rare relic and a Unique Curse.', 1),
+    'Cursed Talisman': ('Upon pickuup, obtain 1 common relic, 1 uncommon relic, 1 rare relic and a Unique Curse.', 1),
     'Eye of Eris': ('Become Confused at the start of combat. Draw 2 additional cards at the start of every turn.', 1),
     'House Deed': ('Upon pickup, obtain 2 potions, gain 100 Gold. increase your Max Hp by 10, Upgrade a card and obtain a random card.', 1),
     'Bag of Holding': ('Upon pickup, choose and Remove 2 cards.', 1),
