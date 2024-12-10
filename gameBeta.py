@@ -6,6 +6,9 @@ import combat_beta
 import potion_data
 import enemy_data
 import map_generation
+import events
+import shop
+import treasure
 
 Instances = []
 
@@ -288,10 +291,8 @@ def main_menu():
             print('Invalid Menu Option')
         # To be continued
 
-
-
 class Run:
-    def __init__(self, player, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5):
+    def __init__(self, player, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5, newRun = True, turtorial = True):
         self.player = player
         if map_info != None:
             self.map, self.path, self.map_display = map_info
@@ -300,25 +301,49 @@ class Run:
         self.act = act
         self.act_name = act_name
         self.room = room
-        if easyPool:
+        self.roomInfo = roomInfo
+        self.newRun = newRun
+        self.turtorial = turtorial
+        if not self.newRun:
             self.easyPool = easyPool
+            self.normalPool = normalPool
+            self.elitePool = elitePool
+            self.boss = boss
+            self.eventList = eventList
+            self.shrineList = shrineList
+            self.rareChanceOffset = rareChanceOffset
         else:
-            if self.act == 1:
-                self.easyPool = enemy_data.act_1_easy_pool()
+            self.easyPool = enemy_data.act_1_easy_pool()
+            self.normalPool = enemy_data.act_1_pool()
+            self.elitePool = enemy_data.act_1_elite()
+            self.boss = enemy_data.act_1_boss()
+            # ADDED EVENTS AND SHRINES
+            self.rareChanceOffset = rareChanceOffset
+            # More to be added
+    
+    def runStart(self):
+        if self.newRun == True:
+            self.neowBlessing()
+        else:
+            # placeholder
+
+    def neowBlessing(self):
+        return # Placeholder
 
     def mapNav(self):
+        return # Placeholder
+    
 
-
-while combat.combat_active == True:
-    if combat.combat_active == True:
-        combat.player_turn_start()
-    if combat.combat_active == True:
-        combat.player_turn()
-    if combat.combat_active == True:
-        combat.player_turn_end()
-    if combat.combat_active == True:
-        combat.enemy_turn_start()
-    if combat.combat_active == True:
-        combat.enemy_action()
-    if combat.combat_active == True:
-        combat.enemy_turn_end()
+#while combat.combat_active == True:
+#    if combat.combat_active == True:
+#        combat.player_turn_start()
+#    if combat.combat_active == True:
+#        combat.player_turn()
+#    if combat.combat_active == True:
+#        combat.player_turn_end()
+#    if combat.combat_active == True:
+#        combat.enemy_turn_start()
+#    if combat.combat_active == True:
+#        combat.enemy_action()
+#    if combat.combat_active == True:
+#        combat.enemy_turn_end()
