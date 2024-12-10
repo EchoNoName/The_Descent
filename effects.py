@@ -36,7 +36,7 @@ def deal_attack_damage(damage, times : int, context, combat):
     # Damage Calcs
     targets = []
     if isinstance(context['target'], int):
-        targets = combat.get_targets(context, context['target'])
+        targets = combat.enemy_targeting(context, context['target'])
     else:
         targets = context['target']
     # Player's target is predetermained
@@ -73,7 +73,7 @@ def deal_damage(damage, context, combat):
     # Gets the target of the effect
     targets = []
     if isinstance(context['target'], int):
-        targets = combat.get_targets(context, context['target'])
+        targets = combat.enemy_targeting(context, context['target'])
     else:
         targets = context['target']
     for entity in targets:
@@ -158,10 +158,10 @@ def enemy_block_gain(block, context, combat):
     '''
     # Aquire targets
     targets = 0
-    if context['target'] == 0:
+    if context['target'] not in {2, 3}:
         targets = [context['user']]
     else:
-        targets = combat.get_targets(context, context['target'])
+        targets = combat.enemy_targeting(context, context['target'])
     for entity in targets:
         # Loop through all targets
         entity.gain_block(block)
@@ -178,7 +178,7 @@ def apply_buff(buffs: list, amount: list, context, combat):
     '''
     targets = []
     if isinstance(context['target'], int):
-        targets = combat.get_targets(context, context['target'])
+        targets = combat.enemy_targeting(context, context['target'])
     else:
         targets = context['target']
     # Player's target is predetermained
@@ -199,7 +199,7 @@ def apply_debuff(debuffs: list, amount: list, context, combat):
     '''
     targets = []
     if isinstance(context['target'], int):
-        targets = combat.get_targets(context, context['target'])
+        targets = combat.enemy_targeting(context, context['target'])
     else:
         targets = context['target']
     # Player's target is predetermained
@@ -381,7 +381,7 @@ def lose_hp(amount, context, combat):
     '''
     targets = []
     if isinstance(context['target'], int):
-        targets = combat.get_targets(context, context['target'])
+        targets = combat.enemy_targeting(context, context['target'])
     else:
         targets = context['target']
     # Aquire the target using method in combat
@@ -658,6 +658,8 @@ def split(slime_type, context, combat):
     # Remove the big slime
     combat.split(slime_type, hp)
     # Use method in combat to add 2 more slimes
+
+
 
 def small_damage_reduction(damage, cap, *args): 
     '''Reduces damage small enought to 1

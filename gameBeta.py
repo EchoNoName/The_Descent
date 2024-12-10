@@ -17,6 +17,7 @@ class Character:
         self.character_class = character_class
         self.block = 0
         self.deck = []
+        self.deck_view = []
         self.gold = 100
         self.thieved = 0
         self.potions = [None, None, None]

@@ -94,8 +94,36 @@ class Combat:
                     curse += 1
         return curse
         # counts the number of curses in play
+    
+    def enemy_targeting(self, context, target_code):
+        '''Retrieves the target of a enemies based on the target code
 
-    def get_targets(self, context, target_code):
+        ### args:
+            target_code (int): An int corresponding to a specific target or targets
+        '''
+        if target_code == None:
+            return None
+        if target_code == 0:
+            # If its 0
+            return [context['user']]
+            # Returns the player
+        elif target_code == 1:
+            # If its 1
+            return [self.player]
+            # returns that player
+        elif target_code == 2:
+            # if its 2
+            return [self.enemies[random.randint(0, len(self.enemies) - 1)]]
+            # Returns a random enemy
+        elif target_code == 3:
+            # if its 3
+            return self.enemies
+            # Returns all the enemies
+        else:
+            raise ValueError(f"Unknown target code: {target_code}")
+            # Errors
+
+    def player_targeting(self, context, target_code):
         '''Retrieves the target of a card based on the cards target code
 
         ### args:
@@ -103,51 +131,28 @@ class Combat:
         '''
         if target_code == None:
             return None
-        if self.enemy_turn == False:
-            # If its the players turn
-            if target_code == 0:
-                # If its 0
-                return [context['user']]
-                # Returns the player
-            elif target_code == 1:
-                # If its 1
-                i = int(input('Enter the index of the enemy'))
-                # Asks the player for which enemy to target
-                return [self.enemies[i]]
-                # returns that target
-            elif target_code == 2:
-                # if its 2
-                return [self.enemies[random.randint(0, len(self.enemies) - 1)]]
-                # Returns a random enemy
-            elif target_code == 3:
-                # if its 3
-                return self.enemies
-                # Returns all the enemies
-            else:
-                raise ValueError(f"Unknown target code: {target_code}")
-                # Errors
+        if target_code == 0:
+            # If its 0
+            return [context['user']]
+            # Returns the player
+        elif target_code == 1:
+            # If its 1
+            i = int(input('Enter the index of the enemy'))
+            # Asks the player for which enemy to target
+            return [self.enemies[i]]
+            # returns that target
+        elif target_code == 2:
+            # if its 2
+            return [self.enemies[random.randint(0, len(self.enemies) - 1)]]
+            # Returns a random enemy
+        elif target_code == 3:
+            # if its 3
+            return self.enemies
+            # Returns all the enemies
         else:
-            # If its the enemies turn
-            if target_code == 0:
-                # If its 0
-                return [context['user']]
-                # Returns the player
-            elif target_code == 1:
-                # If its 1
-                return [self.player]
-                # returns that player
-            elif target_code == 2:
-                # if its 2
-                return [self.enemies[random.randint(0, len(self.enemies) - 1)]]
-                # Returns a random enemy
-            elif target_code == 3:
-                # if its 3
-                return self.enemies
-                # Returns all the enemies
-            else:
-                raise ValueError(f"Unknown target code: {target_code}")
-                # Errors
-    
+            raise ValueError(f"Unknown target code: {target_code}")
+            # Errors
+
     def add_card_to_pile(self, location, card_id, location_name, cost):
         '''adds a certain card to a certain pile
 
@@ -756,7 +761,7 @@ class Combat:
                     'exhaust': self.exhaust_pile,
                     'target': 2
                 }
-                context['target'] = self.get_targets(context, 2)
+                context['target'] = self.player_targeting(context, 2)
                 self.play_card(context)
                 # Play the card
                 if holding:
@@ -847,7 +852,7 @@ class Combat:
             'exhaust': self.exhaust_pile, # The exhaust pile
             'target': None # the target of the card, This is mainly the one that gets overrided
         }
-        context['target'] = self.get_targets(context, self.playing.target)
+        context['target'] = self.player_targeting(context, self.playing.target)
         if override: # If there is an override
             context = override # Use the override instead
         # Context used for certain effects such as attacking where getting buffs is needed

@@ -1574,7 +1574,8 @@ def act_1_easy_pool():
         else:
             louse_encounter.append(GreenLouse)
     pool.append(louse_encounter)
-    return random.shuffle(pool)
+    random.shuffle(pool)
+    return pool
 
 def act_1_pool():
     '''Function for generating the act 1 normal fight pool'''
@@ -1598,7 +1599,8 @@ def act_1_pool():
     pool.append(louses)
     pool.append([random.choice([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime]), random.choices([Looter, Cultist, RedArachnid, BlueArachnid])])
     pool.append([random.choice([InfestedCorpes, JawWorm]), random.choices([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime])])
-    return random.shuffle(pool)
+    random.shuffle(pool)
+    return pool
 
 def act_1_elite():
     pool = [[GoblinGiant], [GiantLouse], [SentryA, SentryB, SentryA]]
