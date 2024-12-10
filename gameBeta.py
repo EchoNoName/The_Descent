@@ -287,10 +287,25 @@ def main_menu():
             print('Invalid Menu Option')
         # To be continued
 
-def run_start():
-    run = True
-    act = 1
-    current_room = [0, 0]
+
+
+class Run:
+    def __init__(self, player, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5):
+        self.player = player
+        if map_info != None:
+            self.map, self.path, self.map_display = map_info
+        else:
+            self.map, self.path, self.map_display = map_generation.createMap(ascsension)
+        self.act = act
+        self.act_name = act_name
+        self.room = room
+        if easyPool:
+            self.easyPool = easyPool
+        else:
+            if self.act == 1:
+                self.easyPool = enemy_data.act_1_easy_pool()
+
+    def mapNav(self):
 
 
 while combat.combat_active == True:
