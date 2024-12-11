@@ -59,6 +59,8 @@ class Relics: # Relic Object Class
     def eventBonus(self, event, player):
         if self.effect_class == 'eventBonus' and self.condition == event:
             self.effect_type(*self.effect_details, player)
+    
+    
 
 
 relicsList = {

@@ -1,4 +1,5 @@
 import random
+import card_data
 
 attack_card_1 = [1003, 1004, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1022, 1023, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1057, 1058, 1059, 1060, 1061, 1062]
 skill_card_1 = [1005, 1006, 1007, 1008, 1017, 1018, 1019, 1020, 1021, 1024, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1063, 1064, 1065, 1066, 1067, 1068]
@@ -21,7 +22,7 @@ def random_card(type, character = None):
             return 'placeholder'
 
 class Card():
-    def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, removable = True, x_cost_effect = {}):
+    def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, removable = True, x_cost_effect = {}, bottled = False):
         self.id = id # Card ID, which is an integer
         self.name = name # Name of the card, a string
         self.rarity = rarity # rarity represented by an integer
@@ -39,6 +40,7 @@ class Card():
         self.chaotic = False # whether a card is chaotic, represented by boolean
         self.x_cost_effect = x_cost_effect
         # rarity:(0 = starter, 1 = common, 2 = uncommon, 3 = rare, 4 = other), type: (0 = atk, 1 = skill, 2 = power, 3 = status, 4 = curse)
+        self.bottled = bottled
 
     def __str__(self):
         card_descrip = []
@@ -83,6 +85,25 @@ class Card():
 
     def __repr__(self):
         return self.__str__()
+    
+    def upgrade_self(self):
+        '''Method for upgrading the card'''
+        if self.id + 100 in card_data.card_info:
+            upgraded_card_info = card_data.card_info[self.id + 100]
+            self.id += 100
+            self.name = upgraded_card_info[0]
+            self.rarity = upgraded_card_info[1]
+            self.type = upgraded_card_info[2]
+            self.cost = upgraded_card_info[3]
+            self.card_text = upgraded_card_info[4]
+            self.innate = upgraded_card_info[5]
+            self.exhaust = upgraded_card_info[6]
+            self.retain = upgraded_card_info[7]
+            self.ethereal = upgraded_card_info[8]
+            self.effect = upgraded_card_info[9]
+            self.target = upgraded_card_info[10]
+        else:
+            raise KeyError(f'Card has no upgrades: {self.name}')
 
     def modify_effect(self, effect_change, modifications):
         new_eff = {}
