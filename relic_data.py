@@ -1,6 +1,19 @@
 import effects
 
 class Relics: # Relic Object Class
+    '''Class for the function and properties of relics
+    
+    ### args:
+    name: name of the relic
+    effect_type: An effect from effects.py that determains what the relic can do
+    effect_class: The kind of action the effect_type does, EX: modifies values (valueMod)
+    condition: The condition to be met in order to activate the effect
+    consumable: whether the relic is a consumable relic
+    effect_details: Arguments for the effect_type function
+    targets: The entities the relic effects
+    counter = None: If the relic is a counter type relic, this will be 0 when initialized
+    counter_needed = None: The number the counter needs to reach to activate the relic's effect
+    counter_type = None: The type of counter being used by the relic, Ex: resets per turn or global counter'''
     def __init__(self, name, effect_type, effect_class, condition, consumable, effect_details, targets, counter = None, count_needed = None, counter_type = None):
         self.name = name # Name
         self.effect_type = effect_type # Effect represented by a function can also be a list of effects for upon pickups effects
@@ -16,7 +29,6 @@ class Relics: # Relic Object Class
         self.count_needed = count_needed
         self.counter_type = counter_type
     
-    # The above is a place holder, code needs to be changed once things get added
     def valueModificationEff(self, event, context): # Method to apply the effect
         if event == self.condition and self.effect_class == 'valueMod': # Check if the condition is met 
             return self.effect_type(context, *self.effect_details) # Apply the effect
@@ -59,7 +71,6 @@ class Relics: # Relic Object Class
     def eventBonus(self, event, player):
         if self.effect_class == 'eventBonus' and self.condition == event:
             self.effect_type(*self.effect_details, player)
-
 
 relicsList = {
     'Pandora\'s Box': ('Upon pickup, Transform all Basic cards.', 1),

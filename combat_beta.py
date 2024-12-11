@@ -31,6 +31,10 @@ class Combat:
         self.enemy_turn = False
         self.escaped = False
     
+    def combat_start(self):
+        '''Method for starting combat'''
+        self.player_turn_start()
+
     def passive_check_and_exe(self, cond: str):
         '''Method to check if a power's condition or relic's condition is met and activates its effect if it is
 
@@ -1009,6 +1013,7 @@ class Combat:
         self.passive_check_and_exe('Turn Start')
         # Check for powers that activate at the start of a turn
         self.display_intent()
+        self.player_turn()
     # Not completed
 
     def display_intent(self):
@@ -1119,6 +1124,7 @@ class Combat:
             self.display_intent()
             # Display enemy intents
             # Resolve actions
+        self.player_turn_end()
 
     def player_turn_end(self):
         '''Executes actions of the player's turn ending'''
@@ -1178,6 +1184,7 @@ class Combat:
             self.player.lose_buff('Strength', self.player.debuffs['Chained'])
             self.player.debuffs['Chained'] = 0
         # Chained effect
+        self.enemy_turn_start
         
     def discover(self, cards, cost):
         '''Ask user to add to hand one of the 3 cards given
@@ -1229,6 +1236,7 @@ class Combat:
             # For every enemy
             enemy.turn_start()
             # Execute the start of turn method
+        self.enemy_action
 
     def enemy_turn_end(self):
         '''Method for ending enemy's turn'''
@@ -1236,6 +1244,7 @@ class Combat:
             # For every enemy
             enemy.turn_end()
             # Execute the end of turn method
+        self.player_turn_start
 
     def enemy_action(self):
         '''Execute all enemy actions
@@ -1262,6 +1271,7 @@ class Combat:
             # Clear intent
         self.resolve_action
         # Resolves action
+        self.enemy_turn_end
 
     def bandit_run(self, context):
         '''Method for a bandit escape
