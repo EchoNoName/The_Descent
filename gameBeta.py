@@ -9,6 +9,7 @@ import map_generation
 import events
 import shop
 import treasure
+import copy
 
 Instances = []
 
@@ -28,7 +29,7 @@ class Character:
         self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0, 'Parry': 0, 'Deflect': 0}
         #Debuffs: Atrophy = lose dex at the end of turn
         self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Parry': 0, 'Deflect': 0}
-        # self.powers = {'Cursed Ward': 0, 'Feel No Pain': 0, 'Evolve': 0, 'Transfer Pain': 0, 'Dark Embrace': 0, 'Corruption Form': 0, 'Spectral Blades': 0, 'Seeing Red': 0, 'Corruption': 0, 'Clear Mind': 0}
+        self.bottled = []
     
     def __str__(self):
         '''Override for String representation'''
@@ -85,6 +86,62 @@ class Character:
                 # Execute effects
         self.potions.remove(potion)
     
+    def upgrade_card(self, cards):
+        '''Method to upgrading cards
+        
+        ### args:
+            cards: cards being upgraded'''
+        for card in cards:
+            if isinstance(card, str):
+                # If a random card of a type is being upgraded
+                if card == 'Card':
+                    validUpgrades = False
+                    for player_card in self.deck:
+                        if player_card.id + 100 in card_data.card_info:
+                            validUpgrades = True
+                            break
+                    while validUpgrades:
+                        upgrade = random.choice(self.deck)
+                        if upgrade.id + 100 in card_data.card_info:
+                            upgrade.upgrade_self()
+                            validUpgrades -= 1
+                            # If it can be upgraded, upgrade it and end the loop
+                            break
+                elif card == 'Attack':
+                    validUpgrades = False
+                    for player_card in self.deck:
+                        if player_card.type == 0 and player_card.id + 100 in card_data.card_info:
+                            validUpgrades = True
+                            break
+                    while validUpgrades:
+                        upgrade = random.choice(self.deck)
+                        if upgrade.type == 0:
+                            # Picks a random card and checks if its the right type
+                            if upgrade.id + 100 in card_data.card_info:
+                                upgrade.upgrade_self()
+                                validUpgrades -= 1
+                                # If it can be upgraded, upgrade it and end the loop
+                                break
+                elif card == 'Skill':
+                    validUpgrades = False
+                    for player_card in self.deck:
+                        if player_card.type == 1 and player_card.id + 100 in card_data.card_info:
+                            validUpgrades = True
+                            break
+                    while validUpgrades:
+                        upgrade = random.choice(self.deck)
+                        if upgrade.type == 1:
+                            if upgrade.id + 100 in card_data.card_info:
+                                upgrade.upgrade_self()
+                                break
+                else:
+                    raise TypeError(f'Unknown Card Type: {card}')
+            else:
+                if card.id + 100 in card_data.card_info:
+                    card.upgrade_self()
+                else:
+                    raise KeyError(f'Card has no upgrade: {card.name}')
+
     def heal(self, amount):
         '''Method to heal the player by an amount or percentage
         

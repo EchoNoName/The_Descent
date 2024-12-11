@@ -644,6 +644,20 @@ def upgrade(target, context, combat):
         combat.hand.append(combat.selected)
         # Choose 1 card in hand and upgrade it
 
+def upgrade_card(cards: list, player):
+    '''Function for upgrading cards prermanatly from effects
+    
+    ### args:
+        cards: The cards being upgraded'''
+    player.upgrade_card(cards)
+    
+def transform_card(cards : list, player):
+    '''Function for transforming cards prermanatly from effects
+    
+    ### args:
+        cards: The cards being transformed'''
+    player.transform_card(cards)
+
 def split(slime_type, context, combat):
     '''Function for slime splitting into smaller slimes
     
