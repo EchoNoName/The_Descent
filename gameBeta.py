@@ -95,24 +95,30 @@ class Character:
             if isinstance(card, str):
                 # If a random card of a type is being upgraded
                 if card == 'Card':
+                    # Random card
                     validUpgrades = False
                     for player_card in self.deck:
                         if player_card.id + 100 in card_data.card_info:
                             validUpgrades = True
                             break
+                    # Check if there is a card that has an upgrade
                     while validUpgrades:
+                        # If there is
                         upgrade = random.choice(self.deck)
+                        # Randomly pick one
                         if upgrade.id + 100 in card_data.card_info:
                             upgrade.upgrade_self()
                             validUpgrades -= 1
                             # If it can be upgraded, upgrade it and end the loop
                             break
                 elif card == 'Attack':
+                    # Random Attack
                     validUpgrades = False
                     for player_card in self.deck:
                         if player_card.type == 0 and player_card.id + 100 in card_data.card_info:
                             validUpgrades = True
                             break
+                    # Check if there is an attack card avalible to upgrade
                     while validUpgrades:
                         upgrade = random.choice(self.deck)
                         if upgrade.type == 0:
@@ -123,24 +129,40 @@ class Character:
                                 # If it can be upgraded, upgrade it and end the loop
                                 break
                 elif card == 'Skill':
+                    # Random Skill
                     validUpgrades = False
                     for player_card in self.deck:
                         if player_card.type == 1 and player_card.id + 100 in card_data.card_info:
                             validUpgrades = True
                             break
+                    # Check if there is a valid skill to be upgraded
                     while validUpgrades:
                         upgrade = random.choice(self.deck)
                         if upgrade.type == 1:
                             if upgrade.id + 100 in card_data.card_info:
                                 upgrade.upgrade_self()
                                 break
+                    # If there is a upgrade, random;y pick cards until a valid card is upgraded
                 else:
                     raise TypeError(f'Unknown Card Type: {card}')
             else:
                 if card.id + 100 in card_data.card_info:
                     card.upgrade_self()
+                    # If the card is referanced as an obj, upgrade it
                 else:
                     raise KeyError(f'Card has no upgrade: {card.name}')
+                    # Invalid upgrade
+    
+    def transform(self, cards):
+        for card in cards:
+            # for every card that needs to be transformed
+            if card.type == 4:
+                # If the card is a curse
+                transform_id = random.choice(card_constructor.weak_curse + card_constructor.medium_curse + card_constructor.strong_curse)
+                card = card_constructor.create_card(transform_id, card_data.card_info[transform_id])
+                # Transform into a random non special curse
+            else:
+                
 
     def heal(self, amount):
         '''Method to heal the player by an amount or percentage
