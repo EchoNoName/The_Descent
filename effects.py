@@ -644,19 +644,94 @@ def upgrade(target, context, combat):
         combat.hand.append(combat.selected)
         # Choose 1 card in hand and upgrade it
 
-def upgrade_card(cards: list, player):
+def upgrade_card(cards, player):
     '''Function for upgrading cards prermanatly from effects
     
     ### args:
         cards: The cards being upgraded'''
     player.upgrade_card(cards)
     
-def transform_card(cards : list, player):
+def transform_card(cards, player):
     '''Function for transforming cards prermanatly from effects
     
     ### args:
-        cards: The cards being transformed'''
-    player.transform_card(cards)
+        cards: The cards being transformed
+        player: The player object'''
+    if cards == 'Basic':
+        # If transforming a type of card
+        cards = []
+        for card in player.deck:
+            if card.rarity == 0:
+                cards.append(card)
+        player.transform_card(cards)
+    else:
+        player.transform_card(cards)
+
+def card_select(num, player, restrictions = None):
+    '''Function for selecting cards from the deck outside of combat
+    
+    ### args:
+        num: Number of cards that needs selecting
+        player: The character object that the player controlls
+        restrictions = None: What type of cards can't be selected, none by default'''
+    if player.deck:
+        eligible_cards = [card for card in player.deck if card.type not in restrictions and card.removable == True]
+    else:
+        return []
+    if not eligible_cards:
+        # If there are no cards to select from
+        return None
+        # Doesn't select anything
+    elif len(eligible_cards) <= num:
+        # If the # of cards in pile is equal to or less then the # of cards that needs to be selected
+        return eligible_cards
+        # Returns the # of cards selected or type of card selected depending on if more than 1 card was selected
+    else:
+        confirm = True
+        player.selected_cards = []
+        index_selected = []
+        # Initialize confirm selection boolean
+        while confirm:
+            # While the player hasn't confirmed yet
+            i = 0
+            if eligible_cards:
+                # If the pile to select from isn't empty
+                for card in eligible_cards:
+                    # Prints all cards in the pile with relevent detail
+                    print(f'{i}: {card}')
+                    i += 1
+            if index_selected:
+                # If there has been cards already selected
+                print('Index selected: ')
+                print(index_selected)
+                # Prints the indexes of all selected cards
+            select = input("Enter the index of the card u wish to select or unselect and cs to confirm choices")
+            # Request for player input
+            if select != 'cs':
+                # Select another card
+                select = int(select)
+                if eligible_cards[int(select)] in player.selected_cards:
+                    # Card is already selected
+                    player.selected_cards.remove(eligible_cards[select])
+                    index_selected.remove(select)
+                    # Unselected the card
+                elif len(index_selected) == num:
+                    # If they already selected the max num of cards
+                    continue
+                    # Do nothing
+                else:
+                    player.selected_cards(eligible_cards[select])
+                    index_selected.append(select)
+                    # Add the chosen card to selected
+            else:
+                if len(index_selected) < num:
+                    # If not enought cards were selected
+                    continue
+                    # Does nothing
+                else:
+                    confirm = False
+                    # Turns off loop
+                    return player.selected_cards
 
 def split(slime_type, context, combat):
     '''Function for slime splitting into smaller slimes

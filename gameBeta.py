@@ -21,7 +21,7 @@ class Character:
         self.character_class = character_class
         self.block = 0
         self.deck = []
-        self.deck_view = []
+        self.selected_cards = []
         self.gold = 100
         self.thieved = 0
         self.potions = [None, None, None]
@@ -86,11 +86,13 @@ class Character:
                 # Execute effects
         self.potions.remove(potion)
     
-    def upgrade_card(self, cards):
+    def upgrade_card(self, cards = 'Selected'):
         '''Method to upgrading cards
         
         ### args:
             cards: cards being upgraded'''
+        if cards == 'Selected':
+            cards = self.selected_cards
         for card in cards:
             if isinstance(card, str):
                 # If a random card of a type is being upgraded
@@ -153,7 +155,9 @@ class Character:
                     raise KeyError(f'Card has no upgrade: {card.name}')
                     # Invalid upgrade
     
-    def transform(self, cards):
+    def transform(self, cards = 'Selected'):
+        if cards == 'Selected':
+            cards = self.selected_cards
         for card in cards:
             # for every card that needs to be transformed
             if card.type == 4:
@@ -162,7 +166,12 @@ class Character:
                 card = card_constructor.create_card(transform_id, card_data.card_info[transform_id])
                 # Transform into a random non special curse
             else:
-                
+                if self.character_class == 1:
+                    transform_id = random.choice(card_constructor.attack_card_1 + card_constructor.skill_card_1 + card_constructor.power_card_1)
+                    card = card_constructor.create_card(transform_id, card_data.card_info[transform_id])
+                    # Tranfrom into a card of the character class
+                else:
+                    return TypeError(f'Unknown card transform: {card}')
 
     def heal(self, amount):
         '''Method to heal the player by an amount or percentage
@@ -399,12 +408,17 @@ class Run:
             # ADDED EVENTS AND SHRINES
             self.rareChanceOffset = rareChanceOffset
             # More to be added
+        self.event = None
+        self.combat = None
+        self.shop = None
+        self.treasure = None
+        self.instances = [self.shop, self.combat, self.event, self.treasure]
     
     def runStart(self):
         if self.newRun == True:
             self.neowBlessing()
         else:
-            # placeholder
+            return # placeholder
 
     def neowBlessing(self):
         return # Placeholder
@@ -426,3 +440,6 @@ class Run:
 #        combat.enemy_action()
 #    if combat.combat_active == True:
 #        combat.enemy_turn_end()
+
+
+

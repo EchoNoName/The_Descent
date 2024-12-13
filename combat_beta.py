@@ -380,9 +380,9 @@ class Combat:
                     print('selected: ')
                     print(selected_cards)
                     # Prints the indexes of all selected cards
-                select = input("Enter the index of the card u wish to select or unselect by typine r followed by the index and cs to confirm choices")
+                select = input("Enter the index of the card u wish to select or unselect and cs to confirm choices")
                 # Request for player input
-                if select != 'cs' and 'r' not in select:
+                if select != 'cs':
                     # Select another card
                     select = int(select)
                     if pile[int(select)] in self.selected:

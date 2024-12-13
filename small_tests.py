@@ -1,8 +1,28 @@
 import copy
-import card_constructor
-class test:
+class event:
     def __init__(self):
-        self.name = "obj 1"
+        pass
 
+    def __repr__(self):
+        return 'Event'
 
-print(card_constructor.weak_curse + card_constructor.medium_curse + card_constructor.strong_curse)
+class combat:
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return 'Combat'
+    
+class shop:
+    def __repr__(self):
+        return 'Shop'
+    
+    def __init__(self):
+        pass
+
+event1 = event()
+event2 = event()
+combat1 = combat()
+shop1 = shop()
+list = [event1, event2, combat1, shop1]
+print(isinstance(event1, event))

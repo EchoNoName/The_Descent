@@ -4,18 +4,21 @@ class Relics: # Relic Object Class
     '''Class for the function and properties of relics
     
     ### args:
-    name: name of the relic
-    effect_type: An effect from effects.py that determains what the relic can do
-    effect_class: The kind of action the effect_type does, EX: modifies values (valueMod)
-    condition: The condition to be met in order to activate the effect
-    consumable: whether the relic is a consumable relic
-    effect_details: Arguments for the effect_type function
-    targets: The entities the relic effects
-    counter = None: If the relic is a counter type relic, this will be 0 when initialized
-    counter_needed = None: The number the counter needs to reach to activate the relic's effect
-    counter_type = None: The type of counter being used by the relic, Ex: resets per turn or global counter'''
-    def __init__(self, name, effect_type, effect_class, condition, consumable, effect_details, targets, counter = None, count_needed = None, counter_type = None):
+        name: name of the relic
+        description: the description of the effect
+        effect_type: An effect from effects.py that determains what the relic can do
+        effect_class: The kind of action the effect_type does, EX: modifies values (valueMod)
+        condition: The condition to be met in order to activate the effect
+        consumable: whether the relic is a consumable relic
+        effect_details: Arguments for the effect_type function
+        targets: The entities the relic effects
+        counter = None: If the relic is a counter type relic, this will be 0 when initialized
+        counter_needed = None: The number the counter needs to reach to activate the relic's effect
+        counter_type = None: The type of counter being used by the relic, Ex: resets per turn or global counter'''
+    def __init__(self, name, description, rarity, effect_type, effect_class, condition, consumable, effect_details, targets, counter = None, count_needed = None, counter_type = None):
         self.name = name # Name
+        self.description = description
+        self.rarity = rarity
         self.effect_type = effect_type # Effect represented by a function can also be a list of effects for upon pickups effects
         self.effect_class = effect_class # Type of effect represented by a string
         self.condition = condition # Condition for the effect
@@ -72,11 +75,12 @@ class Relics: # Relic Object Class
         if self.effect_class == 'eventBonus' and self.condition == event:
             self.effect_type(*self.effect_details, player)
     
-    
+    def additionalRewards(self, reward)
 
+Relics
 relicsList = {
-    'Pandora\'s Box': ('Upon pickup, Transform all Basic cards.', 1),
-    'Astrolabe': ('Upon pickup, choose and Transfrom 3 cards, then Upgrade them.', 1),
+    'Pandora\'s Box': ('Upon pickup, Transform all Basic cards.', 1, [effects.transform_card], 'pickUp', None, False, [['Basic']], 0),
+    'Astrolabe': ('Upon pickup, choose and Transfrom 3 cards, then Upgrade them.', 1, [effects.card_select, effects.transform_card, effects.upgrade_card], 'pickUp', None, False, [[3], ['Selected'], ['Selected']], 0),
     'Rabbit\'s Foot': ('Elites now drop 2 relics instead of 1.', 1),
     'Alchemical Workbench': ('Potion effects are doubled.', 1), 
     'Stasis Chamber': ('You no longer discard your hand at the end of your turn.', 1),
