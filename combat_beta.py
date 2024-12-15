@@ -5,12 +5,10 @@ import card_constructor
 import random
 
 class Combat:
-    def __init__(self, player, deck, relics, potions, enemies, combat_type, mechanics):
+    def __init__(self, player, deck, enemies, combat_type, mechanics):
         self.player = player # The Player 
         self.enemies = enemies # The Enemies in a combat encounter
         self.deck = deck # The player's deck
-        self.relics = relics # The player's relics
-        self.potions = potions # The player's potions
         self.combat_type = combat_type # The Type of combat, (Normal, Elite, Boss)
         self.mechanics = mechanics # {Intent: True/False, Ordered_Draw_Pile: True/False, Turn_End_Discard: True/False, Playable_Curse: Effect/False, Playable_Status: True/False, Exhaust_Chance: %, Cards_per_Turn: False/int}
         self.turn = 0 # Turn counter
@@ -61,8 +59,8 @@ class Combat:
                             for effects, effect_details in effect.items():
                                 effects(*effect_details, context, self)
                                 # Execute the power's effect
-        if self.relics:
-            for relic in self.relics:
+        if self.player.relics:
+            for relic in self.player.relics:
                 # Go through all relics
                 relic.combatActionEff(cond)
                 # Execute condisional effects of relics
@@ -70,9 +68,9 @@ class Combat:
     def get_energy_cap(self):
         '''Gets the energy cap of the player
         '''
-        for relics in self.relics:
+        for relic in self.player.relics:
             # Goes throught every relic
-            if relics.effect_class == 'Energy Relic':
+            if relic.effect_class == 'Energy Relic':
                 # If its an energy relic
                 self.energy_cap += 1
                 # Add 1 energy to the cap
@@ -203,7 +201,7 @@ class Combat:
                 # Shuffle the draw pile
                 self.discard_pile[:] = []
                 # Empty the discard pile
-        for relic in self.relics:
+        for relic in self.player.relics:
             # Go through every relic
             relic.combatActionEff('shuffle')
             # Active the relic effects with the event being shuffling
@@ -967,16 +965,20 @@ class Combat:
         }
         if potion.time_of_use == 'combat':
             # If the potion that is being used can be used during combat
-            for effect, details in potion.effect.items():
-                effect(*details, context, self)
+            i = 1
+            if self.player.relics:
+                for relic in self.player.relics:
+                    if relic.effect_type == 'Sacred Bark':
+                        i = 2
+                        break
+            for times in range(0, i):
+                for effect, details in potion.effect.items():
+                    effect(*details, context, self)
                 # Execute effects
-            self.potions.remove(potion)
-            global potions
-            potions.remove(potion)
+            self.player.potions.remove(potion)
             # Remove the potion from combat and the player object
         elif potion.time_of_use == 'all':
             self.player.use_potion(potion)
-            self.potions.remove(potion)
             # Use potion using player method
         else:
             print(f'Invalid time of use: {potion.time_of_use}')
@@ -1116,7 +1118,7 @@ class Combat:
                     # For potions
                     player_action = int(player_action[1])
                     # Gets the index of the potion being used
-                    potion = self.potions[player_action]
+                    potion = self.player.potions[player_action]
                     # Retreives the correct potion
                     self.use_potion(potion) 
                     # Use the potion

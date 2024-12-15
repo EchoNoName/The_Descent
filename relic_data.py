@@ -1,4 +1,5 @@
 import effects
+import random
 
 class Relics: # Relic Object Class
     '''Class for the function and properties of relics
@@ -75,14 +76,22 @@ class Relics: # Relic Object Class
         if self.effect_class == 'eventBonus' and self.condition == event:
             self.effect_type(*self.effect_details, player)
     
-    def additionalRewards(self, reward)
+    def additionalRewards(self, event, reward):
+        if self.effect_class == 'additionalRewards' and self.condition == event:
+            self.effect_type(*self.effect_details, reward)
+
+def createRelic(name: str, details: tuple):
+    return Relics(name, *details)
+
+def createRandomRelic():
+    return # placeholder
 
 Relics
-relicsList = {
+bossRelics = {
     'Pandora\'s Box': ('Upon pickup, Transform all Basic cards.', 1, [effects.transform_card], 'pickUp', None, False, [['Basic']], 0),
     'Astrolabe': ('Upon pickup, choose and Transfrom 3 cards, then Upgrade them.', 1, [effects.card_select, effects.transform_card, effects.upgrade_card], 'pickUp', None, False, [[3], ['Selected'], ['Selected']], 0),
-    'Rabbit\'s Foot': ('Elites now drop 2 relics instead of 1.', 1),
-    'Alchemical Workbench': ('Potion effects are doubled.', 1), 
+    'Rabbit\'s Foot': ('Elites now drop 2 relics instead of 1.', 1, 'Black Start', 'Special', 'Elite', False, 'Relic', 0),
+    'Alchemical Workbench': ('Potion effects are doubled.', 1, 'Sacred Bark', 'Special', None, False, 'Potion', 0), 
     'Stasis Chamber': ('You no longer discard your hand at the end of your turn.', 1),
     'Cursed Talisman': ('Upon pickuup, obtain 1 common relic, 1 uncommon relic, 1 rare relic and a Unique Curse.', 1),
     'Eye of Eris': ('Become Confused at the start of combat. Draw 2 additional cards at the start of every turn.', 1),
@@ -97,7 +106,9 @@ relicsList = {
     'Philosopher\'s Stone': ('Gain 1 Energy at thes start of each turn. All enemies gain 1 Strength at the start of combat.', 1),
     'Holographic Eyeglass': ('Gain 1 Energy at thes start of each turn. On card reward screens, you recieve 2 less options to pick from.', 1),
     'Cursed Tome': ('Gain 1 Energy at thes start of each turn. Upon opening a non-boss chest, gain a random Curse.', 1),
-    'Eye of Átē': ('Gain 1 Energy at thes start of each turn. You can no longer see enemy intent. (not recommended for unexperienced players)', 1),
+    'Eye of Átē': ('Gain 1 Energy at thes start of each turn. You can no longer see enemy intent. (not recommended for unexperienced players)', 1)
+}
+commonRelics = {
     'Dumbbell': ('At the start of combat, gain 1 Strength.', 4),
     'Smooth Stone': ('At the start of combat, gain 1 Dexterity', 4),
     'Backpack': ('Draw 2 Additional cards at the start of combat.', 4),
@@ -126,7 +137,9 @@ relicsList = {
     'Sunflower': ('Every 3 turns, gain 1 Energy.', 4),
     'Bronze Scales': ('At the start of combat, gain 3 thorns.', 4),
     'Haunted Stone': ('At the start of combat, apply 1 Vulnerable to all enemies.', 4),
-    'Orichalcum': ('When you end your turn with no block, gain 6 block.', 4),
+    'Orichalcum': ('When you end your turn with no block, gain 6 block.', 4)
+}
+UncommonRelics = {
     'Horse Wagon': ('Gain 125 Gold. Your next Event room will always be a shop.', 3),
     'Bottled Flames': ('Upon pickup, choose an Attack card. Start combat with that card in your hand.', 3),
     'Bottled Lightning': ('Upon pickup, choose an Skill card. Start combat with that card in your hand.', 3),
@@ -151,7 +164,9 @@ relicsList = {
     'Cauldron': ('Enemy combat rewards always contain a potion.', 3),
     'Ahnk': ('After playing a Power card, reduce the cost of a random card in your hand to 0 that turn.', 3),
     'Bamboo Stilts': ('At the start of boss combat, heal 25 Hp.', 3),
-    'Sundial': ('Every 3 times the draw pile is shuffled, gain 2 Energy.', 3),
+    'Sundial': ('Every 3 times the draw pile is shuffled, gain 2 Energy.', 3)
+}
+rareRelics = {
     'Midas\'s Hand': ('Upon killing an enemy, gain Gold equal to overkill damage done.', 2),
     'Brewing Stand': ('Whenever you rest, obatin a random potion.', 2),
     'Covert Cloak': ('At the start of combat, gain 1 Intangable.', 2),
@@ -176,7 +191,9 @@ relicsList = {
     'Urn': ('Whenever you play a Power, heal 2 Hp.', 2),
     'Ballistic Armour': ('Whenever you lose Hp, lose 1 less.', 2),
     'The Arch': ('Whenever you take attack damage below or equal to 5, it is reduced to 1.', 2),
-    'Pot': ('Every 6 turns, gain 1 Intangible.', 2),
+    'Pot': ('Every 6 turns, gain 1 Intangible.', 2)
+}
+shopRelics = {
     'Treasure Map': ('Your next Event room will always be a Chest.', 5),
     'Damaged Duplicator': ('Upon pickup, duplicate a card in your deck.', 5),
     'Biomechanical Arm': ('At the start of combat, gain 1 Artifact.', 5),
@@ -190,7 +207,9 @@ relicsList = {
     '2 Leaf Clover': ('Cards that Exhaust from being played don\'t 50% of the time.', 5),
     'Rainbow': ('At the start of combat, add a non-class card to your hand, it costs 0 that turn.', 5),
     'Sandvich': ('Status cards can now be played, they are Exhausted when played.', 5),
-    'Iron Plated Cards': ('When ever you shuffle your draw pile, gain 6 block.', 5),
+    'Iron Plated Cards': ('When ever you shuffle your draw pile, gain 6 block.', 5)
+}
+eventRelics = {
     'Broken Arms': ('At the start of combat, apply 1 Weak to all enemies.', 6),
     'Christmas Present': ('Rare cards appear more often.', 6),
     'Steroids': ('At the start of combat, gain 3 Temporary Strength.', 6),

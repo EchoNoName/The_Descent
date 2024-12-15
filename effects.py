@@ -733,6 +733,20 @@ def card_select(num, player, restrictions = None):
                     # Turns off loop
                     return player.selected_cards
 
+def additonal_rewards(additional: dict, rewards):
+    '''Function to add additional rewards
+    
+    ### args:
+        rewards: A dictonary that contains the different catagory of rewards
+        additional: the amount of additional rewards with the type and amount
+    
+    ### returns:
+        rewards: Updated rewards dictonary'''
+    for type, items in additional.items():
+        rewards[type] = items
+    return rewards
+
+
 def split(slime_type, context, combat):
     '''Function for slime splitting into smaller slimes
     

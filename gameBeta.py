@@ -81,8 +81,14 @@ class Character:
         ### args:
             potion: The potion to be used
         '''
-        for effect, details in potion.effect.items():
-                effect(*details, self)
+        i = 1
+        for relic in self.relics:
+            if relic.effect_type == 'Sacred Bark':
+                i = 2
+                break
+        for times in range(0, i):
+            for effect, details in potion.effect.items():
+                    effect(*details, self)
                 # Execute effects
         self.potions.remove(potion)
     
