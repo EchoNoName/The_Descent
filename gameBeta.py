@@ -386,7 +386,7 @@ def main_menu():
         # To be continued
 
 class Run:
-    def __init__(self, player, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5, newRun = True, turtorial = True):
+    def __init__(self, player, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5):
         self.player = player
         if map_info != None:
             self.map, self.path, self.map_display = map_info

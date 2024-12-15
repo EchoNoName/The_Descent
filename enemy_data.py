@@ -1558,14 +1558,21 @@ class AncientMech(Enemy):
             return self.intent
         # Repeats this loop over and over
 
-def act_1_easy_pool():
-    '''Function for generating the act 1 easy encounter pool'''
-    pool = [[Cultist], [JawWorm]]
+
+def generate_act1_pools():
+    '''Function to generage enemy encouters for act 1, mainly used for some encounters that have some random variation
+    
+    ### returns:
+        act1_fights: A dictonary containing all easy, normal, elite and boss encounters'''
+    act1_easy_combats = {
+        'Single Cultist': [Cultist],
+        'Single Jawworm': [JawWorm],
+    }
     rng = random.randint(0, 1)
     if rng == 0:
-        pool.append([MediumBlueSlime, SmallGreenSlime])
+        act1_easy_combats['2 Slimes'] = [MediumBlueSlime, SmallGreenSlime]
     else:
-        pool.append([MediumGreenSlime, SmallBlueSlime])
+        act1_easy_combats['2 Slimes'] = [MediumGreenSlime, SmallBlueSlime]
     louse_encounter = []
     for i in range(0, 2):
         rng = random.randint(0, 1)
@@ -1573,22 +1580,25 @@ def act_1_easy_pool():
             louse_encounter.append(RedLouse)
         else:
             louse_encounter.append(GreenLouse)
-    pool.append(louse_encounter)
-    random.shuffle(pool)
-    return pool
+    act1_easy_combats['2 Louses'] = louse_encounter
 
-def act_1_pool():
-    '''Function for generating the act 1 normal fight pool'''
-    pool = [[SmallBlueSlime, SmallBlueSlime, SmallBlueSlime, SmallGreenSlime, SmallGreenSlime], [RedArachnid], [BlueArachnid], [InfestedCorpes, InfestedCorpes], [Looter]]
+    act1_normal_combat = {
+        '5 Slimes': [SmallBlueSlime, SmallBlueSlime, SmallBlueSlime, SmallGreenSlime, SmallGreenSlime],
+        'Blue Spider': [BlueArachnid],
+        'Red Spider': [RedArachnid],
+        '2 Corpes': [InfestedCorpes, InfestedCorpes],
+        'Single Looter': [Looter]
+    }
+
     goblin_pool = [MadGoblin, MadGoblin, SneakyGoblin, SneakyGoblin, FatGoblin, FatGoblin, ShieldGoblin, WizardGoblin]
     fight = []
     for i in range(0, 4):
         enemy = random.choice(goblin_pool)
         fight.append(enemy)
         goblin_pool.remove(enemy)
-    pool.append(fight)
+    act1_normal_combat['4 Goblins'] = fight
     slime = [random.choice([LargeBlueSlime, LargeGreenSlime])]
-    pool.append(slime)
+    act1_normal_combat['Single LSlime'] = slime
     louses = []
     for i in range(0, 3):
         rng = random.randint(0, 1)
@@ -1596,21 +1606,25 @@ def act_1_pool():
             louses.append(RedLouse)
         else:
             louses.append(GreenLouse)
-    pool.append(louses)
-    pool.append([random.choice([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime]), random.choices([Looter, Cultist, RedArachnid, BlueArachnid])])
-    pool.append([random.choice([InfestedCorpes, JawWorm]), random.choices([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime])])
-    random.shuffle(pool)
-    return pool
+    act1_normal_combat['3 Louses'] = louses
+    act1_normal_combat['Forest and Human'] = [random.choice([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime]), random.choice([Looter, Cultist, RedArachnid, BlueArachnid])]
+    act1_normal_combat['Double Forest'] = [random.choice([InfestedCorpes, JawWorm]), random.choices([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime])]
 
-def act_1_elite():
-    pool = [[GoblinGiant], [GiantLouse], [SentryA, SentryB, SentryA]]
-    pool2 = [[GoblinGiant], [GiantLouse], [SentryA, SentryB, SentryA]]
-    pool3 = [[GoblinGiant], [GiantLouse], [SentryA, SentryB, SentryA]]
-    random.shuffle(pool)
-    random.shuffle(pool2)
-    random.shuffle(pool3)
-    pool.extend(pool2.extend(pool3))
-    return pool
+    act1_elites = {
+        'Goblin Giant' : [GoblinGiant],
+        'Giant Louse': [GiantLouse],
+        'Sentries': [SentryA, SentryB, SentryA]
+    }
 
-def act_1_boss():
-    return [random.choice([AncientMech])]
+    act1_bosses = {
+        'Ancient Mech': [AncientMech]
+    }
+
+    act1_fights = {
+        'easy': act1_easy_combats,
+        'normal': act1_normal_combat,
+        'elite': act1_elites,
+        'boss': act1_bosses
+    }
+    
+    return act1_fights
