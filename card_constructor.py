@@ -1,6 +1,7 @@
 import random
-import card_data
-
+common_1 = [1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024]
+uncommon_1 = [1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1050, 1051, 1052, 1053, 1054, 1055, 1056]
+rare_1 = [1057, 1058, 1059, 1060, 1061, 1062, 1063, 1064, 1065, 1066, 1067, 1068, 1069, 1070, 1071, 1072, 1073, 1074]
 attack_card_1 = [1003, 1004, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1022, 1023, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1057, 1058, 1059, 1060, 1061, 1062]
 skill_card_1 = [1005, 1006, 1007, 1008, 1017, 1018, 1019, 1020, 1021, 1024, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1063, 1064, 1065, 1066, 1067, 1068]
 power_card_1 = [1050, 1051, 1052, 1053, 1054, 1055, 1056, 1069, 1070, 1071, 1072, 1073, 1074]
@@ -22,7 +23,7 @@ def random_card(type, character = None):
             return 'placeholder'
 
 class Card():
-    def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, removable = True, x_cost_effect = {}, bottled = False):
+    def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, bottled = False, removable = True, x_cost_effect = {}):
         self.id = id # Card ID, which is an integer
         self.name = name # Name of the card, a string
         self.rarity = rarity # rarity represented by an integer
@@ -85,25 +86,6 @@ class Card():
 
     def __repr__(self):
         return self.__str__()
-    
-    def upgrade_self(self):
-        '''Method for upgrading the card'''
-        if self.id + 100 in card_data.card_info:
-            upgraded_card_info = card_data.card_info[self.id + 100]
-            self.id += 100
-            self.name = upgraded_card_info[0]
-            self.rarity = upgraded_card_info[1]
-            self.type = upgraded_card_info[2]
-            self.cost = upgraded_card_info[3]
-            self.card_text = upgraded_card_info[4]
-            self.innate = upgraded_card_info[5]
-            self.exhaust = upgraded_card_info[6]
-            self.retain = upgraded_card_info[7]
-            self.ethereal = upgraded_card_info[8]
-            self.effect = upgraded_card_info[9]
-            self.target = upgraded_card_info[10]
-        else:
-            raise KeyError(f'Card has no upgrades: {self.name}')
 
     def modify_effect(self, effect_change, modifications):
         new_eff = {}
@@ -140,7 +122,8 @@ class Card():
                 self.combat_cost = (None, None)
 
     def chaos(self):
-        self.combat_cost = (random.randint(0, 3), 'combat')
+        if self.cost not in {'U', 'X'}:
+            self.combat_cost = (random.randint(0, 3), 'Combat')
     
     def cost_change(self, cost, duration):
         self.combat_cost = (cost, duration)
@@ -161,3 +144,54 @@ class Card():
 
 def create_card(card_id, card_data: tuple):
     return Card(card_id, *card_data)
+
+def generate_card_reward(type, rareChanceOffset, numberOfOptions, character_class):
+    '''Function for generating card rewards
+    
+    ### args:
+        type: type of card reward being generated
+        rareChanceOffset: the rare chance offset modifier that modifies the chance of getting a rare card
+        numberOfOptions: the number of card rewards to pick from
+        character_class: what class the player is currently'''
+
+    card_pool = {
+        'Common': [],
+        'Uncommon': [],
+        'Rare': []
+    }
+    if character_class == 1:
+        card_pool['Common'] = common_1
+        card_pool['Uncommon'] = uncommon_1
+        card_pool['Rare'] = rare_1
+
+    baseRareChance = 0 # Initializing variable for base rare chance
+    uncommChance = 0 # Initializing variable for uncommon chance
+
+    if type == "normal": #base rare chance decided by combat type
+        baseRareChance = 3
+        uncommChance = 37
+    elif type == "elite":
+        baseRareChance = 10
+        uncommChance = 40
+    else:
+        baseRareChance = 105 #guarenteed rare for boss fights
+    
+    card_options = []
+
+    for i in range(numberOfOptions): #Runs x amount of random card choices
+        x = random.randrange(0, 100) #random num from 0-99 inclusive
+        rareChance = baseRareChance + rareChanceOffset #calculate actual rare chance
+        if x < rareChance or type == "boss": #if the random num rolled is below rare chance that means they got a rare card, or if its a boss fight
+            cardPoolSel = [item for item in card_pool['Rare'] if item not in card_options] #create a pool of cards from the correct rarity and remove dupes from cards already part of the selection
+            card_options.append(random.choice(cardPoolSel)) #random card chosen from the pool
+            if type != "boss":
+                rareChanceOff = -5 #if its not a boss card reward, reset the rare chance offset
+        elif x < uncommChance: #same as above expect for uncommons
+            cardPoolSel = [item for item in card_pool['Uncommon'] if item not in card_options]
+            card_options.append(random.choice(cardPoolSel))
+        else:  #for commons
+            cardPoolSel = [item for item in card_pool['Common'] if item not in card_options]
+            card_options.append(random.choice(cardPoolSel))
+            rareChanceOff += 1 #increase the rare chance offset when ever a common card is rolled
+    
+    return card_options

@@ -588,6 +588,11 @@ def final_gambit(x, additional, context, combat):
         energy_manip(x - additional, context, combat)
         # Refund energy back if final gambit has been played already
 
+def temporal_hiccup(context, combat):
+    '''Function for the effect of temporal hiccup'''
+    if combat.turn <= 3:
+        combat.start_of_combat == True
+
 def discover(card_type, cost, context, combat):
     '''Function for a discover effect (Select from 3 random cards of a type)
     
@@ -622,6 +627,11 @@ def discover(card_type, cost, context, combat):
     # Use method in combat for user to choose one of the three
     # Unfinished
 
+def sneko_eye(context, combat):
+    if combat.start_of_combat == True:
+        apply_debuff(['Chaotic'], [1], context, combat)
+    draw_cards(2, context, combat)
+
 def upgrade(target, context, combat):
     '''Function for upgrading cards in combat
     
@@ -644,38 +654,57 @@ def upgrade(target, context, combat):
         combat.hand.append(combat.selected)
         # Choose 1 card in hand and upgrade it
 
-def upgrade_card(cards, player):
+def upgrade_card(cards, run):
     '''Function for upgrading cards prermanatly from effects
     
     ### args:
-        cards: The cards being upgraded'''
-    player.upgrade_card(cards)
+        cards: The cards being upgraded
+        run: The run object'''
+    run.player.upgrade_card(cards)
     
-def transform_card(cards, player):
+def transform_card(cards, run):
     '''Function for transforming cards prermanatly from effects
     
     ### args:
         cards: The cards being transformed
-        player: The player object'''
+        run: The run object'''
     if cards == 'Basic':
         # If transforming a type of card
         cards = []
-        for card in player.deck:
+        for card in run.player.deck:
             if card.rarity == 0:
                 cards.append(card)
-        player.transform_card(cards)
+        run.player.transform_card(cards)
     else:
-        player.transform_card(cards)
+        run.player.transform_card(cards)
 
-def card_select(num, player, restrictions = None):
+def remove_card(cards, run):
+    '''Function for removing cards permantly from effects
+    
+    ### args:
+        cards: The cards being removed
+        run: The run object'''
+    run.player.remove_card(cards)
+
+def chaos(context, combat):
+    '''Function to randomize all costs in hand for the rest of combat
+    
+    ### args:
+        context: Info related to targets and the user
+        combat: The combat session'''
+    if combat.hand:
+        for card in combat.hand:
+            card.chaos()
+
+def card_select(num, run, restrictions = None):
     '''Function for selecting cards from the deck outside of combat
     
     ### args:
         num: Number of cards that needs selecting
         player: The character object that the player controlls
         restrictions = None: What type of cards can't be selected, none by default'''
-    if player.deck:
-        eligible_cards = [card for card in player.deck if card.type not in restrictions and card.removable == True]
+    if run.player.deck:
+        eligible_cards = [card for card in run.player.deck if card.type not in restrictions and card.removable == True]
     else:
         return []
     if not eligible_cards:
@@ -688,7 +717,7 @@ def card_select(num, player, restrictions = None):
         # Returns the # of cards selected or type of card selected depending on if more than 1 card was selected
     else:
         confirm = True
-        player.selected_cards = []
+        run.player.selected_cards = []
         index_selected = []
         # Initialize confirm selection boolean
         while confirm:
@@ -710,9 +739,9 @@ def card_select(num, player, restrictions = None):
             if select != 'cs':
                 # Select another card
                 select = int(select)
-                if eligible_cards[int(select)] in player.selected_cards:
+                if eligible_cards[int(select)] in run.player.selected_cards:
                     # Card is already selected
-                    player.selected_cards.remove(eligible_cards[select])
+                    run.player.selected_cards.remove(eligible_cards[select])
                     index_selected.remove(select)
                     # Unselected the card
                 elif len(index_selected) == num:
@@ -720,7 +749,7 @@ def card_select(num, player, restrictions = None):
                     continue
                     # Do nothing
                 else:
-                    player.selected_cards(eligible_cards[select])
+                    run.player.selected_cards(eligible_cards[select])
                     index_selected.append(select)
                     # Add the chosen card to selected
             else:
@@ -731,9 +760,9 @@ def card_select(num, player, restrictions = None):
                 else:
                     confirm = False
                     # Turns off loop
-                    return player.selected_cards
+                    return run.player.selected_cards
 
-def additonal_rewards(additional: dict, rewards):
+def additonal_rewards(additional, rewards):
     '''Function to add additional rewards
     
     ### args:
@@ -742,10 +771,31 @@ def additonal_rewards(additional: dict, rewards):
     
     ### returns:
         rewards: Updated rewards dictonary'''
-    for type, items in additional.items():
-        rewards[type] = items
+    for type in additional:
+        rewards[type] = 1
     return rewards
 
+def generate_reward(rewards, run):
+    items = {
+        'Common '
+    }
+
+def add_card_to_deck(card_id, run):
+    '''Function to call the mathod in run add a card to deck
+    
+    ### args:
+        card_id: id of the card being added
+        run: the run object'''
+    run.card_pickup_from_id(card_id)
+
+def combat_mechanic_change(mechanic, change, run):
+    '''Function to call the mathod in run to change the combat mechanic
+    
+    ### args:
+        mechanic: The mechanic that is being changed
+        change: the changes that need to be made
+        run: the run object'''
+    run.mechanics_change(mechanic, change)
 
 def split(slime_type, context, combat):
     '''Function for slime splitting into smaller slimes
@@ -761,8 +811,6 @@ def split(slime_type, context, combat):
     # Remove the big slime
     combat.split(slime_type, hp)
     # Use method in combat to add 2 more slimes
-
-
 
 def small_damage_reduction(damage, cap, *args): 
     '''Reduces damage small enought to 1
@@ -796,13 +844,13 @@ def hp_loss_reduction(hp_loss, reduction, *args): # Hp Loss Reduction Effect
     return hp_loss - reduction
     # Apply reduction
 
-def max_hp_change(amount, player):
-    '''Function for gaining max hp from certain effects
+def max_hp_change(amount, run):
+    '''Function for gaining max hp from relics or events
     
     ### args:
         amount: amount of max hp gained
         player: the player using the effect'''
-    player.increase_max_hp(amount)
+    run.player.increase_max_hp(amount)
     # Uses method in player class to perform the action
 
 def revive(revive_percentage, max_hp, *args): # Revive effect

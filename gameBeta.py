@@ -6,6 +6,7 @@ import combat_beta
 import potion_data
 import enemy_data
 import map_generation
+import reward_screen
 import events
 import shop
 import treasure
@@ -51,21 +52,6 @@ class Character:
         debuffs = str(', '.join(debuffs))
         return self.__repr__() + f'   Buffs: {buffs}   Debuffs: {debuffs}'
 
-    def gold_modification(self, amount):
-        '''Method to change amount of gold the player has
-        
-        ### args:
-            amount: amount of gold gained or lost'''
-        self.gold += amount
-        # Add amount
-
-    def relic_pickup(self, relic):
-        self.relics.append(relic)
-        relic.applyEff('pickup', None)
-    
-    def potion_pickup(self, potion):
-        if self.potions.count(None) > 0:
-            self.potions[self.potions.index(None)] = potion
     
     def gain_rand_potion(self):
         '''Method for filling a empty slot with a random potion
@@ -115,7 +101,10 @@ class Character:
                         upgrade = random.choice(self.deck)
                         # Randomly pick one
                         if upgrade.id + 100 in card_data.card_info:
-                            upgrade.upgrade_self()
+                            card_id = upgrade.id + 100
+                            card_information = list(card_data.card_info[card_id])
+                            card_information.extend([upgrade.bottled, upgrade.removable])
+                            upgrade = card_constructor.create_card(card_id, card_information)
                             validUpgrades -= 1
                             # If it can be upgraded, upgrade it and end the loop
                             break
@@ -132,7 +121,10 @@ class Character:
                         if upgrade.type == 0:
                             # Picks a random card and checks if its the right type
                             if upgrade.id + 100 in card_data.card_info:
-                                upgrade.upgrade_self()
+                                card_id = upgrade.id + 100
+                                card_information = list(card_data.card_info[card_id])
+                                card_information.extend([upgrade.bottled, upgrade.removable])
+                                upgrade = card_constructor.create_card(card_id, card_information)
                                 validUpgrades -= 1
                                 # If it can be upgraded, upgrade it and end the loop
                                 break
@@ -148,20 +140,26 @@ class Character:
                         upgrade = random.choice(self.deck)
                         if upgrade.type == 1:
                             if upgrade.id + 100 in card_data.card_info:
-                                upgrade.upgrade_self()
+                                card_id = upgrade.id + 100
+                                card_information = list(card_data.card_info[card_id])
+                                card_information.extend([upgrade.bottled, upgrade.removable])
+                                upgrade = card_constructor.create_card(card_id, card_information)
                                 break
                     # If there is a upgrade, random;y pick cards until a valid card is upgraded
                 else:
                     raise TypeError(f'Unknown Card Type: {card}')
             else:
                 if card.id + 100 in card_data.card_info:
-                    card.upgrade_self()
+                    card_id = card.id + 100
+                    card_information = list(card_data.card_info[card_id])
+                    card_information.extend([card.bottled, card.removable])
+                    card = card_constructor.create_card(card_id, card_information)
                     # If the card is referanced as an obj, upgrade it
                 else:
                     raise KeyError(f'Card has no upgrade: {card.name}')
                     # Invalid upgrade
     
-    def transform(self, cards = 'Selected'):
+    def transform_card(self, cards = 'Selected'):
         if cards == 'Selected':
             cards = self.selected_cards
         for card in cards:
@@ -178,6 +176,16 @@ class Character:
                     # Tranfrom into a card of the character class
                 else:
                     return TypeError(f'Unknown card transform: {card}')
+    
+    def remove_card(self, cards = 'Selected'):
+        '''Method for removing cards from the deck
+        
+        ### args:
+            cards: the cards being removed, the selected cards by default'''
+        if cards == 'Selected':
+            cards = self.selected_cards
+        for card in cards:
+            self.deck.remove(card)
 
     def heal(self, amount):
         '''Method to heal the player by an amount or percentage
@@ -386,7 +394,7 @@ def main_menu():
         # To be continued
 
 class Run:
-    def __init__(self, player, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5):
+    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False}):
         self.player = player
         if map_info != None:
             self.map, self.path, self.map_display = map_info
@@ -396,8 +404,10 @@ class Run:
         self.act_name = act_name
         self.room = room
         self.roomInfo = roomInfo
+        self.combats_finished = combats_finished
         self.newRun = newRun
         self.turtorial = turtorial
+        self.mechanics = mechanics
         if not self.newRun:
             self.easyPool = easyPool
             self.normalPool = normalPool
@@ -405,7 +415,6 @@ class Run:
             self.boss = boss
             self.eventList = eventList
             self.shrineList = shrineList
-            self.rareChanceOffset = rareChanceOffset
         else:
             self.easyPool = enemy_data.act_1_easy_pool()
             self.normalPool = enemy_data.act_1_pool()
@@ -414,11 +423,15 @@ class Run:
             # ADDED EVENTS AND SHRINES
             self.rareChanceOffset = rareChanceOffset
             # More to be added
+        self.rareChanceOffset = rareChanceOffset
+        self.potionChance = potionChance
+        self.cardRewardOptions = cardRewardOptions
         self.event = None
         self.combat = None
         self.shop = None
         self.treasure = None
-        self.instances = [self.shop, self.combat, self.event, self.treasure]
+        self.reward = None
+        self.instances = [self.shop, self.combat, self.event, self.treasure, self.reward]
     
     def runStart(self):
         if self.newRun == True:
@@ -432,6 +445,63 @@ class Run:
     def mapNav(self):
         return # Placeholder
     
+    def generate_reward_screen_instance(self, reward_type, set_reward = False, additonal_rewards = {}):
+        '''Method to generate a reward screen instance
+        
+        ### args:
+            reward_type: the type of event that this reward screen correspond to, Ex: normal combat, events
+            set_reward: predetermained loot, used for events and special occasions
+            additional_rewards: additive rewards from certain effects'''
+        if self.player.relics:
+            for relic in self.player.relics:
+                additonal_rewards = relic.additionalRewards(reward_type, additonal_rewards)
+        self.reward = reward_screen.RewardScreen(self.player.character_class, self.rareChanceOffset, self.potionChance, self.cardRewardOptions, reward_type, set_reward, additonal_rewards)
+
+    def mechanics_change(self, mechanic, details): 
+        '''Method to modify core mechanics of the game that relates to combat
+        
+        ### args:
+            mechanic: the mechanic that is being changed
+            details: what the mechanic will be changed to'''
+        self.mechanics[mechanic] = details
+        # Change the mechanic
+
+    def gold_modification(self, amount):
+        '''Method to change amount of gold the player has
+        
+        ### args:
+            amount: amount of gold gained or lost'''
+        for relic in self.player.relics:
+            amount = relic.valueModificationEff('gold', amount)
+        self.player.gold += amount
+        # Add amount
+
+    def card_pickup_from_id(self, card_id: int):
+        '''Method for adding a card directly to the deck
+        
+        ### args:
+            card_id: the card id'''
+        card = card_constructor.create_card(card_id, card_data.card_info[card_id])
+        self.card_pickup(card)
+
+    def card_pickup(self, card: card_constructor.Card):
+        '''Method for picking up card rewards
+        
+        ### args:
+            card: the card object being added'''
+        self.player.deck.append(card)
+
+    def relic_pickup(self, relic):
+        self.player.relics.append(relic)
+        relic.pickUp(self)
+    
+    def potion_pickup(self, potion):
+        if self.player.potions.count(None) > 0:
+            for relic in self.player.relics:
+                potion = relic.valueModificationEff('potion', potion)
+            self.player.potions[self.potions.index(None)] = potion
+        else:
+            print('Potion Slots Full!')
 
 #while combat.combat_active == True:
 #    if combat.combat_active == True:

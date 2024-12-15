@@ -16,7 +16,7 @@ class Relics: # Relic Object Class
         counter = None: If the relic is a counter type relic, this will be 0 when initialized
         counter_needed = None: The number the counter needs to reach to activate the relic's effect
         counter_type = None: The type of counter being used by the relic, Ex: resets per turn or global counter'''
-    def __init__(self, name, description, rarity, effect_type, effect_class, condition, consumable, effect_details, targets, counter = None, count_needed = None, counter_type = None):
+    def __init__(self, name, description, rarity, effect_type, effect_class, condition, consumable, effect_details, targets, energy_relic = False, counter = None, count_needed = None, counter_type = None):
         self.name = name # Name
         self.description = description
         self.rarity = rarity
@@ -29,9 +29,16 @@ class Relics: # Relic Object Class
             self.used = False
         self.effect_details = effect_details # The details of the effect, depends on the arguments of the effect_type
         self.targets = targets # Targets of the relic's effect, only applies to combat relics that effect entities, other relics will have None
+        self.energy_relic = energy_relic
         self.counter = counter
         self.count_needed = count_needed
         self.counter_type = counter_type
+
+    def __str__(self):
+        return self.name
+    
+    def __repr__(self):
+        return self.description
     
     def valueModificationEff(self, event, context): # Method to apply the effect
         if event == self.condition and self.effect_class == 'valueMod': # Check if the condition is met 
@@ -66,39 +73,61 @@ class Relics: # Relic Object Class
                     self.effect_type(*self.effect_details, context, combat)
                     self.counter = 0
 
-    def pickUp(self, player):
+    def pickUp(self, run):
         '''Method for handling on pickup effects of relics'''
         if self.effect_class == 'pickUp':
             for i in range(0, len(self.effect_type)):
-                self.effect_type[i](*self.effect_details[i], player)
+                self.effect_type[i](*self.effect_details[i], run)
     
-    def eventBonus(self, event, player):
+    def eventBonus(self, event, run):
         if self.effect_class == 'eventBonus' and self.condition == event:
-            self.effect_type(*self.effect_details, player)
+            self.effect_type(*self.effect_details, run)
     
     def additionalRewards(self, event, reward):
         if self.effect_class == 'additionalRewards' and self.condition == event:
-            self.effect_type(*self.effect_details, reward)
+            return self.effect_type(*self.effect_details, reward)
 
 def createRelic(name: str, details: tuple):
     return Relics(name, *details)
 
-def createRandomRelic():
-    return # placeholder
+def createCommon():
+    '''Function to create a random common relic'''
+    relic_name = random.choice(list(commonRelics.keys()))
+    return Relics(relic_name, commonRelics[relic_name])
+
+def createUncommon():
+    '''Function to create a random uncommon relic'''
+    relic_name = random.choice(list(UncommonRelics.keys()))
+    return Relics(relic_name, UncommonRelics[relic_name])
+
+def createRare():
+    '''Function to create a random rare relic'''
+    relic_name = random.choice(list(rareRelics.keys()))
+    return Relics(relic_name, rareRelics[relic_name])
+
+def spawnRelic(common = 50, uncommon = 33):
+    '''Function to generate a random relic for elite fights'''
+    rng = random.randint(1, 100)
+    if rng <= common:
+        return createCommon()
+    elif rng <= common + uncommon:
+        return createUncommon()
+    else:
+        return createRare()
 
 Relics
 bossRelics = {
     'Pandora\'s Box': ('Upon pickup, Transform all Basic cards.', 1, [effects.transform_card], 'pickUp', None, False, [['Basic']], 0),
     'Astrolabe': ('Upon pickup, choose and Transfrom 3 cards, then Upgrade them.', 1, [effects.card_select, effects.transform_card, effects.upgrade_card], 'pickUp', None, False, [[3], ['Selected'], ['Selected']], 0),
-    'Rabbit\'s Foot': ('Elites now drop 2 relics instead of 1.', 1, 'Black Start', 'Special', 'Elite', False, 'Relic', 0),
+    'Rabbit\'s Foot': ('Elites now drop 2 relics instead of 1.', 1, effects.additonal_rewards, 'additionalRewards', 1, False, ['Relic'], 0),
     'Alchemical Workbench': ('Potion effects are doubled.', 1, 'Sacred Bark', 'Special', None, False, 'Potion', 0), 
-    'Stasis Chamber': ('You no longer discard your hand at the end of your turn.', 1),
-    'Cursed Talisman': ('Upon pickuup, obtain 1 common relic, 1 uncommon relic, 1 rare relic and a Unique Curse.', 1),
-    'Eye of Eris': ('Become Confused at the start of combat. Draw 2 additional cards at the start of every turn.', 1),
-    'House Deed': ('Upon pickup, obtain 2 potions, gain 100 Gold. increase your Max Hp by 10, Upgrade a card and obtain a random card.', 1),
-    'Bag of Holding': ('Upon pickup, choose and Remove 2 cards.', 1),
-    'Threat Detector': ('During Elite and Boss combats, gain 1 Energy at the start of each turn.', 1),
-    'Temporal Hiccup': ('For the first 3 turns of combat, your turns are treated as the start of combat.', 1 ),
+    'Stasis Chamber': ('You no longer discard your hand at the end of your turn.', 1, [effects.combat_mechanic_change], 'pickUp', None, False, [['Turn_End_Discard', False]], 0),
+    'Cursed Talisman': ('Upon pickup, obtain 1 common relic, 1 uncommon relic, 1 rare relic and a Unique Curse.', 1, [effects.add_card_to_deck, effects.generate_reward], 'pickUp', None, False [[21], ['Bell']], 0),
+    'Eye of Eris': ('Become Confused at the start of combat. Draw 2 additional cards at the start of every turn.', 1, effects.sneko_eye, 'combatAct', 'Turn Start', False, [], 0),
+    'House Deed': ('Upon pickup, obtain 2 potions, gain 100 Gold. increase your Max Hp by 10, Upgrade a card and obtain a random card.', 1, [effects.upgrade_card, effects.max_hp_change, effects.generate_reward], 'pickUp', None, False, [['Card'], [10], ['Tiny House']], 0),
+    'Bag of Holding': ('Upon pickup, choose and Remove 2 cards.', 1, [effects.card_select, effects.remove_card], 'pickUp', None, False, [['Selected']], 0),
+    'Threat Detector': ('During Elite and Boss combats, gain 1 Energy at the start of each turn.', 1, [], None, None, False, [], 0, 'Elite'),
+    'Temporal Hiccup': ('For the first 3 turns of combat, your turns are treated as the start of combat.', 1 , effects.temporal_hiccup, 'combatAct', 'Turn Start', False, [], 0),
     'Coffee Mug': ('Gain 1 Energy at thes start of each turn. You can no longer Rest at Campfires.', 1),
     'Molten Hammer': ('Gain 1 Energy at thes start of each turn. You can no longer Upgrade at Campfires.', 1),
     'Erosive Slime': ('Gain 1 Energy at thes start of each turn. You can no longer gain Gold.', 1),
@@ -106,7 +135,8 @@ bossRelics = {
     'Philosopher\'s Stone': ('Gain 1 Energy at thes start of each turn. All enemies gain 1 Strength at the start of combat.', 1),
     'Holographic Eyeglass': ('Gain 1 Energy at thes start of each turn. On card reward screens, you recieve 2 less options to pick from.', 1),
     'Cursed Tome': ('Gain 1 Energy at thes start of each turn. Upon opening a non-boss chest, gain a random Curse.', 1),
-    'Eye of Átē': ('Gain 1 Energy at thes start of each turn. You can no longer see enemy intent. (not recommended for unexperienced players)', 1)
+    'Eye of Átē': ('Gain 1 Energy at thes start of each turn. You can no longer see enemy intent. (not recommended for unexperienced players)', 1),
+    'Sozu': ('Gain 1 Energy at thes start of each turn. You can no longer pickup Potions. ', 1)
 }
 commonRelics = {
     'Dumbbell': ('At the start of combat, gain 1 Strength.', 4),

@@ -5,12 +5,12 @@ import card_constructor
 import random
 
 class Combat:
-    def __init__(self, player, deck, enemies, combat_type, mechanics):
-        self.player = player # The Player 
+    def __init__(self, run, player, deck, enemies, combat_type):
+        self.run = run # The current run
+        self.player = player # The Player, can also be accessed through run but this is here for ease of use
         self.enemies = enemies # The Enemies in a combat encounter
         self.deck = deck # The player's deck
         self.combat_type = combat_type # The Type of combat, (Normal, Elite, Boss)
-        self.mechanics = mechanics # {Intent: True/False, Ordered_Draw_Pile: True/False, Turn_End_Discard: True/False, Playable_Curse: Effect/False, Playable_Status: True/False, Exhaust_Chance: %, Cards_per_Turn: False/int}
         self.turn = 0 # Turn counter
         self.start_of_combat = True # Whether its the start of combat
         self.draw_pile = deck # Draw pile
@@ -70,10 +70,14 @@ class Combat:
         '''
         for relic in self.player.relics:
             # Goes throught every relic
-            if relic.effect_class == 'Energy Relic':
+            if relic.energy_relic == True:
                 # If its an energy relic
-                self.energy_cap += 1
-                # Add 1 energy to the cap
+                if relic.energy_relic != 'Elite':
+                    self.energy_cap += 1
+                else:
+                    if self.combat_type == 'Elite':
+                        self.energy_cap += 1
+                # Add 1 energy to the cap if its a normal energy relic and add 1 for slavers collar in elites
 
     def curse_count(self):
         '''Counts the number of curses in play'''
@@ -233,6 +237,9 @@ class Combat:
             else:
                 self.hand.append(self.draw_pile[-1])
                 # "draw" a card
+                if self.player.debuffs['Chaotic'] > 0:
+                    self.hand[-1].chaos()
+                # If the player is chaotic, randomize the cost of drawn cards
                 if self.hand[-1].effect:
                     if 'Drawn' in self.hand[-1].effect:
                         # If the card has a when drawn effect
@@ -701,9 +708,9 @@ class Combat:
                 self.can_play_card = False
                 # Disable the ability to play cards
             else:
-                if self.mechanics['Cards_per_Turn'] != False:
+                if self.run.mechanics['Cards_per_Turn'] != False:
                     # Checks for if there is a cards per turn limit set
-                    if self.cards_played < self.mechanics['Cards_per_Turn']:
+                    if self.cards_played < self.run.mechanics['Cards_per_Turn']:
                         # If its below the amount
                         self.can_play_card = True
                         # can play cards
@@ -798,6 +805,7 @@ class Combat:
     def escape(self):
         '''Method for ending combat without killing all enemies'''
         if self.combat_type != 'Boss':
+            self.player.thieved = 0
             self.escaped = True
             self.combat_active = False
         else:
@@ -863,7 +871,7 @@ class Combat:
             # Add the card to the discard pile
         elif self.playing.cost == 'U':
             # If the card being played is Unplayable
-            if self.playing.type == 3 and self.mechanics['Playable_Status']:
+            if self.playing.type == 3 and self.run.mechanics['Playable_Status']:
                 # If the type of card is a status and the mechanic Playable_Status is activated
                 self.exhaust_pile.append(self.playing)
                 # Add the card to the exhaust pile
@@ -871,9 +879,9 @@ class Combat:
                 # Empty the playing card
                 self.passive_check_and_exe('Exhaust')
                 # Check for effects
-            elif self.playing.type == 4 and self.mechanics['Playable_Curse']:
+            elif self.playing.type == 4 and self.run.mechanics['Playable_Curse']:
                 # If the type of card is a Curse and the mechanic Playable_Curse is activated
-                for effect, details in self.mechanics['Playable_Curse'].items():
+                for effect, details in self.run.mechanics['Playable_Curse'].items():
                     effect(*details, context, self)
                     # Execute the effect for playing a curse
                 self.exhaust_pile.append(self.playing)
@@ -998,6 +1006,7 @@ class Combat:
         # Set cards played to 0
         self.player.block = 0
         # Lose all block at the start of turn
+        self.passive_check_and_exe('Turn Start')
         if self.start_of_combat == True:
             # If its the start of combat
             self.get_energy_cap()
@@ -1012,7 +1021,6 @@ class Combat:
         # Said buff resets
         self.player.debuffs['Draw Reduction'] = 0
         # Said debuff resets
-        self.passive_check_and_exe('Turn Start')
         # Check for powers that activate at the start of a turn
         self.display_intent()
         self.player_turn()
@@ -1020,7 +1028,7 @@ class Combat:
 
     def display_intent(self):
         '''Method for displating all enemy intents to the player'''
-        if self.mechanics['Intent'] == True:
+        if self.run.mechanics['Intent'] == True:
             # If intents are enabled
             for enemy in self.enemies:
                 # for every enemy
@@ -1091,7 +1099,7 @@ class Combat:
                     cost = card.get_cost(self)
                     # Retreive the cost of the card
                     if cost == 'U':
-                        if (self.mechanics['Playable_Curse'] == True and card.type == 4) or (self.mechanics['Playable_Status'] == True and card.type == 3):
+                        if (self.run.mechanics['Playable_Curse'] == True and card.type == 4) or (self.run.mechanics['Playable_Status'] == True and card.type == 3):
                             # If its an unplayble card but the mechanics permit it
                             self.playing = card
                             self.hand.remove(card)
@@ -1151,7 +1159,10 @@ class Combat:
                 # Go through every card
                 self.if_card_cond(card, 'Turn End')
                 # Execute turn end effects
-            if self.mechanics['turn_end_discard']:
+                if card.combat_cost[1] == 'Turn':
+                    card.combat_cost == (None, None)
+                # update card costs
+            if self.run.mechanics['turn_end_discard']:
                 # Check if the player needs to discard their hand
                 if self.retain > 0:
                     self.soft_card_select(self.retain, self.hand)
