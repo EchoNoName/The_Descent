@@ -250,15 +250,21 @@ def havoc(number_of_cards : int, special : bool, context, combat):
     combat.havoc(number_of_cards, special)
     # Use the havoc method in combat to perform this effect
 
-def entropic(player):
+def potion_slot_addition(slots, run):
+    addition = []
+    for i in range(0, slots):
+        addition.append(None)
+    run.player.potions.extend(addition)
+
+def entropic(run):
     '''Function for filling all empty potion slots with random potions
     
     ### args:
         player: The player using the effect'''
-    empty_slots = player.potions.count(None)
+    empty_slots = run.player.potions.count(None)
     # get number of empty slots
     for i in range(0, empty_slots):
-        player.gain_rand_potion()
+        run.gain_rand_potion()
         # Fill all empty slots
 
 def purity(context, combat):
@@ -283,13 +289,13 @@ def bandit_escape(context, combat):
     combat.bandit_run(context)
     # Use bandit run method in combat
 
-def blood(amount, player):
+def blood(amount, run):
     '''Function for healing for a percentage of hp
     
     ### args:
         amount: the percentage that needs to be healed
         player: The player using the effect'''
-    player.heal(amount)
+    run.player.heal(amount)
     # heal for the percentage
 
 def gamble(context, combat):
@@ -588,10 +594,28 @@ def final_gambit(x, additional, context, combat):
         energy_manip(x - additional, context, combat)
         # Refund energy back if final gambit has been played already
 
+def combat_gold_gain(amount, context, combat):
+    combat.gold_gain(amount)
+    
+def card_removal_cost_set(amount, run):
+    return amount
+
 def temporal_hiccup(context, combat):
     '''Function for the effect of temporal hiccup'''
     if combat.turn <= 3:
         combat.start_of_combat == True
+
+def no_block_buffer(amount, context, combat):
+    '''Function for gaining block at the end of the turn if the player has no block
+    
+    ### args:
+        amount: the amount of block to gain
+        context: Information related to the current combat 
+        combat: The current combat'''
+    if combat.player.block == 0:
+        # If the player has no block
+        block_gain_power(amount, context, combat)
+        # Gain block
 
 def discover(card_type, cost, context, combat):
     '''Function for a discover effect (Select from 3 random cards of a type)
@@ -626,6 +650,17 @@ def discover(card_type, cost, context, combat):
     combat.discover(cards, cost)
     # Use method in combat for user to choose one of the three
     # Unfinished
+
+def eventChange(encounter, run):
+    '''Function to change the next event
+    
+    ### args:
+        encounter: the event to change to
+        run: the run object'''
+    run.eventList.append(encounter)
+
+def campfire_chance(action: str, run):
+    run.campfire_restrict(action)
 
 def sneko_eye(context, combat):
     if combat.start_of_combat == True:
@@ -696,7 +731,22 @@ def chaos(context, combat):
         for card in combat.hand:
             card.chaos()
 
-def card_select(num, run, restrictions = None):
+def effect_for_card_type_not_played(card_type: int, effects: list, effect_details: list, context, combat):
+    '''Function for executing effects if a certain type of card was not played
+    
+    ### args:
+        card_type: the type of card
+        effects: a list of effect funtions
+        effect_details: a list of the arguments for the effects
+        context: Info related to targets and the user
+        combat: The combat session'''
+    if card_type not in combat.card_type_played:
+        for i in range(0, len(effects)):
+            effects[i](*effect_details[i], context, combat)
+
+def bottle()
+
+def card_select(num, restrictions, run):
     '''Function for selecting cards from the deck outside of combat
     
     ### args:
@@ -786,7 +836,18 @@ def add_card_to_deck(card_id, run):
     ### args:
         card_id: id of the card being added
         run: the run object'''
-    run.card_pickup_from_id(card_id)
+    if isinstance(card_id, int):
+        run.card_pickup_from_id(card_id)
+    else:
+        card_id = card_constructor.random_card(card_id, run.player.character_class)
+        run.card_pickup_from_id(card_id)
+
+def heal_player(amount, run):
+    '''Function to heal the player from effects'''
+    run.player.heal(amount)
+
+def card_reward_option_mod(mod, run):
+    run.card_reward_option_mod(mod)
 
 def combat_mechanic_change(mechanic, change, run):
     '''Function to call the mathod in run to change the combat mechanic
@@ -829,6 +890,23 @@ def small_damage_reduction(damage, cap, *args):
     else:
         return damage
         # returns damage unchanged
+
+def gold_gain(amount, run):
+    '''Function for gaining gold outseide of combat
+    
+    ### args:
+        amount: the amoung being gained
+        run: The run object'''
+    run.gold_modification(amount)
+
+def gold_amount_mod(amount, mod, *args):
+    return max(0, amount + mod)
+
+def potion_to_nothing(*args):
+    return None
+
+def card_to_nothing(*args):
+    return None
 
 def hp_loss_reduction(hp_loss, reduction, *args): # Hp Loss Reduction Effect
     '''Reduces Hp Loss

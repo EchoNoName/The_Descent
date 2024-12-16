@@ -26,12 +26,42 @@ class Combat:
         self.can_play_card = True # If the player can play cards
         self.combat_active = True # Whether the player is in this combat
         self.powers = [] # The powers the player has gained
+        self.card_type_played = {}
         self.enemy_turn = False
         self.escaped = False
     
     def combat_start(self):
         '''Method for starting combat'''
+        if self.run.mechanics['Insect'] == True and self.combat_type == 'Elite':
+            for enemy in self.enemies:
+                enemy.hp = int(enemy.hp * 0.75)
+        # check for preserved insect condition
+        innate_or_bottled = []
+        for card in reversed(self.draw_pile):
+            if card.innate == True or card.bottled == True:
+                innate_or_bottled.append(card)
+                self.draw_pile.remove(card)
+        random.shuffle(self.draw_pile)
+        random.shuffle(innate_or_bottled)
+        self.draw_pile.extend(innate_or_bottled)
+        innate_or_bottled = []
+        # put all innate and bottled cards at the top of the draw pile
         self.player_turn_start()
+
+    def counter_reset(self):
+        '''Method for resetting turn counters'''
+        if self.player.relics:
+            for relic in self.player.relics:
+                if relic.counter != None:
+                    if relic.counter_type != 'global':
+                        relic.counter = 0
+
+    def bonusEff(self, event):
+        if self.player.relics:
+            for relic in self.player.relics:
+                # Go through all relics
+                relic.eventBonus(event, self.run)
+                # Execute condisional effects of relics
 
     def passive_check_and_exe(self, cond: str):
         '''Method to check if a power's condition or relic's condition is met and activates its effect if it is
@@ -696,6 +726,13 @@ class Combat:
         self.energy = max(0, self.energy + amount)
         # Adds amount to energy, if energy becomes negative, becomes 0 instead
 
+    def gold_gain(self, amount: int):
+        '''Method for player gaining gold in the middle of combat
+        
+        ### args:
+            amount: amount of gold gained'''
+        self.run.gold_modification(amount)
+
     def card_limit(self, limit = False):
         '''Checks for if the player can play anymore cards
         
@@ -941,10 +978,23 @@ class Combat:
         if self.playing.combat_cost[1] == 'Played':
             self.playing.combat_cost = (None, None)
         # Update cost of cards after being played
+        if self.playing.type == 0:
+            self.passive_check_and_exe('Attack Played')
+        elif self.playing.type == 1:
+            self.passive_check_and_exe('Skill Played')
+        elif self.playing.type == 2:
+            self.passive_check_and_exe('Power Played')
+        elif self.playing.type == 3:
+            self.passive_check_and_exe('Status Played')
+        elif self.playing.type == 4:
+            self.passive_check_and_exe('Curse Played')
+        else:
+            raise TypeError(f'Card type not found: {self.playing.type}')
         self.playing = None
         # Empty the currently playing card
         self.cards_played += 1
         # Increase the amount of cards played by 1
+        self.passive_check_and_exe('Card Played')
         if self.hand:
             # if there are cards in hand
             for card in self.hand:
@@ -983,6 +1033,7 @@ class Combat:
                 for effect, details in potion.effect.items():
                     effect(*details, context, self)
                 # Execute effects
+            self.bonusEff('Used Potion')
             self.player.potions.remove(potion)
             # Remove the potion from combat and the player object
         elif potion.time_of_use == 'all':
@@ -998,10 +1049,16 @@ class Combat:
         # Player turn starts
         self.can_play_card = True
         # Set the ability to play cards to be true
+        self.card_type_played = {}
+        # Reset the card types that were played
         self.energy = 0
         # Set energy to 0
         self.turn += 1
         # Increase turn counter
+        if self.player.relics:
+            for relic in self.player.relics:
+                relic.turnEff(self)
+        # Execute effects for specific turns
         self.cards_played = 0
         # Set cards played to 0
         self.player.block = 0
@@ -1015,6 +1072,9 @@ class Combat:
             # Execute start of combat effects of passives
         self.energy += self.energy_cap
         # Add energy cap to energy
+        self.energy += self.player.buffs['Energized']
+        self.player.buffs['Energized'] == 0
+        # Add extra energy equal to energized
         self.draw(5 + self.player.buffs['Draw Card'] - self.player.debuffs['Draw Reduction'])
         # Draw 5 cards for the start of turn, modified depending on buffs and debuffs that affect draw
         self.player.buffs['Draw Card'] = 0
@@ -1197,7 +1257,8 @@ class Combat:
             self.player.lose_buff('Strength', self.player.debuffs['Chained'])
             self.player.debuffs['Chained'] = 0
         # Chained effect
-        self.enemy_turn_start
+        self.counter_reset()
+        self.enemy_turn_start()
         
     def discover(self, cards, cost):
         '''Ask user to add to hand one of the 3 cards given
@@ -1249,7 +1310,7 @@ class Combat:
             # For every enemy
             enemy.turn_start()
             # Execute the start of turn method
-        self.enemy_action
+        self.enemy_action()
 
     def enemy_turn_end(self):
         '''Method for ending enemy's turn'''
@@ -1257,7 +1318,7 @@ class Combat:
             # For every enemy
             enemy.turn_end()
             # Execute the end of turn method
-        self.player_turn_start
+        self.player_turn_start()
 
     def enemy_action(self):
         '''Execute all enemy actions
@@ -1282,9 +1343,9 @@ class Combat:
                 # Execute the ffects
             enemy.intent = None
             # Clear intent
-        self.resolve_action
+        self.resolve_action()
         # Resolves action
-        self.enemy_turn_end
+        self.enemy_turn_end()
 
     def bandit_run(self, context):
         '''Method for a bandit escape

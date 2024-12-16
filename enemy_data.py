@@ -1628,3 +1628,27 @@ def generate_act1_pools():
     }
     
     return act1_fights
+
+def act_1_easy_pool():
+    '''Function to generate the encounter order'''
+    pool = ['Single Cultist', 'Single Jawworm', '2 Slimes', '2 Louses']
+    random.shuffle(pool)
+    return pool
+    
+def act_1_normal_pool():
+    pool = ['5 Slimes', 'Blue Spider', 'Red Spider', '2 Corpes', 'Single Looter', '4 Goblins', 'Single LSlime', '3 Louses', 'Forest and Human', 'Double Forest']
+    random.shuffle(pool)
+    return pool
+
+def act_1_elite_pool():
+    pool = ['Goblin Giant', 'Giant Louse', 'Sentries']
+    random.shuffle(pool)
+    pool2 = ['Goblin Giant', 'Giant Louse', 'Sentries']
+    random.shuffle(pool2)
+    pool.extend(pool2)
+    return pool
+
+def act_1_boss_pool():
+    pool = ['Ancient Mech']
+    random.shuffle(pool)
+    return pool

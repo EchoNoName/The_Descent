@@ -51,32 +51,6 @@ class Character:
                 debuffs.append(f'{debuff}: {amount}')
         debuffs = str(', '.join(debuffs))
         return self.__repr__() + f'   Buffs: {buffs}   Debuffs: {debuffs}'
-
-    
-    def gain_rand_potion(self):
-        '''Method for filling a empty slot with a random potion
-        '''
-        potion_name, potion_details = random.choice(list(potion_data.potions.items()))
-        potion = potion_data.Potion(potion_name, *potion_details)
-        self.potion_pickup(potion)
-        # Fill the an empty potion slot with a random potion if there is one
-    
-    def use_potion(self, potion):
-        '''Method to use non combat based potions
-        
-        ### args:
-            potion: The potion to be used
-        '''
-        i = 1
-        for relic in self.relics:
-            if relic.effect_type == 'Sacred Bark':
-                i = 2
-                break
-        for times in range(0, i):
-            for effect, details in potion.effect.items():
-                    effect(*details, self)
-                # Execute effects
-        self.potions.remove(potion)
     
     def upgrade_card(self, cards = 'Selected'):
         '''Method to upgrading cards
@@ -394,7 +368,7 @@ def main_menu():
         # To be continued
 
 class Run:
-    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False}):
+    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False}, campfire = {'Rest': True, 'Smith': True}):
         self.player = player
         if map_info != None:
             self.map, self.path, self.map_display = map_info
@@ -407,7 +381,9 @@ class Run:
         self.combats_finished = combats_finished
         self.newRun = newRun
         self.turtorial = turtorial
+        self.encounterChance = encounterChance
         self.mechanics = mechanics
+        self.campfire = campfire
         if not self.newRun:
             self.easyPool = easyPool
             self.normalPool = normalPool
@@ -417,12 +393,15 @@ class Run:
             self.shrineList = shrineList
         else:
             self.easyPool = enemy_data.act_1_easy_pool()
-            self.normalPool = enemy_data.act_1_pool()
-            self.elitePool = enemy_data.act_1_elite()
-            self.boss = enemy_data.act_1_boss()
+            self.normalPool = enemy_data.act_1_normal_pool()
+            self.elitePool = enemy_data.act_1_elite_pool()
+            self.boss = enemy_data.act_1_boss_pool()
+            self.eventList = self.generate_event_list
             # ADDED EVENTS AND SHRINES
-            self.rareChanceOffset = rareChanceOffset
             # More to be added
+        self.combat_pool_details = {}
+        if self.act == 1:
+            self.combat_pool_details = enemy_data.generate_act1_pools()
         self.rareChanceOffset = rareChanceOffset
         self.potionChance = potionChance
         self.cardRewardOptions = cardRewardOptions
@@ -457,6 +436,21 @@ class Run:
                 additonal_rewards = relic.additionalRewards(reward_type, additonal_rewards)
         self.reward = reward_screen.RewardScreen(self.player.character_class, self.rareChanceOffset, self.potionChance, self.cardRewardOptions, reward_type, set_reward, additonal_rewards)
 
+    def bonusEff(self, event):
+        if self.player.relics:
+            for relic in self.player.relics:
+                # Go through all relics
+                relic.eventBonus(event, self.run)
+                # Execute condisional effects of relics
+
+    def card_reward_option_mod(self, mod):
+        '''Method to increase or decrease the amount of cards avalible at card rewards'''
+        self.cardRewardOptions += mod
+
+    def campfire_restrict(self, action):
+        '''Method to Disable an action at campfires'''
+        self.campfire[action] == False
+
     def mechanics_change(self, mechanic, details): 
         '''Method to modify core mechanics of the game that relates to combat
         
@@ -482,7 +476,12 @@ class Run:
         ### args:
             card_id: the card id'''
         card = card_constructor.create_card(card_id, card_data.card_info[card_id])
-        self.card_pickup(card)
+        if card.type == 4:
+            if self.player.relics:
+                for relic in self.player.relics:
+                    card = relic.valueModificationEff('curse', card)
+        if card != None:
+            self.card_pickup(card)
 
     def card_pickup(self, card: card_constructor.Card):
         '''Method for picking up card rewards
@@ -499,9 +498,102 @@ class Run:
         if self.player.potions.count(None) > 0:
             for relic in self.player.relics:
                 potion = relic.valueModificationEff('potion', potion)
-            self.player.potions[self.potions.index(None)] = potion
+            self.player.potions[self.player.potions.index(None)] = potion
         else:
             print('Potion Slots Full!')
+
+    def gain_rand_potion(self):
+        '''Method for filling a empty slot with a random potion
+        '''
+        potion_name, potion_details = random.choice(list(potion_data.potions.items()))
+        potion = potion_data.Potion(potion_name, *potion_details)
+        self.potion_pickup(potion)
+        # Fill the an empty potion slot with a random potion if there is one
+    
+    def use_potion(self, potion):
+        '''Method to use non combat based potions
+        
+        ### args:
+            potion: The potion to be used
+        '''
+        i = 1
+        for relic in self.relics:
+            if relic.effect_type == 'Sacred Bark':
+                i = 2
+                break
+        for times in range(0, i):
+            for effect, details in potion.effect.items():
+                    effect(*details, self)
+                # Execute effects
+        self.bonusEff('Used Potion')
+        self.player.potions.remove(potion)
+
+    def get_enemies(self, combat = 'normal'):
+        enemies = []
+        cap = 0
+        if self.act == 1:
+            cap = 3
+        if combat == 'elite':
+            enemies = self.combat_pool_details['elite'][self.elitePool[-1]]
+            self.elitePool.pop(-1)
+        elif combat == 'boss':
+            enemies = self.combat_pool_details['boss'][self.boss[-1]]
+        elif self.combats_finished <= cap:
+            enemies = self.combat_pool_details['easy'][self.easyPool[-1]]
+            self.easyPool.pop(-1)
+        else:
+            enemies = self.combat_pool_details['normal'][self.normalPool[-1]]
+            self.normalPool.pop(-1)
+        return enemies
+
+    def start_combat(self):
+        self.combat.combat_start()
+        self.combats_finished += 1
+
+    def generate_event_list(self):
+        '''Method to generate the list of random events the player will encouter'''
+        encounter_list = []
+        combat_chance = 10
+        treasure_chance = 2
+        shop_chance = 3
+        for i in range(0, 50):
+            rng = random.randint(1, 100)
+            if rng <= combat_chance:
+                encounter_list.append('combat')
+                combat_chance = 10
+                treasure_chance += 2
+                shop_chance += 3
+            elif rng <= combat_chance + treasure_chance:
+                encounter_list.append('treasure')
+                treasure_chance = 2
+                combat_chance += 10
+                shop_chance += 3
+            elif rng <= combat_chance + treasure_chance + shop_chance:
+                encounter_list.append('shop')
+                combat_chance += 10
+                treasure_chance += 2
+                shop_chance = 3
+            else:
+                combat_chance += 10
+                treasure_chance += 2
+                shop_chance += 3
+                rng = random.randint(1, 100)
+                if rng <= 95:
+                    encounter_list.append('event')
+                else:
+                    encounter_list.append('shrine')
+        return encounter_list
+
+    def unknown_location(self):
+        event = self.eventList[-1]
+        while event == 'combat' and self.mechanics['Random_Combat'] == False:
+            self.eventList.pop(-1)
+            event = self.eventList[-1]
+        if event == 'combat':
+            self.combat = combat_beta.Combat(self, self.player, copy.deepcopy(self.player.deck), self.get_enemies(), 'Normal')
+        elif event == 'treasure':
+            self.treasure = treasure # placeHolder to be continued
+
 
 #while combat.combat_active == True:
 #    if combat.combat_active == True:
