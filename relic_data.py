@@ -199,9 +199,9 @@ commonRelics = {
 }
 UncommonRelics = {
     'Horse Wagon': ('Gain 125 Gold. Your next Event room will always be a shop.', 3, [effects.gold_gain, effects.eventChange], 'pickUp', None, False, [[125], ['shop']], 0),
-    'Bottled Flames': ('Upon pickup, choose an Attack card. Start combat with that card in your hand.', 3),
-    'Bottled Lightning': ('Upon pickup, choose an Skill card. Start combat with that card in your hand.', 3),
-    'Bottled Storm': ('Upon pickup, choose an Power card. Start combat with that card in your hand.', 3),
+    'Bottled Flames': ('Upon pickup, choose an Attack card. Start combat with that card in your hand.', 3, [effects.bottle], 'pickUp', None, False, [[0]], 0),
+    'Bottled Lightning': ('Upon pickup, choose an Skill card. Start combat with that card in your hand.', 3, [effects.bottle], 'pickUp', None, False, [[1]], 0),
+    'Bottled Storm': ('Upon pickup, choose an Power card. Start combat with that card in your hand.', 3, [effects.bottle], 'pickUp', None, False, [[2]], 0),
     'Molten Egg': ('Whenever an Attack card is added to your deck, it is Upgraded.', 3),
     'Toxic Egg': ('Whenever an Skill card is added to your deck, it is Upgraded.', 3),
     'Frozen Egg': ('Whenever an Power card is added to your deck, it is Upgraded.', 3),
@@ -251,7 +251,7 @@ rareRelics = {
     'Pot': ('Every 6 turns, gain 1 Intangible.', 2)
 }
 shopRelics = {
-    'Treasure Map': ('Your next Event room will always be a Chest.', 5),
+    'Treasure Map': ('Your next Event room will always be a Treasure.', 5),
     'Damaged Duplicator': ('Upon pickup, duplicate a card in your deck.', 5),
     'Biomechanical Arm': ('At the start of combat, gain 1 Artifact.', 5),
     'The Third Eye': ('When viewing your draw pile, it is now shown in order.', 5),

@@ -528,6 +528,12 @@ class Run:
         self.bonusEff('Used Potion')
         self.player.potions.remove(potion)
 
+    def bottle(self):
+        '''Method to add bottled tag to selected cards'''
+        if self.player.selected_cards:
+            for card in self.player.selected_cards:
+                card.bottled = True
+
     def get_enemies(self, combat = 'normal'):
         enemies = []
         cap = 0

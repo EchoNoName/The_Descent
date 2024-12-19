@@ -1,4 +1,3 @@
-import effects
 import enemy_data
 import card_data
 import card_constructor
