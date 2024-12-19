@@ -39,7 +39,7 @@ class Relics: # Relic Object Class
     
     def __repr__(self):
         return self.description
-    
+
     def valueModificationEff(self, event, context): # Method to apply the effect
         if event == self.condition and self.effect_class == 'valueMod': # Check if the condition is met 
             return self.effect_type(context, *self.effect_details) # Apply the effect
