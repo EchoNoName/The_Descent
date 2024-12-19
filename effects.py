@@ -744,7 +744,23 @@ def effect_for_card_type_not_played(card_type: int, effects: list, effect_detail
         for i in range(0, len(effects)):
             effects[i](*effect_details[i], context, combat)
 
-def bottle()
+def bottle(type, run):
+    '''Function for bottled card effects from relics, causes a card to become innate
+    
+    ### args:
+        type: the type of card to be bottled
+        run: the run object'''
+    if type == 0:
+        if card_select(1, {1, 2, 3, 4}, run) != False:
+            run.bottle()
+    elif type == 1:
+        if card_select(1, {0, 2, 3, 4}, run) != False:
+            run.bottle()
+    elif type == 2:
+        if card_select(1, {0, 1, 3, 4}, run) != False:
+            run.bottle()
+    else:
+        raise TypeError(f'Unknown card type_id: {type}')
 
 def card_select(num, restrictions, run):
     '''Function for selecting cards from the deck outside of combat
@@ -753,21 +769,22 @@ def card_select(num, restrictions, run):
         num: Number of cards that needs selecting
         player: The character object that the player controlls
         restrictions = None: What type of cards can't be selected, none by default'''
+    run.player.selected_cards = []
     if run.player.deck:
         eligible_cards = [card for card in run.player.deck if card.type not in restrictions and card.removable == True]
     else:
         return []
     if not eligible_cards:
         # If there are no cards to select from
-        return None
+        return False
         # Doesn't select anything
     elif len(eligible_cards) <= num:
         # If the # of cards in pile is equal to or less then the # of cards that needs to be selected
+        run.player.selected_cards.extend(eligible_cards)
         return eligible_cards
         # Returns the # of cards selected or type of card selected depending on if more than 1 card was selected
     else:
         confirm = True
-        run.player.selected_cards = []
         index_selected = []
         # Initialize confirm selection boolean
         while confirm:
