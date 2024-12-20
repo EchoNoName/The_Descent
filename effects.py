@@ -744,6 +744,10 @@ def effect_for_card_type_not_played(card_type: int, effects: list, effect_detail
         for i in range(0, len(effects)):
             effects[i](*effect_details[i], context, combat)
 
+def egg(type, run):
+    '''Function for adding a egg relic'''
+    run.egg_relic(type)
+
 def bottle(type, run):
     '''Function for bottled card effects from relics, causes a card to become innate
     
@@ -863,6 +867,11 @@ def heal_player(amount, run):
     '''Function to heal the player from effects'''
     run.player.heal(amount)
 
+def eternal_feather(run):
+    '''Function for healing the player when they enter a fireplace for every 5 cards they have'''
+    amount = len(run.player.deck) // 5
+    heal_player(amount, run)
+
 def card_reward_option_mod(mod, run):
     run.card_reward_option_mod(mod)
 
@@ -874,6 +883,14 @@ def combat_mechanic_change(mechanic, change, run):
         change: the changes that need to be made
         run: the run object'''
     run.mechanics_change(mechanic, change)
+
+def additional_campfire(action, run):
+    run.campfire_add_action(action)
+
+def meat(run):
+    '''Function for the meat on the bone effect'''
+    if run.player.maxHp // 2 >= run.player.hp:
+        heal_player(12, run)
 
 def split(slime_type, context, combat):
     '''Function for slime splitting into smaller slimes

@@ -368,7 +368,7 @@ def main_menu():
         # To be continued
 
 class Run:
-    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False}, campfire = {'Rest': True, 'Smith': True}):
+    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False}, campfire = {'Rest': True, 'Smith': True}, eggs = {}):
         self.player = player
         if map_info != None:
             self.map, self.path, self.map_display = map_info
@@ -391,6 +391,7 @@ class Run:
             self.boss = boss
             self.eventList = eventList
             self.shrineList = shrineList
+            self.eggs = eggs
         else:
             self.easyPool = enemy_data.act_1_easy_pool()
             self.normalPool = enemy_data.act_1_normal_pool()
@@ -449,7 +450,11 @@ class Run:
 
     def campfire_restrict(self, action):
         '''Method to Disable an action at campfires'''
-        self.campfire[action] == False
+        self.campfire[action] = False
+
+    def campfire_add_action(self, action):
+        '''Method to add an action to a campfire'''
+        self.campfire[action] = True
 
     def mechanics_change(self, mechanic, details): 
         '''Method to modify core mechanics of the game that relates to combat
@@ -488,7 +493,17 @@ class Run:
         
         ### args:
             card: the card object being added'''
+        if card.type in self.eggs:
+            if card.id + 100 in card_data.card_info:
+                card = card_constructor.create_card(card.id + 100, card_data.card_info[card.id + 100])
         self.player.deck.append(card)
+
+    def egg_relic(self, type: int):
+        '''Method to add a type of card to egg stash
+        
+        ### args: 
+            type: card type id for the eggs'''
+        self.egg_relic.add(type)
 
     def relic_pickup(self, relic):
         self.player.relics.append(relic)

@@ -65,12 +65,14 @@ class Relics: # Relic Object Class
         context['target'] = combat.player_targeting(self.targets)
         if self.counter != None:
             if event == self.condition and self.effect_class == 'combatAct': # Check if the condition is met 
-                self.effect_type(*self.effect_details, context, combat)
+                for i in range(0, len(self.effect_type)):
+                        self.effect_type[i](*self.effect_details[i], context, combat)
         else:
             if event == self.condition:
                 self.counter += 1
                 if self.counter == self.count_needed:
-                    self.effect_type(*self.effect_details, context, combat)
+                    for i in range(0, len(self.effect_type)):
+                        self.effect_type[i](*self.effect_details[i], context, combat)
                     self.counter = 0
 
     def pickUp(self, run):
@@ -151,74 +153,74 @@ bossRelics = {
     'Alchemical Workbench': ('Potion effects are doubled.', 1, 'Sacred Bark', 'Special', None, False, 'Potion', 0), 
     'Stasis Chamber': ('You no longer discard your hand at the end of your turn.', 1, [effects.combat_mechanic_change], 'pickUp', None, False, [['Turn_End_Discard', False]], 0),
     'Cursed Talisman': ('Upon pickup, obtain 1 common relic, 1 uncommon relic, 1 rare relic and a Unique Curse.', 1, [effects.add_card_to_deck, effects.generate_reward], 'pickUp', None, False [[21], ['Bell']], 0),
-    'Eye of Eris': ('Become Confused at the start of combat. Draw 2 additional cards at the start of every turn.', 1, effects.sneko_eye, 'combatAct', 'Turn Start', False, [], 0),
+    'Eye of Eris': ('Become Confused at the start of combat. Draw 2 additional cards at the start of every turn.', 1, [effects.sneko_eye], 'combatAct', 'Turn Start', False, [[]], 0),
     'House Deed': ('Upon pickup, obtain 2 potions, gain 100 Gold. increase your Max Hp by 10, Upgrade a card and obtain a random card.', 1, [effects.upgrade_card, effects.max_hp_change, effects.generate_reward], 'pickUp', None, False, [['Card'], [10], ['Tiny House']], 0),
     'Bag of Holding': ('Upon pickup, choose and Remove 2 cards.', 1, [effects.card_select, effects.remove_card], 'pickUp', None, False, [[2, {}], ['Selected']], 0),
     'Threat Detector': ('During Elite and Boss combats, gain 1 Energy at the start of each turn.', 1, [], None, None, False, [], 0, 'Elite'),
-    'Temporal Hiccup': ('For the first 3 turns of combat, your turns are treated as the start of combat.', 1 , effects.temporal_hiccup, 'combatAct', 'Turn Start', False, [], 0),
+    'Temporal Hiccup': ('For the first 3 turns of combat, your turns are treated as the start of combat.', 1 , [effects.temporal_hiccup], 'combatAct', 'Turn Start', False, [[]], 0),
     'Coffee Mug': ('Gain 1 Energy at thes start of each turn. You can no longer Rest at Campfires.', 1, [effects.campfire_chance], 'pickUp', None, False, [['Rest']], 0, True),
     'Molten Hammer': ('Gain 1 Energy at thes start of each turn. You can no longer Upgrade at Campfires.', 1, [effects.campfire_chance], 'pickUp', None, False, [['Smith']], 0, True),
     'Erosive Slime': ('Gain 1 Energy at thes start of each turn. You can no longer gain Gold.', 1, effects.gold_amount_mod, 'valueMod', 'gold', False, [-9999], 0, True),
-    'Ball n\' Chain': ('Gain 1 Energy at thes start of each turn. You can only play 6 cards per turn.', 1, effects.card_play_limit, 'combatAct', 'Card Played', False, [6], 0, True),
-    'Philosopher\'s Stone': ('Gain 1 Energy at thes start of each turn. All enemies gain 1 Strength at the start of combat.', 1, effects.apply_buff, 'combatAct', 'Combat Start', False, [['Strength'], [1]], 3, True),
+    'Ball n\' Chain': ('Gain 1 Energy at thes start of each turn. You can only play 6 cards per turn.', 1, [effects.card_play_limit], 'combatAct', 'Card Played', False, [[6]], 0, True),
+    'Philosopher\'s Stone': ('Gain 1 Energy at thes start of each turn. All enemies gain 1 Strength at the start of combat.', 1, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Strength'], [1]]], 3, True),
     'Holographic Eyeglass': ('Gain 1 Energy at thes start of each turn. On card reward screens, you recieve 2 less options to pick from.', 1, [effects.card_reward_option_mod], 'pickUp', None, False, [[-2]], 0, True),
     'Cursed Tome': ('Gain 1 Energy at thes start of each turn. Upon opening a non-boss chest, gain a random Curse.', 1, effects.add_card_to_deck, 'eventMod', 'Open Chest', False, ['curse'], 0, True),
     'Eye of Átē': ('Gain 1 Energy at thes start of each turn. You can no longer see enemy intent. (not recommended for unexperienced players)', 1, [effects.combat_mechanic_change], 'pickUp', None, False, [['Intent', False]], 0, True),
     'Sozu': ('Gain 1 Energy at thes start of each turn. You can no longer pickup Potions. ', 1, effects.potion_to_nothing, 'valueMod', 'potion', False, [], 0, True)
 }
 commonRelics = {
-    'Dumbbell': ('At the start of combat, gain 1 Strength.', 4, effects.apply_buff, 'combatAct', 'Combat Start', False, [['Strength'], [1]], 0),
-    'Smooth Stone': ('At the start of combat, gain 1 Dexterity', 4, effects.apply_buff, 'combatAct', 'Combat Start', False, [['Dexterity'], [1]], 0),
+    'Dumbbell': ('At the start of combat, gain 1 Strength.', 4, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Strength'], [1]]], 0),
+    'Smooth Stone': ('At the start of combat, gain 1 Dexterity', 4, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Dexterity'], [1]]], 0),
     'Backpack': ('Draw 2 Additional cards at the start of combat.', 4, effects.draw_cards, 'combatAct', 'Combat Start', False, [2], 0),
-    'Art of War': ('If you do not play any Attacks during your turn, gain 1 additional Energy next turn.', 4, effects.effect_for_card_type_not_played, 'combatAct', 'Turn End', False, [[effects.apply_buff], [[0, ['Energized'], [1]]]], 0),
-    'Holy Cross': ('If you do not play any Skills during your turn, gain 1 additional Energy next turn.', 4, effects.effect_for_card_type_not_played, 'combatAct', 'Turn End', False, [[effects.apply_buff], [[1, ['Energized'], [1]]]], 0),
+    'Art of War': ('If you do not play any Attacks during your turn, gain 1 additional Energy next turn.', 4, [effects.effect_for_card_type_not_played], 'combatAct', 'Turn End', False, [[[effects.apply_buff], [[0, ['Energized'], [1]]]]], 0),
+    'Holy Cross': ('If you do not play any Skills during your turn, gain 1 additional Energy next turn.', 4, [effects.effect_for_card_type_not_played], 'combatAct', 'Turn End', False, [[[effects.apply_buff], [[1, ['Energized'], [1]]]]], 0),
     'Omamori': ('Negate the next 2 Curses you obtain.', 4, effects.card_to_nothing, 'valueMod', 'curse', False, [], 0),
     'Sharpening Stone': ('Upon pickup, Upgrade 2 random Attakcs.', 4, [effects.upgrade_card], 'pickUp', None, False, [['Attack', 'Attack']], 0),
     'Armour Polish': ('Upon pickup, Upgrade 2 random Skills.', 4, [effects.upgrade_card], 'pickUp', None, False, [['Skill', 'Skill']], 0),
     'Anvil': ('Upon pickup, Upgrade 2 random cards.', 4, [effects.upgrade_card], 'pickUp', None, False, [['Card', 'Card']], 0),
     'Meal Ticket': ('When you enter a Shop, heal 10 Hp.', 4, effects.heal_player, 'eventMod', 'shop', False, [10], 0),
     'Comfy Pillow': ('When you Rest, heal 15 additional Hp.', 4, effects.heal_player, 'eventMod', 'rest', False, [15], 0),
-    'Lantern': ('At the start of combat, gain 1 Energy.', 4, effects.energy_manip, 'combatAct', 'Combat Start', False, [1], 0),
-    'Javalin': ('At the start of combat, gain 8 Vigour', 4, effects.apply_buff, 'combatAct', 'Combat Start', False, [['Vigour'], [8]], 0),
+    'Lantern': ('At the start of combat, gain 1 Energy.', 4, [effects.energy_manip], 'combatAct', 'Combat Start', False, [[1]], 0),
+    'Javalin': ('At the start of combat, gain 8 Vigour', 4, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Vigour'], [8]]], 0),
     'Crystal Ball': ('You can no longer encounter enemy combat in Event rooms.', 4, [effects.combat_mechanic_change], 'pickUp', None, False, [['Random_Combat', False]], 0),
     'Lucky 7': ('On turn 7, gain 17 Gold.', 4, effects.combat_gold_gain, 'turnEff', 7, False, [17], 0),
     'Coupon Sheet': ('Removing a card at a Shop always costs 50 Gold.', 4, effects.card_removal_cost_set, 'eventMod', 'removal', False, [50], 0),
     'Strawberry': ('Upon pickup, Increase Max Hp by 7.', 4, [effects.max_hp_change], 'pickUp', None, False, [[7]], 0),
     'Fancy Bottles': ('Whenever you use a potion, heal 5 Hp.', 4, effects.heal_player, 'eventBonus', 'Used Potion', False, [5], 0),
-    'Nunchuck': ('After playing 10 attacks, gian 1 Energy.', 4, effects.energy_manip, 'combatAct', 'Attack Played', False, [1], 0, False, 0, 10, 'global'),
-    'Pen Nib': ('After playing 10 attacks, your next attack is played twice.', 4, effects.apply_buff, 'combatAct', 'Attack Played', False, [['Double Tap'], [1]], 0, False, 0, 10, 'global'),
-    'Anchor': ('At the start of combet, gain 10 block.', 4, effects.block_gain_power, 'combatAct', 'Combat Start', False, [10], 0),
+    'Nunchuck': ('After playing 10 attacks, gian 1 Energy.', 4, [effects.energy_manip], 'combatAct', 'Attack Played', False, [[1]], 0, False, 0, 10, 'global'),
+    'Pen Nib': ('After playing 10 attacks, your next attack is played twice.', 4, [effects.apply_buff], 'combatAct', 'Attack Played', False, [[['Double Tap'], [1]]], 0, False, 0, 10, 'global'),
+    'Anchor': ('At the start of combet, gain 10 block.', 4, [effects.block_gain_power], 'combatAct', 'Combat Start', False, [[10]], 0),
     'Potion Belt': ('Gain 2 potion slots.', 4, [effects.potion_slot_addition], 'pickUp', None, False, [[2]], 0),
-    '333': ('On the third turn, draw 3 cards.', 4, effects.draw_cards, 'combatAct', 'turnEff', 3, False, [3], 0),
+    '333': ('On the third turn, draw 3 cards.', 4, [effects.draw_cards], 'combatAct', 'turnEff', 3, False, [[3]], 0),
     'Adventurer Pamphlet': ('Elites start with 75% of their Hp instead of full Hp.', 4, [effects.combat_mechanic_change], 'pickUp', None, False, [['Insect', True]], 0),
     'Piggy Bank': ('When you enter a room, gain 12 Gold. After spending Gold at a shop, this relic no longer works.', 4, effects.gold_gain, 'eventMod', 'Room', True, [12], 0),
-    'Sunflower': ('Every 3 turns, gain 1 Energy.', 4, effects.energy_manip, 'combatAct', 'Turn Start', False, [1], 0, False, 0, 3, 'global'),
-    'Bronze Scales': ('At the start of combat, gain 3 thorns.', 4, effects.apply_buff, 'combatAct', 'Combat Start', False, [['Thorns'], [3]], 0),
-    'Haunted Stone': ('At the start of combat, apply 1 Vulnerable to all enemies.', 4, effects.apply_debuff, 'combatAct', 'Combat Start', False, [['Vulnerable'], [1]], 3),
-    'Orichalcum': ('When you end your turn with no block, gain 6 block.', 4, effects.no_block_buffer, 'combatAct', 'Turn End', False, [6], 0)
+    'Sunflower': ('Every 3 turns, gain 1 Energy.', 4, [effects.energy_manip], 'combatAct', 'Turn Start', False, [[1]], 0, False, 0, 3, 'global'),
+    'Bronze Scales': ('At the start of combat, gain 3 thorns.', 4, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Thorns'], [3]]], 0),
+    'Haunted Stone': ('At the start of combat, apply 1 Vulnerable to all enemies.', 4, [effects.apply_debuff], 'combatAct', 'Combat Start', False, [[['Vulnerable'], [1]]], 3),
+    'Orichalcum': ('When you end your turn with no block, gain 6 block.', 4, [effects.no_block_buffer], 'combatAct', 'Turn End', False, [[6]], 0)
 }
 UncommonRelics = {
     'Horse Wagon': ('Gain 125 Gold. Your next Event room will always be a shop.', 3, [effects.gold_gain, effects.eventChange], 'pickUp', None, False, [[125], ['shop']], 0),
     'Bottled Flames': ('Upon pickup, choose an Attack card. Start combat with that card in your hand.', 3, [effects.bottle], 'pickUp', None, False, [[0]], 0),
     'Bottled Lightning': ('Upon pickup, choose an Skill card. Start combat with that card in your hand.', 3, [effects.bottle], 'pickUp', None, False, [[1]], 0),
     'Bottled Storm': ('Upon pickup, choose an Power card. Start combat with that card in your hand.', 3, [effects.bottle], 'pickUp', None, False, [[2]], 0),
-    'Molten Egg': ('Whenever an Attack card is added to your deck, it is Upgraded.', 3),
-    'Toxic Egg': ('Whenever an Skill card is added to your deck, it is Upgraded.', 3),
-    'Frozen Egg': ('Whenever an Power card is added to your deck, it is Upgraded.', 3),
-    'Candle': ('Curses can now be played. Playing a Curse exhausts it and causes you to lose 1 HP.', 3),
-    'Eternal Feather': ('Whenever you enter a Campfire, heal 3 Hp for every 5 cards in your deck.', 3),
-    'Goblin Horn': ('Whenever you kill an enemy, draw 1 card and gain 1 Energy.', 3),
-    'Lucky Charm': ('The next 2 chests you open has 2 relics instead of 1.', 3),
-    'Meat on a Bone': ('At the end of combat, if you are below 50% Hp, heal 12 Hp.', 3),
-    'Pear': ('Upon pickup, increase your Max Hp by 10.', 3),
-    'Metal Detector': ('card rewards now have 1 extra option to choose from.', 3),
-    'Paper Clip': ('Whenever you play 3 skill cards in a single turn, deal 5 damage to all enemies.', 3),
-    'Sands of Time': ('At the start of your turn, deal 3 damage to all enemies.', 3),
-    'Leather Boots': ('Every time you play 3 Attacks in a single turn, gain 1 Dexterity.', 3),
-    'Leather Gloves': ('Every time you play 3 Attacks in a single turn, gain 1 Strength.', 3),
-    'Potted Plant': ('When adding a card to your deck, you may gain 2 Max Hp instead.', 3),
-    'Horn Cleat': ('On your second turn, gain 14 block.', 3),
-    'D10': ('For every 10 cards you play, draw 1 card.', 3),
+    'Molten Egg': ('Whenever an Attack card is added to your deck, it is Upgraded.', 3, [effects.egg], 'pickUp', None, False, [[0]], 0),
+    'Toxic Egg': ('Whenever an Skill card is added to your deck, it is Upgraded.', 3, [effects.egg], 'pickUp', None, False, [[1]], 0),
+    'Frozen Egg': ('Whenever an Power card is added to your deck, it is Upgraded.', 3, [effects.egg], 'pickUp', None, False, [[2]], 0),
+    'Candle': ('Curses can now be played. Playing a Curse exhausts it and causes you to lose 1 HP.', 3, [effects.combat_mechanic_change], 'pickUp', None, False, [['Playable_Curse', True]], 0),
+    'Eternal Feather': ('Whenever you enter a Campfire, heal 3 Hp for every 5 cards in your deck.', 3, effects.eternal_feather, 'eventMod', 'Campfire', False, [], 0),
+    'Goblin Horn': ('Whenever you kill an enemy, draw 1 card and gain 1 Energy.', 3, [effects.draw_cards, effects.energy_manip], 'combatAct', 'Lethal', False, [[1], [1]], 0),
+    # 'Lucky Charm': ('The next 2 chests you open has 2 relics instead of 1.', 3),
+    'Meat on a Bone': ('At the end of combat, if you are below 50% Hp, heal 12 Hp.', 3, effects.meat, 'eventMod', 'Combat End', False, [], 0),
+    'Pear': ('Upon pickup, increase your Max Hp by 10.', 3, [effects.max_hp_change], 'pickUp', None, False, [[10]], 0),
+    'Metal Detector': ('card rewards now have 1 extra option to choose from.', 3, [effects.card_reward_option_mod], 'pickUp', None, False, [[1]], 0),
+    'Paper Clip': ('Whenever you play 3 skill cards in a single turn, deal 5 damage to all enemies.', 3, [effects.deal_damage], 'combatAct', 'Skill Played', False, [[5]], 3, False, 0, 3, 'Turn'),
+    'Sands of Time': ('At the start of your turn, deal 3 damage to all enemies.', 3, [effects.deal_damage], 'combatAct', 'Turn Start', False, [[3]], 3),
+    'Leather Boots': ('Every time you play 3 Attacks in a single turn, gain 1 Dexterity.', 3, [effects.apply_buff], 'combatAct', 'Attack Played', False, [[['Dexterity'], [1]]], 0, False, 0, 3, 'Turn'),
+    'Leather Gloves': ('Every time you play 3 Attacks in a single turn, gain 1 Strength.', 3, [effects.apply_buff], 'combatAct', 'Attack Played', False, [[['Strength'], [1]]], 0, False, 0, 3, 'Turn'),
+    'Potted Plant': ('You can now gain 5 Max Hp at a Campfire as a free action. ', 3, [effects.additional_campfire], 'pickUp', None, False, [['Potted Plant']], 0),
+    'Horn Cleat': ('On your second turn, gain 14 block.', 3, effects.block_gain_power, 'turnEff', 2, False, [14], 0),
+    'D10': ('For every 10 cards you play, draw 1 card.', 3, [effects.draw_cards], 'combatAct', 'Card Played', False, [[1]], 0, False, 0, 10, 'global'),
     'Cauldron': ('Enemy combat rewards always contain a potion.', 3),
     'Ahnk': ('After playing a Power card, reduce the cost of a random card in your hand to 0 that turn.', 3),
     'Bamboo Stilts': ('At the start of boss combat, heal 25 Hp.', 3),

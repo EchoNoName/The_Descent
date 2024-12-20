@@ -1,6 +1,7 @@
 import enemy_data
 import card_data
 import card_constructor
+import effects
 import random
 
 class Combat:
@@ -888,6 +889,7 @@ class Combat:
         ### args:
             overide: A dictionary of information that is passed on to execute effects, only inputted if some info needs to be overrided to not be the default
         '''
+        lethal_check = len(self.enemies)
         context = {
             # Default info to pass on for executing effects
             'user': self.player, # The player is playing the card
@@ -917,13 +919,15 @@ class Combat:
                 # Check for effects
             elif self.playing.type == 4 and self.run.mechanics['Playable_Curse']:
                 # If the type of card is a Curse and the mechanic Playable_Curse is activated
-                for effect, details in self.run.mechanics['Playable_Curse'].items():
-                    effect(*details, context, self)
-                    # Execute the effect for playing a curse
+                effects.lose_hp(1, context, self)
+                # Execute the effect for playing a curse
                 self.exhaust_pile.append(self.playing)
                 # Add the card to the exhaust pile
                 self.passive_check_and_exe('Exhaust')
                 # Check for effects
+            else:
+                self.discard_pile.append(self.playing)
+                # Does nothing
         elif self.playing.cost == 'X':
             # If you are playing an X cost card (A card that spends all you energy and has effects scale off of energy spent)
             self.playing.play_x_cost(self.energy)
@@ -977,8 +981,11 @@ class Combat:
         if self.playing.combat_cost[1] == 'Played':
             self.playing.combat_cost = (None, None)
         # Update cost of cards after being played
+        self.resolve_action()
         if self.playing.type == 0:
             self.passive_check_and_exe('Attack Played')
+            if lethal_check > len(self.enemies):
+                self.passive_check_and_exe('Lethal')
         elif self.playing.type == 1:
             self.passive_check_and_exe('Skill Played')
         elif self.playing.type == 2:
@@ -989,6 +996,7 @@ class Combat:
             self.passive_check_and_exe('Curse Played')
         else:
             raise TypeError(f'Card type not found: {self.playing.type}')
+        # Check for effects that occur when certain types of cards are played
         self.playing = None
         # Empty the currently playing card
         self.cards_played += 1
@@ -1002,7 +1010,6 @@ class Combat:
                 # Execute effects for if a card is played
                 self.resolve_action()
                 # Resolve effects
-        self.resolve_action()
     
     def use_potion(self, potion):
         '''Method used for using potions in combat
