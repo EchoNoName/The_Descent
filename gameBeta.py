@@ -161,6 +161,18 @@ class Character:
         for card in cards:
             self.deck.remove(card)
 
+    def duplicate_card(self, card = 'Selected'):
+        '''Method for removing cards from the deck
+        
+        ### args:
+            cards: the cards being removed, the selected cards by default'''
+        if card == 'Selected':
+            card = self.selected_cards
+        new_card = copy.deepcopy(card)
+        # Create a deep copy of the card being duplicated
+        self.deck.append(new_card)
+        # Add the copy to the deck
+
     def heal(self, amount):
         '''Method to heal the player by an amount or percentage
         
@@ -249,6 +261,11 @@ class Character:
             buff_type: The type of debuff being gained
             amount: amount being gained
         '''
+        if self.relics:
+            for relic in self.relics:
+                amount = relic.valueModificationEff(debuff_type, amount)
+        if amount == 0:
+            return None
         if self.buffs['Artifact'] > 0:
             # If player has artifact
             self.buffs['ArtiFact'] -= 1
@@ -285,7 +302,7 @@ class Character:
 
     def hp_loss(self, amount):
         for relic in self.relics:
-            amount = relic.applyEff('HpLoss', amount)
+            amount = relic.valueModificationEff('HpLoss', amount)
         self.hp -= amount
         if amount > 0:
             if self.died == True:
@@ -304,7 +321,7 @@ class Character:
         damage = damage
         # Applies relic effects that reduce damage taken
         for relic in self.relics:
-            damage = relic.applyEff('damageTaken', damage)
+            damage = relic.valueModificationEff('damageTaken', damage)
         self.block -= damage
         if self.block >= 0:
             return 0
@@ -340,7 +357,7 @@ class Character:
         if self.hp <= 0:
             for relic in self.relics:
                 if relic.condition == 'dead' and relic.used == False:
-                    self.hp = relic.applyEff('dead', self.maxHp)
+                    self.hp = relic.valueModificationEff('dead', self.maxHp)
                     relic.used = True
                     return False
             return True
@@ -368,7 +385,7 @@ def main_menu():
         # To be continued
 
 class Run:
-    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False}, campfire = {'Rest': True, 'Smith': True}, eggs = {}):
+    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False}, campfire = {'Rest': True, 'Smith': True}, eggs = {}):
         self.player = player
         if map_info != None:
             self.map, self.path, self.map_display = map_info
@@ -455,6 +472,10 @@ class Run:
     def campfire_add_action(self, action):
         '''Method to add an action to a campfire'''
         self.campfire[action] = True
+
+    def potion_chance_change(self, mod):
+        '''Method to change the potion chance'''
+        self.potionChance += mod
 
     def mechanics_change(self, mechanic, details): 
         '''Method to modify core mechanics of the game that relates to combat

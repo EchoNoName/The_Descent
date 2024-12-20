@@ -21,6 +21,21 @@ def random_card(type, character = None):
             return random.choice(attack_card_1)
         else:
             return 'placeholder'
+    elif type == 'skill':
+        if character.character_class == 1:
+            return random.choice(skill_card_1)
+        else:
+            return 'placeholder'
+    elif type == 'power':
+        if character.character_class == 1:
+            return random.choice(power_card_1)
+        else:
+            return 'placeholder'
+    elif type == 'card':
+        if character.character_class == 1:
+            return random.choice(power_card_1 + skill_card_1 + attack_card_1)
+        else:
+            return 'placeholder'
 
 class Card():
     def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, bottled = False, removable = True, x_cost_effect = {}):

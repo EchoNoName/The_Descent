@@ -227,7 +227,7 @@ def add_card_to_pile(location: str, card_id, number_of_cards: int, cost, context
             combat.add_card_to_pile(context[location], card_id, location, cost)
             # Add the card to the location
     else:
-        if card_id in {'atk', 'skill', 'power', 'weak curse', 'average curse', 'strong curse', 'curse', 'status'}:
+        if card_id in {'atk', 'skill', 'power', 'weak curse', 'average curse', 'strong curse', 'curse', 'status', 'card'}:
             # If card_id is a known card type
             for i in range(0, number_of_cards):
                 card = card_constructor.random_card(card_id, context['user'])
@@ -689,6 +689,11 @@ def upgrade(target, context, combat):
         combat.hand.append(combat.selected)
         # Choose 1 card in hand and upgrade it
 
+def rand_card_no_cost(context, combat):
+    if combat.hand:
+        card = random.choice(combat.hand)
+        card.cost_change(0, 'Played')
+
 def upgrade_card(cards, run):
     '''Function for upgrading cards prermanatly from effects
     
@@ -720,6 +725,14 @@ def remove_card(cards, run):
         cards: The cards being removed
         run: The run object'''
     run.player.remove_card(cards)
+
+def duplicate_card(card, run):
+    '''Function for duplicating cards
+    
+    ### args:
+        cards: The cards being duplicated
+        run: The run object'''
+    run.player.duplicate_card(card)
 
 def chaos(context, combat):
     '''Function to randomize all costs in hand for the rest of combat
@@ -833,7 +846,7 @@ def card_select(num, restrictions, run):
                     # Turns off loop
                     return run.player.selected_cards
 
-def additonal_rewards(additional, rewards):
+def additonal_rewards(reward_type, amount, additional_rewards):
     '''Function to add additional rewards
     
     ### args:
@@ -842,14 +855,23 @@ def additonal_rewards(additional, rewards):
     
     ### returns:
         rewards: Updated rewards dictonary'''
-    for type in additional:
-        rewards[type] = 1
-    return rewards
+    for type in reward_type:
+        additional_rewards[type] += amount
+    return additional_rewards
 
-def generate_reward(rewards, run):
-    items = {
-        'Common '
-    }
+def pocket_watch(amount, context, combat):
+    if combat.cards_played <= 3:
+        apply_buff(['Draw Card'], [amount], context, combat)
+
+def potion_chance_mod(mod, run):
+    '''Function to modify to the potion chance
+    
+    ### args:
+        mod: The modification
+        run: the run object'''
+
+def gain_rand_potion(run):
+    run.gain_rand_potion()
 
 def add_card_to_deck(card_id, run):
     '''Function to call the mathod in run add a card to deck
@@ -891,6 +913,16 @@ def meat(run):
     '''Function for the meat on the bone effect'''
     if run.player.maxHp // 2 >= run.player.hp:
         heal_player(12, run)
+
+def combat_heal_player(amount, context, combat):
+    '''Function for healing the player in combat
+    
+    ### args:
+        amount: amount of healing
+        context: Info related to the combat
+        combat: the current combat session
+    '''           
+    combat.player.hp_recovery(amount)
 
 def split(slime_type, context, combat):
     '''Function for slime splitting into smaller slimes
@@ -942,6 +974,9 @@ def potion_to_nothing(*args):
 def card_to_nothing(*args):
     return None
 
+def debuff_reduction(amount, reduction, *args):
+    return amount - reduction
+
 def hp_loss_reduction(hp_loss, reduction, *args): # Hp Loss Reduction Effect
     '''Reduces Hp Loss
     
@@ -953,7 +988,7 @@ def hp_loss_reduction(hp_loss, reduction, *args): # Hp Loss Reduction Effect
     ### Returns: 
         The reduced amount
     '''
-    return hp_loss - reduction
+    return max(0, hp_loss - reduction)
     # Apply reduction
 
 def max_hp_change(amount, run):
@@ -965,7 +1000,7 @@ def max_hp_change(amount, run):
     run.player.increase_max_hp(amount)
     # Uses method in player class to perform the action
 
-def revive(revive_percentage, max_hp, *args): # Revive effect
+def revive(max_hp, revive_percentage, *args): # Revive effect
     '''Revives the player when dead
     
     ### args: 

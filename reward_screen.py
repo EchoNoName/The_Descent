@@ -30,6 +30,10 @@ class RewardScreen: # Class for any reward screed
 
     def generate_rewards(self):
         if not self.set_reward:
+            if self.run.player.relics:
+                for relic in self.player.relics:
+                    relic.rewardModification(self.reward_type, self.additional_rewards)
+            # Apply relic effects
             if self.reward_type == 0: 
                 # Normal combat
                 self.rewards['Gold'] = random.randint(10, 20)

@@ -1067,7 +1067,10 @@ class Combat:
         # Execute effects for specific turns
         self.cards_played = 0
         # Set cards played to 0
-        self.player.block = 0
+        if not self.run.mechanics['Block_Loss']:
+            self.player.block = 0
+        else:
+            self.player.block = max(0, self.player.block - self.run.mechanics['Block_Loss'])
         # Lose all block at the start of turn
         self.passive_check_and_exe('Turn Start')
         if self.start_of_combat == True:

@@ -96,6 +96,11 @@ class Relics: # Relic Object Class
         if self.effect_class == 'eventMod' and self.condition == action:
             self.effect_type(*self.effect_details, run)
     
+    def rewardModification(self, reward_type, additional_rewards):
+        if reward_type in self.condition and self.effect_class == 'rewardMod':
+            return self.effect_type(*self.effect_details, additional_rewards)
+        return additional_rewards
+
     def turnEff(self, combat):
         '''Handles relic effects that does an action in combat on specific turns
 
@@ -221,41 +226,40 @@ UncommonRelics = {
     'Potted Plant': ('You can now gain 5 Max Hp at a Campfire as a free action. ', 3, [effects.additional_campfire], 'pickUp', None, False, [['Potted Plant']], 0),
     'Horn Cleat': ('On your second turn, gain 14 block.', 3, effects.block_gain_power, 'turnEff', 2, False, [14], 0),
     'D10': ('For every 10 cards you play, draw 1 card.', 3, [effects.draw_cards], 'combatAct', 'Card Played', False, [[1]], 0, False, 0, 10, 'global'),
-    'Cauldron': ('Enemy combat rewards always contain a potion.', 3),
-    'Ahnk': ('After playing a Power card, reduce the cost of a random card in your hand to 0 that turn.', 3),
-    'Bamboo Stilts': ('At the start of boss combat, heal 25 Hp.', 3),
-    'Sundial': ('Every 3 times the draw pile is shuffled, gain 2 Energy.', 3)
+    'Cauldron': ('Enemy combat rewards always contain a potion.', 3, [effects.potion_chance_mod], 'pickUp', None, False, [[9999]], 0),
+    'Ahnk': ('After playing a Power card, reduce the cost of a random card in your hand to 0 that turn.', 3, [effects.rand_card_no_cost], 'combatAct', 'Power Played', False, [[]], 0),
+    'Bamboo Stilts': ('At the start of boss combat, heal 25 Hp.', 3, effects.heal_player, 'eventMod', 'Boss Start', False, [25], 0),
+    'Sundial': ('Every 3 times the draw pile is shuffled, gain 2 Energy.', 3, [effects.energy_manip], 'combatAct', 'Shuffle', False, [[2]], 0, False, 0, 3, 'Global')
 }
 rareRelics = {
-    'Brewing Stand': ('Whenever you rest, obatin a random potion.', 2),
-    'Covert Cloak': ('At the start of combat, gain 1 Intangable.', 2),
-    'Magic Mushrooms': ('At the start of combat, gain 1 Duplicate.', 2),
-    'Captain\'s Wheel': ('On the 3rd turn, gain 18 block.', 2),
-    'Rusted Plate': ('At the start of combat, gain 4 plated armour.', 2),
-    'Ginger': ('You can no longer be Weakened.', 2),
-    'Garlic': ('You can no longer be Frail.', 2),
-    'Apple': ('Upon pickup, increase your Max Hp by 14.', 2),
-    'Card Sleeves': ('Normal enemies now drop 2 card rewards.', 2),
-    'Gold Bar': ('Upon pickup, gain 300 Gold.', 2),
-    'Voodoo Doll': ('At the start of combat, gain 1 Strength for every Curse in your deck.', 2),
-    'Holographic Watch': ('Whenever you play 3 or less cards in your turn, draw 3 additional cards the next turn.', 2),
-    'Cheater\'s Coat': ('Whenever you have no cards during your turn, draw 1 card.', 2),
-    'Small Shield': ('You now lose a maximun of 15 block at the start of your turn.', 2),
-    'Dead Branch': ('Whenever you Exhaust a card in your hand, add a random card to your hand.', 2),
-    '1 Up': ('At the start of combat, gain 1 Buffer.', 2),
-    'Dual Disk': ('At the start of combat, you may discard any amount of cards from your hand and draw that amount.', 2),
-    'Divider': ('When you die, consume this relic and set your Hp to 50% instead.', 2),
-    'Paper Shredder': ('You can now remove a card at a Campfire.', 2),
-    'Drill': ('You can now dig for a relic at a Campfire.', 2),
-    'Urn': ('Whenever you play a Power, heal 2 Hp.', 2),
-    'Ballistic Armour': ('Whenever you lose Hp, lose 1 less.', 2),
-    'The Arch': ('Whenever you take attack damage below or equal to 5, it is reduced to 1.', 2),
-    'Pot': ('Every 6 turns, gain 1 Intangible.', 2)
+    'Brewing Stand': ('Whenever you rest, obatin a random potion.', 2, effects.gain_rand_potion, 'eventBonus', 'Rest', False, [], 0),
+    'Covert Cloak': ('At the start of combat, gain 1 Intangable.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Intangable'], [1]]], 0),
+    'Magic Mushrooms': ('At the start of combat, gain 1 Duplicate.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Duplicate'], [1]]], 0),
+    'Captain\'s Wheel': ('On the 3rd turn, gain 18 block.', 2, [effects.block_gain_power], 'combatAct', 'Combat Start', False, [[18]], 0),
+    'Rusted Plate': ('At the start of combat, gain 4 plated armour.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Plated Armour'], [4]]], 0),
+    'Ginger': ('You can no longer be Weakened.', 2, effects.debuff_reduction, 'valueMod', 'Weak', False, [999], 0),
+    'Garlic': ('You can no longer be Frail.', 2, effects.debuff_reduction, 'valueMod', 'Frail', False, [999], 0),
+    'Apple': ('Upon pickup, increase your Max Hp by 14.', 2, [effects.max_hp_change], 'pickUp', None, False, [[14]], 0),
+    'Card Sleeves': ('Combats now drop 2 card rewards.', 2, effects.additonal_rewards, 'eventBonus', {0, 1, 2}, False, [['Card'], 1]),
+    'Gold Bar': ('Upon pickup, gain 300 Gold.', 2, [effects.gold_gain], 'pickUp', None, False, [[300]], 0),
+    'Holographic Watch': ('Whenever you play 3 or less cards in your turn, draw 3 additional cards the next turn.', 2, [effects.pocket_watch], 'combatAct', 'Turn End', False, [[3]]),
+    'Cheater\'s Coat': ('Whenever you have no cards during your turn, draw 1 card.', 2, [effects.draw_cards], 'combatAct', 'Empty Hand', False, [[1]], 0),
+    'Small Shield': ('You now lose a maximun of 15 block at the start of your turn.', 2, [effects.combat_mechanic_change], 'pickUp', None, False, [['Block_Loss', 15]], 0),
+    'Dead Branch': ('Whenever you Exhaust a card in your hand, add a random card to your hand.', 2, [effects.add_card_to_pile], 'combatAct', 'Exhaust', False, [['hand', 'card', 1, 'na']], 0),
+    '1 Up': ('At the start of combat, gain 1 Buffer.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Buffer'], [1]]], 0),
+    'Dual Disk': ('At the start of combat, you may discard any amount of cards from your hand and draw that amount.', 2, [effects.gamble], 'combatAct', 'Combat Start', False, [[]], 0),
+    'Divider': ('When you die, consume this relic and set your Hp to 50% instead.', 2, effects.revive, 'valueMod', 'dead', True, [50], 0),
+    'Paper Shredder': ('You can now remove a card at a Campfire.', 2, [effects.additional_campfire], 'pickUp', None, False, [['Shred']], 0),
+    'Drill': ('You can now dig for a relic at a Campfire.', 2, [effects.additional_campfire], 'pickUp', None, False, [['Dig']], 0),
+    'Urn': ('Whenever you play a Power, heal 2 Hp.', 2, [effects.combat_heal_player], 'combatAct', 'Power Played', False, [[2]], 0),
+    'Ballistic Armour': ('Whenever you lose Hp, lose 1 less.', 2, effects.hp_loss_reduction, 'valueMod', 'HpLoss', False, [1], 0),
+    'The Arch': ('Whenever you take attack damage below or equal to 5, it is reduced to 1.', 2, effects.small_damage_reduction, 'valueMod', 'damageTaken', False, [5], 0),
+    'Pot': ('Every 6 turns, gain 1 Intangible.', 2, [effects.apply_buff], 'combatAct', 'Turn Start', False, [[['Intangible'], [1]]], 0, False, 0, 6, 'global')
 }
 shopRelics = {
     'Treasure Map': ('Your next Event room will always be a Treasure.', 5),
-    'Damaged Duplicator': ('Upon pickup, duplicate a card in your deck.', 5),
-    'Biomechanical Arm': ('At the start of combat, gain 1 Artifact.', 5),
+    'Damaged Duplicator': ('Upon pickup, duplicate a card in your deck.', 5, [effects.card_select, effects.duplicate_card], 'pickUp', None, False [[1, {}], ['Selected']], 0),
+    'Biomechanical Arm': ('At the start of combat, gain 1 Artifact.', 5, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Artifact'], [1]]], 0),
     'The Third Eye': ('When viewing your draw pile, it is now shown in order.', 5),
     'Pancakes': ('Upon pickup, increase your Max Hp by 7 and heal all your Hp.', 5),
     'X': ('Whenever you play an X cost card, its effects are increased by 2.', 5),
