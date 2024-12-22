@@ -160,7 +160,7 @@ class Card():
 def create_card(card_id, card_data: tuple):
     return Card(card_id, *card_data)
 
-def generate_card_reward(type, rareChanceOffset, numberOfOptions, character_class):
+def generate_card_reward(type, rareChanceOffset, numberOfOptions, character_class, rareChanceMult = 1):
     '''Function for generating card rewards
     
     ### args:
@@ -191,6 +191,7 @@ def generate_card_reward(type, rareChanceOffset, numberOfOptions, character_clas
     else:
         baseRareChance = 105 #guarenteed rare for boss fights
     
+    baseRareChance *= rareChanceMult
     card_options = []
 
     for i in range(numberOfOptions): #Runs x amount of random card choices
@@ -200,13 +201,13 @@ def generate_card_reward(type, rareChanceOffset, numberOfOptions, character_clas
             cardPoolSel = [item for item in card_pool['Rare'] if item not in card_options] #create a pool of cards from the correct rarity and remove dupes from cards already part of the selection
             card_options.append(random.choice(cardPoolSel)) #random card chosen from the pool
             if type != "boss":
-                rareChanceOff = -5 #if its not a boss card reward, reset the rare chance offset
+                rareChanceOffset = -5 #if its not a boss card reward, reset the rare chance offset
         elif x < uncommChance: #same as above expect for uncommons
             cardPoolSel = [item for item in card_pool['Uncommon'] if item not in card_options]
             card_options.append(random.choice(cardPoolSel))
         else:  #for commons
             cardPoolSel = [item for item in card_pool['Common'] if item not in card_options]
             card_options.append(random.choice(cardPoolSel))
-            rareChanceOff += 1 #increase the rare chance offset when ever a common card is rolled
+            rareChanceOffset += 1 #increase the rare chance offset when ever a common card is rolled
     
-    return card_options
+    return card_options, rareChanceOffset

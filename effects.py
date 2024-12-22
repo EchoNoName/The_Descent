@@ -638,14 +638,15 @@ def discover(card_type, cost, context, combat):
             elif card_type == 'Skill':
                 # Skill cards
                 card_list = set(card_constructor.skill_card_1)
-            else:
+            elif card_type == 'Power':
                 # Power cards
                 card_list = set(card_constructor.power_card_1)
-    cards = []
-    for i in range(0, 3):
-        card = random.choice(card_list)
-        cards.append(card)
-        card_list.remove(card)
+            else:
+                card_type == 'Card'
+                card_list = set(card_constructor.attack_card_1 + card_constructor.skill_card_1 + card_constructor.power_card_1)
+
+    random.shuffle(card_list)
+    cards = [card_list[0], card_list[1], card_list[2]]
     # Choose 3 random cards from valid list
     combat.discover(cards, cost)
     # Use method in combat for user to choose one of the three
@@ -873,6 +874,14 @@ def potion_chance_mod(mod, run):
 def gain_rand_potion(run):
     run.gain_rand_potion()
 
+def change_next_event(event, run):
+    '''Function to change the next random encounter
+    
+    ### args:
+        type: the event to change to
+        run: the run object'''
+    run.eventList.append(event)
+
 def add_card_to_deck(card_id, run):
     '''Function to call the mathod in run add a card to deck
     
@@ -897,6 +906,10 @@ def eternal_feather(run):
 def card_reward_option_mod(mod, run):
     run.card_reward_option_mod(mod)
 
+def generate_rewards(name, run):
+    '''Function that generates a reward screen'''
+    run.generate_reward_screen_instance(False, name)
+
 def combat_mechanic_change(mechanic, change, run):
     '''Function to call the mathod in run to change the combat mechanic
     
@@ -908,6 +921,9 @@ def combat_mechanic_change(mechanic, change, run):
 
 def additional_campfire(action, run):
     run.campfire_add_action(action)
+
+def rare_base_chance_mult(amount, run):
+    run.rareChanceMult = amount
 
 def meat(run):
     '''Function for the meat on the bone effect'''
@@ -964,6 +980,9 @@ def gold_gain(amount, run):
         amount: the amoung being gained
         run: The run object'''
     run.gold_modification(amount)
+
+def price_discount(price, discount, *args):
+    return math.floor(price * discount)
 
 def gold_amount_mod(amount, mod, *args):
     return max(0, amount + mod)

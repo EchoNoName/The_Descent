@@ -53,6 +53,7 @@ card_info = {
     12: ('Icky', 4, 4, 1, 'Add a Slimed to your hand', False, True, False, False, {effects.add_card_to_pile: ('hand', 50, 1, 'na')}, 0),
     20: ('Curse of the Blade', 4, 4, 'U', 'When drawn, lose 4, At the end of the turn, lose 2 HP', False, False, True, False, {'Drawn': {effects.lose_hp: (4, )}, 'Turn End': {effects.lose_hp: (2, )}}, 0),
     21: ('Curse of the Talisman', 4, 4, 'U', None, False, False, False, False, None, 0, False),
+    22: ('Necronomicurse', 4, 4, 'U', 'You cannot escape from this Curse. ', False, False, False, False, {'Exhausted': {effects.add_card_to_pile: ('hand', 22, 1, 'na')}}, 0),
     50: ('Slimed', 4, 3, 1, None, False, True, False, False, None, 0),
     51: ('Burned', 4, 3, 'U', 'At the end of your turn, take 2 damage', False, False, False, False, {'Turn End': {effects.deal_attack_damage: (2, 1)}}, 0),
     52: ('Wound', 4, 3, 'U', None, False, False, False, False, None, 0),

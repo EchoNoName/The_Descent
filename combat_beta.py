@@ -29,9 +29,14 @@ class Combat:
         self.card_type_played = {}
         self.enemy_turn = False
         self.escaped = False
+        self.necroed = True
     
     def combat_start(self):
         '''Method for starting combat'''
+        if self.combat_type == 'Elite':
+            if self.player.relics:
+                for relic in self.player.relics:
+                    relic.combatActionEff('Elite Start', self)
         if self.run.mechanics['Insect'] == True and self.combat_type == 'Elite':
             for enemy in self.enemies:
                 enemy.hp = int(enemy.hp * 0.75)
@@ -235,9 +240,7 @@ class Combat:
                 # Shuffle the draw pile
                 self.discard_pile[:] = []
                 # Empty the discard pile
-        for relic in self.player.relics:
-            # Go through every relic
-            relic.combatActionEff('shuffle')
+        self.passive_check_and_exe('Shuffle')
             # Active the relic effects with the event being shuffling
 
     def draw(self, num: int):
@@ -930,30 +933,45 @@ class Combat:
                 # Does nothing
         elif self.playing.cost == 'X':
             # If you are playing an X cost card (A card that spends all you energy and has effects scale off of energy spent)
-            self.playing.play_x_cost(self.energy)
+            self.playing.play_x_cost(self.energy + self.run.mechanics['X_Bonus'])
             # Aquire the complete details of the effect being executed
-            for effect, details in self.playing.x_cost_effect.items():
-                effect(*details, context, self)
+            times = 1
+            if self.necroed == True and self.run.mechanics['Necro'] == True and self.playing.type == 0:
+                self.necroed = False
+                times = 2
+            for i in range(0, times):
+                for effect, details in self.playing.x_cost_effect.items():
+                    effect(*details, context, self)
                 # Execute the X cost effect
             if self.playing.exhaust == True:
-                # If the card exhausts
-                self.exhaust_pile.append(self.playing)
-                # Add the card to the exhaust pile 
-                self.if_card_cond(self.playing, 'Exhausted')
-                # Execute Exhausted effects
-                self.passive_check_and_exe('Exhaust')
-                # Check for effects
+                rng = random.randint(1, 100)
+                if rng <= self.run.mechanics['Exhaust Chance']:
+                    # If the card exhausts
+                    self.exhaust_pile.append(self.playing)
+                    # Add the card to the exhaust pile 
+                    self.if_card_cond(self.playing, 'Exhausted')
+                    # Execute Exhausted effects
+                    self.passive_check_and_exe('Exhaust')
+                    # Check for effects
+                else:
+                    self.discard_pile.append(self.playing)
+                    # Discard instead
             else:
                 self.discard_pile.append(self.playing)
                 # Add the card to the discard pile
         else: 
             if self.playing.effect:
                 # If the card has an effect
-                for effect, details in self.playing.effect.items():
-                    # Iterates through every effect
-                    if not isinstance(effect, str):
-                        effect(*details, context, self)
-                        #  Performs the effects if its not a conditional
+                times = 1
+                if self.necroed == True and self.run.mechanics['Necro'] == True and self.playing.type == 0:
+                    self.necroed = False
+                    times = 2
+                for i in range(0, times):
+                    for effect, details in self.playing.effect.items():
+                        # Iterates through every effect
+                        if not isinstance(effect, str):
+                            effect(*details, context, self)
+                            #  Performs the effects if its not a conditional
             if self.playing.type == 2:
                 # If the card played was a power
                 if 'Power' in self.playing.effect:
@@ -968,13 +986,18 @@ class Combat:
                         self.player.buffs[f'{self.playing.name}'] = 1
                         # Record that a power was played so the player knows what powers they have active
             elif self.playing.exhaust == True:
-                # If the card played exhausts
-                self.exhaust_pile.append(self.playing)
-                # Add the card to the exhaust pile
-                self.if_card_cond(self.playing, 'Exhausted')
-                # Execute Exhausted effects
-                self.passive_check_and_exe('Exhaust')
-                # Check for effects
+                rng = random.randint(1, 100)
+                if rng <= self.run.mechanics['Exhaust Chance']:
+                    # If the card exhausts
+                    self.exhaust_pile.append(self.playing)
+                    # Add the card to the exhaust pile 
+                    self.if_card_cond(self.playing, 'Exhausted')
+                    # Execute Exhausted effects
+                    self.passive_check_and_exe('Exhaust')
+                    # Check for effects
+                else:
+                    self.discard_pile.append(self.playing)
+                    # Discard instead
             else:
                 self.discard_pile.append(self.playing)
                 # Add the card to the discard pile
@@ -1051,6 +1074,7 @@ class Combat:
 
     def player_turn_start(self):
         '''Method for doing everything that needs to be done at the start of combat'''
+        self.necroed = True
         self.enemy_turn = False
         # Player turn starts
         self.can_play_card = True
@@ -1276,6 +1300,8 @@ class Combat:
             cards: A list of 3 cards to choose from
             cost: cost modifications to the cards
         '''
+        for i in range(0, 3):
+            cards[i] = card_constructor.create_card(cards[i], card_data.card_info[cards[i]])
         self.hard_card_select(1, cards)
         # Select 1 card from the list
         if self.hand:

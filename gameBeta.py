@@ -8,6 +8,7 @@ import enemy_data
 import map_generation
 import reward_screen
 import events
+import math
 import shop
 import treasure
 import copy
@@ -182,10 +183,18 @@ class Character:
             # If its a string
             percentage = int(amount)
             percentage = percentage / 100
-            self.hp = min(self.maxHp, self.hp + int(self.maxHp * percentage))
+            healing_amount = math.floor(self.maxHp * percentage)
+            if self.relics:
+                for relic in self.relics:
+                    healing_amount = relic.valueModificationEff('Healing', healing_amount)
+            self.hp = min(self.maxHp, self.hp + healing_amount)
             # Add a percentage of of max hp to your own hp
         else:
-            self.hp = min(self.maxHp, self.hp + amount)
+            healing_amount = amount
+            if self.relics:
+                for relic in self.relics:
+                    healing_amount = relic.valueModificationEff('Healing', healing_amount)
+            self.hp = min(self.maxHp, self.hp + healing_amount)
             # Add fixed amount of hp up to max hp
     
     def increase_max_hp(self, amount):
@@ -385,7 +394,7 @@ def main_menu():
         # To be continued
 
 class Run:
-    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False}, campfire = {'Rest': True, 'Smith': True}, eggs = {}):
+    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True}, eggs = {}):
         self.player = player
         if map_info != None:
             self.map, self.path, self.map_display = map_info
@@ -420,6 +429,7 @@ class Run:
         self.combat_pool_details = {}
         if self.act == 1:
             self.combat_pool_details = enemy_data.generate_act1_pools()
+        self.rareChanceMult = rareChanceMult
         self.rareChanceOffset = rareChanceOffset
         self.potionChance = potionChance
         self.cardRewardOptions = cardRewardOptions
@@ -452,7 +462,7 @@ class Run:
         if self.player.relics:
             for relic in self.player.relics:
                 additonal_rewards = relic.additionalRewards(reward_type, additonal_rewards)
-        self.reward = reward_screen.RewardScreen(self.player.character_class, self.rareChanceOffset, self.potionChance, self.cardRewardOptions, reward_type, set_reward, additonal_rewards)
+        self.reward = reward_screen.RewardScreen(self.player.character_class, self.rareChanceMult, self.rareChanceOffset, self.potionChance, self.cardRewardOptions, reward_type, set_reward, additonal_rewards)
 
     def bonusEff(self, event):
         if self.player.relics:

@@ -257,27 +257,27 @@ rareRelics = {
     'Pot': ('Every 6 turns, gain 1 Intangible.', 2, [effects.apply_buff], 'combatAct', 'Turn Start', False, [[['Intangible'], [1]]], 0, False, 0, 6, 'global')
 }
 shopRelics = {
-    'Treasure Map': ('Your next Event room will always be a Treasure.', 5),
+    'Treasure Map': ('Your next Event room will always be a Treasure.', 5, [effects.change_next_event], 'pickUp', None, False, [['Treasure']], 0),
     'Damaged Duplicator': ('Upon pickup, duplicate a card in your deck.', 5, [effects.card_select, effects.duplicate_card], 'pickUp', None, False [[1, {}], ['Selected']], 0),
     'Biomechanical Arm': ('At the start of combat, gain 1 Artifact.', 5, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Artifact'], [1]]], 0),
-    'The Third Eye': ('When viewing your draw pile, it is now shown in order.', 5),
-    'Pancakes': ('Upon pickup, increase your Max Hp by 7 and heal all your Hp.', 5),
-    'X': ('Whenever you play an X cost card, its effects are increased by 2.', 5),
-    'Costco\'s Membership Card': ('50% discount on all shop items.', 5),
-    'Sling of Courage': ('Gain 2 Strength during Elite combats.', 5),
-    'Booster Pack': ('Upon pickup, gain 5 card rewards.', 5),
-    'Cauldron+': ('Upon pickup, Brew 5 potions.', 5),
-    '2 Leaf Clover': ('Cards that Exhaust from being played don\'t 50% of the time.', 5),
-    'Rainbow': ('At the start of combat, add a non-class card to your hand, it costs 0 that turn.', 5),
-    'Sandvich': ('Status cards can now be played, they are Exhausted when played.', 5),
-    'Iron Plated Cards': ('When ever you shuffle your draw pile, gain 6 block.', 5)
+    'The Third Eye': ('When viewing your draw pile, it is now shown in order.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [['Ordered_Draw_Pile', True]], 0),
+    'Pancakes': ('Upon pickup, increase your Max Hp by 7 and heal all your Hp.', 5, [effects.max_hp_change, effects.heal_player], 'pickUp', None, False, [[7], [9999]], 0),
+    'X': ('Whenever you play an X cost card, its effects are increased by 2.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [[2]], 0),
+    'Costco\'s Membership Card': ('50% discount on all shop items.', 5, effects.price_discount, 'valueMod', 'Price', False, [0.5], 0),
+    'Sling of Courage': ('Gain 2 Strength during Elite combats.', 5, [effects.apply_buff], 'combatAct', 'Elite Start', False, [[['Strength'], [2]]], 0),
+    'Booster Pack': ('Upon pickup, gain 5 card rewards.', 5, [effects.generate_rewards], 'pickUp', None, False [['Booster Pack']], 0),
+    'Cauldron+': ('Upon pickup, Brew 5 potions.', 5, [effects.generate_rewards], 'pickUp', None, False [['Cauldron']], 0),
+    '2 Leaf Clover': ('Cards that Exhaust from being played don\'t 50% of the time.', 5, [effects.combat_mechanic_change], 'pickUp', None, False [['Exhaust_Chance', 50]], 0),
+    'Rainbow': ('At the start of combat, add a random card to your hand, it costs 0 that turn.', 5, [effects.add_card_to_pile], 'combatAct', 'Combat Start', False, [['hand', 'Card', 1, 'na']], 0),
+    'Sandvich': ('Status cards can now be played, they are Exhausted when played.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [['Playable_Status', True]], 0),
+    'Iron Plated Cards': ('When ever you shuffle your draw pile, gain 6 block.', 5, [effects.block_gain_power], 'combatAct', 'Shuffle', [[6]], 0)
 }
 eventRelics = {
-    'Broken Arms': ('At the start of combat, apply 1 Weak to all enemies.', 6),
-    'Christmas Present': ('Rare cards appear more often.', 6),
-    'Steroids': ('At the start of combat, gain 3 Temporary Strength.', 6),
-    'Necronomicon': ('Upon pickup, add a Necronomicurse to the deck. The first Attack you play every turn that costs 2 or more is played twice.', 6),
-    'Knownledge Book': ('At the start of combat, add a random Power to your hand, it costs 0 that turn.', 6),
-    'The Codex': ('At the end of the turn, you can choose 1 of 3 cards to add to your discard pile.', 6),
-    'Heart Disease': ('You can no longer heal.', 6)
+    'Broken Arms': ('At the start of combat, apply 1 Weak to all enemies.', 6, [effects.apply_debuff], 'combatAct', 'Combat Start', False, [[['Weak'], [1]]], 3),
+    'Christmas Present': ('Rare cards appear more often.', 6, [effects.rare_base_chance_mult], 'pickUp', None, False, [[3]], 0),
+    'Steroids': ('At the start of combat, gain 3 Temporary Strength.', 6, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Strength', 'Chained'], [3, 3]]], 0),
+    'Necronomicon': ('Upon pickup, add a Necronomicurse to the deck. The first Attack you play every turn that costs 2 or more is played twice.', 6, [effects.add_card_to_deck, effects.combat_mechanic_change], 'pickUp', None, False, [[22], ['Necro', True]]),
+    'Knownledge Book': ('At the start of combat, add a random Power to your hand, it costs 0 that turn.', 6, [effects.add_card_to_pile], 'combatAct', 'Combat Start', False, [['hand', 'Power', 1, 0]], 0),
+    'The Codex': ('At the start of the turn, you can choose 1 of 3 cards to add to your hand.', 6, [effects.discover], 'combatAct', 'Turn Start', False, [['Card', 'na']], 0),
+    'Heart Disease': ('You can no longer heal.', 6, effects.healing_reduction, 'valueMod', 'Healing', False, [9999], 0)
 }

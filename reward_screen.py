@@ -5,7 +5,7 @@ import potion_data
 import random
 
 class RewardScreen: # Class for any reward screed
-    def __init__(self, run, character_class, rareChanceOffset, potionChance, cardRewardOptions, reward_type, set_reward = False, additonal_rewards = {'Gold': 0, 'Cards': 0, 'Potions': 0, 'Relic': 0}):
+    def __init__(self, run, character_class, rareChanceMult, rareChanceOffset, potionChance, cardRewardOptions, reward_type, set_reward = False, additonal_rewards = {'Gold': 0, 'Cards': 0, 'Potions': 0, 'Relic': 0}):
         self.run = run
         self.character_class = character_class
         self.rareChanceOffset = rareChanceOffset
@@ -20,6 +20,7 @@ class RewardScreen: # Class for any reward screed
             'Relics': []
         }
         self.additional_rewards = additonal_rewards
+        self.rareChanceMult = rareChanceMult
     
     def isEmpty(self):
         '''Method for checking if there are still items left'''
@@ -38,7 +39,7 @@ class RewardScreen: # Class for any reward screed
                 # Normal combat
                 self.rewards['Gold'] = random.randint(10, 20)
                 # Gold amount
-                cards = card_constructor.generate_card_reward('normal', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
+                cards, self.rareChanceOffset = card_constructor.generate_card_reward('normal', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
                 for i in range(0, len(cards)):
                     card_option = card_constructor.create_card(cards[i], card_data.card_info[cards[i]])
                     cards[i] = card_option
@@ -48,7 +49,7 @@ class RewardScreen: # Class for any reward screed
                 # Elite combat
                 self.rewards['Gold'] = random.randint(25, 35)
                 # Gold amount
-                cards = card_constructor.generate_card_reward('elite', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
+                cards, self.rareChanceOffset = card_constructor.generate_card_reward('elite', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
                 for i in range(0, len(cards)):
                     card_option = card_constructor.create_card(cards[i], card_data.card_info[cards[i]])
                     cards[i] = card_option
@@ -61,7 +62,7 @@ class RewardScreen: # Class for any reward screed
                 # Boss encounter
                 self.rewards['Gold'] = random.randint(95, 105)
                 # Gold amount
-                cards = card_constructor.generate_card_reward('boss', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
+                cards, self.rareChanceOffset = card_constructor.generate_card_reward('boss', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
                 for i in range(0, len(cards)):
                     card_option = card_constructor.create_card(cards[i], card_data.card_info[cards[i]])
                     cards[i] = card_option
@@ -97,12 +98,12 @@ class RewardScreen: # Class for any reward screed
                 self.rewards['Relics'].append(relic_data.createRare)
             elif self.set_reward == 'Booster Pack':
                 for k in range(0, 5):
-                    cards = card_constructor.generate_card_reward('normal', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
+                    cards, self.rareChanceOffset = card_constructor.generate_card_reward('normal', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
                     for i in range(0, len(cards)):
                         card_option = card_constructor.create_card(cards[i], card_data.card_info[cards[i]])
                         cards[i] = card_option
                     self.rewards['Cards'].append(cards)
-            elif self.set_reward == 'Caldron':
+            elif self.set_reward == 'Cauldron':
                 for i in range(0, 5):
                     potion = potion_data.randomPotion()
                     self.rewards['Potions'].append(potion)
@@ -111,7 +112,7 @@ class RewardScreen: # Class for any reward screed
                 for i in range(0, 2):
                     potion = potion_data.randomPotion()
                     self.rewards['Potions'].append(potion)
-                cards = card_constructor.generate_card_reward('normal', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
+                cards, self.rareChanceOffset = card_constructor.generate_card_reward('normal', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
                 for i in range(0, len(cards)):
                     card_option = card_constructor.create_card(cards[i], card_data.card_info[cards[i]])
                     cards[i] = card_option
@@ -124,7 +125,7 @@ class RewardScreen: # Class for any reward screed
                 self.rewards['Gold'] += self.rewards['Gold']
             if self.additional_rewards['Card'] > 0:
                 for k in range(0, self.additional_rewards['Card']):
-                    cards = card_constructor.generate_card_reward('normal', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
+                    cards, self.rareChanceOffset = card_constructor.generate_card_reward('normal', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
                     for i in range(0, len(cards)):
                         card_option = card_constructor.create_card(cards[i], card_data.card_info[cards[i]])
                         cards[i] = card_option
@@ -137,7 +138,9 @@ class RewardScreen: # Class for any reward screed
                 for i in range(0, self.additional_rewards['Potion']):
                     relic = relic_data.spawnRelic()
                     self.rewards['Relics'].append(relic)
-        
+        self.run.rareChanceOffset = self.rareChanceOffset
+
+
     def listRewards(self):
         i = 0
         reward_picks = {

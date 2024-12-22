@@ -38,15 +38,5 @@ for i in range(card_choice_num): #Runs x amount of random card choices
         cardSelect.append(random.choice(cardPoolSel))
         rareChanceOff += 1 #increase the rare chance offset when ever a common card is rolled
 
-deck = [] #player's deck
-
-print(cardSelect) #prints out the cards avalible to select
-
-i = int(input("Pick a card:")) #takes user choice
-
-deck.append(cardSelect[i]) # add chosen card to deck
-
-print(deck[0])
-
 
 
