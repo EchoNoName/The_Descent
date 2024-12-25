@@ -32,7 +32,7 @@ def deal_attack_damage(damage, times : int, context, combat):
     context['user'].buffs['Vigour'] = 0
     actualDamage = actualDamage - context['user'].debuffs['-Strength']
     if context['user'].debuffs['Weak'] > 0:
-        actualDamage = actualDamage // 4
+        actualDamage = int(actualDamage * 0.75)
     # Damage Calcs
     targets = []
     if isinstance(context['target'], int):
@@ -834,7 +834,7 @@ def card_select(num, restrictions, run):
                     continue
                     # Do nothing
                 else:
-                    run.player.selected_cards(eligible_cards[select])
+                    run.player.selected_cards.append(eligible_cards[select])
                     index_selected.append(select)
                     # Add the chosen card to selected
             else:
@@ -909,6 +909,7 @@ def card_reward_option_mod(mod, run):
 def generate_rewards(name, run):
     '''Function that generates a reward screen'''
     run.generate_reward_screen_instance(False, name)
+    run.reward.listRewards()
 
 def combat_mechanic_change(mechanic, change, run):
     '''Function to call the mathod in run to change the combat mechanic
@@ -985,6 +986,8 @@ def price_discount(price, discount, *args):
     return math.floor(price * discount)
 
 def gold_amount_mod(amount, mod, *args):
+    if amount < 0:
+        return amount
     return max(0, amount + mod)
 
 def potion_to_nothing(*args):

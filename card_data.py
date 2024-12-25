@@ -1,5 +1,5 @@
 import effects
-
+import pygame
 
 #the card ids will consist of 4 numbers, ABCD, A represents the class of cards, and the rest represents the card number, adding 100 is the upgraded version of the card.
 # A = 0, Classless cards, curses, statuses. A = 1, Cursed Swordsman cards
@@ -60,9 +60,9 @@ card_info = {
     53: ('Dazed', 4, 3, 'U', None, False, False, False, True, None, 0),
     54: ('Void', 4, 3, 'U', 'When drawn, lose 1 Energy', False, False, False, True, {'Drawn': {effects.energy_manip: (-1, )}}, 0),
     1000: ('Slash', 0, 0, 1, 'Deal 6 damage', False, False, False, False, {effects.deal_attack_damage: (6, 1)}, 1),
-    1001: ('Bash', 0, 0, 1, 'Deal 8 damage. Apply 2 Vulnerable', False, False, False, False, {effects.deal_attack_damage: (8, 1), effects.apply_debuff: (['Vulnerable'], [2])}, 1),
+    1001: ('Bash', 0, 0, 2, 'Deal 8 damage. Apply 2 Vulnerable', False, False, False, False, {effects.deal_attack_damage: (8, 1), effects.apply_debuff: (['Vulnerable'], [2])}, 1),
     1002: ('Block', 0, 1, 1, 'Gain 5 block', False, False, False, False, {effects.block_gain_card: (5, 1)}, 0),
-    1003: ('Inflict Wounds', 0, 0, 0, 'Deal 3 damage. Apply 1 Vulnerable', False, False, False, False, {effects.deal_attack_damage: (3, 1), effects.apply_debuff: (['Vulnerable'], [1])}, 1),
+    1003: ('Inflict Wounds', 1, 0, 0, 'Deal 3 damage. Apply 1 Vulnerable', False, False, False, False, {effects.deal_attack_damage: (3, 1), effects.apply_debuff: (['Vulnerable'], [1])}, 1),
     1004: ("Rampage", 1, 0, 0, 'Deal 6 damage. Add a copy of this card to your discard pile', False, False, False, False, {effects.deal_attack_damage: (6, 1), effects.add_card_to_pile: ('discard', 1004, 1, 'na')}, 1), # 0 = hand, 1 = draw pile, 2 = discard pile. 3 = exhaust pile
     1005: ("Covet", 1, 1, 0, 'Draw 1 card. Discard 1 card, if the card discarded was a Curse, Exhaust it instead', False, False, False, False, {effects.draw_cards: (1, ), effects.exhaust_discard_curse: (1, )}, 0),
     1006: ("Flex", 1, 1, 0, 'Gain 2 Temporary Strength', False, False, False, False, {effects.apply_buff: (['Strength'], [2]), effects.apply_debuff: (['Chained'], [2])}, 0),
@@ -99,7 +99,7 @@ card_info = {
     1037: ("Cursed Pact", 2, 1, 1, 'Exhaust 1 card in your hand. Draw 2 cards', False, False, False, False, {effects.exhaust_from_hand: (1, ), effects.draw_cards: (2, )}, 0),
     1038: ("Power Through", 2, 1, 0, 'Lose 3 HP. Gain 12 block, shuffle 1 Curse into the draw pile', False, False, False, False, {effects.hp_cost: (3, ), effects.block_gain_card: (12, 1), effects.add_card_to_pile: ('draw', 'weak curse', 1, 'na')}, 0),
     1039: ("Second wind", 2, 1, 1, 'Exhaust all non-attack cards and gain 5 block for each card exhausted', False, False, False, False, {effects.hand_for_card_exhausted: ({1, 2, 3, 4}, {0, 1, 2, 3, 4}, [effects.block_gain_card], [(5, 1)])}, 0),
-    1040: ("Conjour blade", 2, 1, 1, 'Add a random attack card to your hand. It costs 0 this turn', False, False, False, False, {effects.add_card_to_pile: ('hand', 'atk', 1, (0, 'turn'))}, 0),
+    1040: ("Conjour blade", 2, 1, 1, 'Add a random attack card to your hand. It costs 0 this turn', False, False, False, False, {effects.add_card_to_pile: ('hand', 'atk', 1, (0, 'Turn'))}, 0),
     1041: ("Sinister appearance", 2, 1, 0, 'Apply 1 Weak to all enemies', False, True, False, False, {effects.apply_debuff: (['Weak'], [1])}, 3),
     1042: ("Sentenal", 2, 1, 1, 'Gain 5 block. If this card is exhausted, gain 2 Energy', False, False, False, False, {effects.block_gain_card: (5, 1), 'Exhausted': {effects.energy_manip: (2, )}}, 0),
     1043: ("Bloodletting", 2, 1, 0, 'Lose 3 HP. Gain 2 Energy', False, False, False, False, {effects.hp_cost: (3, ), effects.energy_manip: (2, )}, 0),
@@ -116,7 +116,7 @@ card_info = {
     1054: ("Evolve", 2, 2, 1, 'Whenever you draw a Status, draw 1 card', False, False, False, False, {'Power': {'Draw Status': {effects.draw_cards: (1, )}}}, 0),
     1055: ("Transfer pain", 2, 2, 1, 'Whenever you draw a Curse or Status, deal 6 damage to all enemies', False, False, False, False, {'Power': {'Draw Negative': {effects.deal_damage: (6, 1)}}}, 3),
     1056: ("Dark Embrace", 2, 2, 2, 'Whenever a card is exhausted, draw 1 card', False, False, False, False, {'Power': {'Exhaust': {effects.draw_cards: (1, )}}}, 0),
-    1057: ("Devouring Blade", 3, 0, 1, 'Deal 10 damage. If Fatal, increase your Max Hp by 3', False, True, False, False, {effects.feed: (10, 3)}, 1),
+    1057: ("Devouring Blade", 3, 0, 1, 'Deal 10 damage. If Fatal, increase your Max Hp by 3', False, True, False, False, {effects.feed: (10, 3)}, 1, "devouring_blade.png"),
     1058: ("Void Strike", 3, 0, 0, 'Deal 3 damage. Apply 2 Vulnerable. 2 Weak and 2 Poison', False, True, False, False, {effects.deal_attack_damage: (3, 1), effects.apply_debuff: (['Vulnerable', 'Weak', 'Poison'], [2, 2, 2])}, 1),
     1059: ("Cursed flames", 3, 0, 2, 'Deal 21 to all enemies. Shuffle 2 Curses into the discard pile', False, False, False, False, {effects.deal_attack_damage: (21, 1), effects.add_card_to_pile: ('discard', 'weak curse', 2, 'na')}, 3),
     1060: ("Bloodlust", 3, 0, 2, 'Deal 4 damage to all enemies. Heal HP equal to the unblocked damage dealt', False, False, False, False, {effects.reap: (4, )}, 3),
@@ -138,7 +138,7 @@ card_info = {
     1100: ('Slash+', 0, 0, 1, 'Deal 9 damage', False, False, False, False, {effects.deal_attack_damage: (9, 1)}, 1),
     1101: ('Bash+', 0, 0, 1, 'Deal 12 damage. Apply 3 Vulnerable', False, False, False, False, {effects.deal_attack_damage: (12, 1), effects.apply_debuff: (['Vulnerable'], [3])}, 1),
     1102: ('Block+', 0, 1, 1, 'Gain 8 block', False, False, False, False, {effects.block_gain_card: (8, 1)}, 0),
-    1103: ('Inflict Wounds+', 0, 0, 0, 'Deal 4 damage. Apply 2 Vulnerable', False, False, False, False, {effects.deal_attack_damage: (4, 1), effects.apply_debuff: (['Vulnerable'], [2])}, 1),
+    1103: ('Inflict Wounds+', 1, 0, 0, 'Deal 4 damage. Apply 2 Vulnerable', False, False, False, False, {effects.deal_attack_damage: (4, 1), effects.apply_debuff: (['Vulnerable'], [2])}, 1),
     1104: ("Rampage+", 1, 0, 0, 'Deal 8 damage. Add a copy of this card to your discard pile', False, False, False, False, {effects.deal_attack_damage: (8, 1), effects.add_card_to_pile: ('discard', 1104, 1, 'na')}, 1),
     1105: ("Covet+", 1, 1, 0, 'Draw 2 card. Discard 2 card, if the card discarded was a Curse, Exhaust it instead', False, False, False, False, {effects.draw_cards: (2, ), effects.exhaust_discard_curse: (2, )}, 0),
     1106: ("Flex+", 1, 1, 0, 'Gain 4 Temporary Strength', False, False, False, False, {effects.apply_buff: (['Strength'], [4]), effects.apply_debuff: (['Chained'], [4])}, 0),
@@ -175,7 +175,7 @@ card_info = {
     1137: ("Cursed Pact+", 2, 1, 1, 'Exhaust 1 card in your hand. Draw 3 cards', False, False, False, False, {effects.exhaust_from_hand: (1, ), effects.draw_cards: (3, )}, 0),
     1138: ("Power Through+", 2, 1, 0, 'Lose 3 HP. Gain 15 block, Add 1 Curse into the hand', False, False, False, False, {effects.hp_cost: (3, ), effects.block_gain_card: (15, 1), effects.add_card_to_pile: ('hand', 'weak curse', 1, 'na')}, 0),
     1139: ("Second wind+", 2, 1, 1, 'Exhaust all non-attack cards and gain 7 block for each card exhausted', False, False, False, False, {effects.hand_for_card_exhausted: ({1, 2, 3, 4}, {0, 1, 2, 3, 4}, [effects.block_gain_card], [(7, 1)])}, 0),
-    1140: ("Conjour blade+", 2, 1, 0, 'Add a random attack card to your hand. It costs 0 this turn', False, False, False, False, {effects.add_card_to_pile: ('hand', 'atk', 1, 0)}, 0),
+    1140: ("Conjour blade+", 2, 1, 0, 'Add a random attack card to your hand. It costs 0 this turn', False, False, False, False, {effects.add_card_to_pile: ('hand', 'atk', 1, (0, 'Turn'))}, 0),
     1141: ("Sinister appearance+", 2, 1, 0, 'Apply 2 Weak to all enemies', False, True, False, False, {effects.apply_debuff: (['Weak'], [2])}, 3),
     1142: ("Sentenal+", 2, 1, 1, 'Gain 8 block. If this card is exhausted, gain 3 Energy', False, False, False, False, {effects.block_gain_card: (8, 1), 'Exhausted': {effects.energy_manip: (3, )}}, 0),
     1143: ("Bloodletting+", 2, 1, 0, 'Lose 3 HP. Gain 3 Energy', False, False, False, False, {effects.hp_cost: (3, ), effects.energy_manip: (3, )}, 0),

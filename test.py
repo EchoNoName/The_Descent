@@ -1,38 +1,38 @@
-import random
+import pygame
+import card_constructor
+import card_data
 
-potions = ['test', 'other potion']
+pygame.init()
 
-class card():
-    def __init__(self, name, potion):
-        self.name = name
-        self.potion = potion
+# Set up the display surface (the screen)
+screen = pygame.display.set_mode((800, 600))  # A surface to render on
 
-class combat():
-    def __init__(self, hand, discard_pile, potion):
-        self.hand = hand
-        self.discard_pile = discard_pile
-        self.potion = potion
+card = card_constructor.create_card(1057, card_data.card_info[1057])
 
-    def random_discard(self, num):
-        if self.hand:
-            if len(self.hand) > num:
-                for i in range(0, num):
-                    card = random.choice(self.hand)
-                    self.discard_pile.append(card)
-                    self.hand.remove(card)
-            else:
-                self.discard_pile.extend(self.hand)
-                self.hand.clear()
+running = True
+while running:
+    screen.fill((0, 0, 0))  # Fill the screen with a black background
 
-    def remove_potion(self, potion):
-        global potions
-        potions.remove(potion)
+    # Draw the card
+    card.draw_sprite(screen)
 
-Cc = combat([], [], potions)
-Cc.remove_potion(Cc.potion[0])
-print(Cc.potion)
-print(potions)
-Cc.potion = 1
-Cc.potion + 1
+    # Event handling
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            card.start_drag(event.pos)  # Start dragging when the mouse button is pressed
+        
+        if event.type == pygame.MOUSEMOTION:
+            if card.dragging:
+                card.drag(event.pos)  # Update the card's position during the drag
+        
+        if event.type == pygame.MOUSEBUTTONUP:
+            card.stop_drag()  # Snap the card back to its original position when the mouse button is released
 
+    card.update()
 
+    pygame.display.flip()  # Update the display
+
+pygame.quit()

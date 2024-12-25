@@ -20,7 +20,7 @@ class Enemy:
             if amount > 0:
                 debuffs.append(f'{debuff}: {amount}')
         debuffs = str(', '.join(debuffs))
-        return f'{self.name}   HP: {self.hp}/{self.max_hp}   Buffs: {buffs}   Debuffs: {debuffs}'
+        return f'{self.name}   HP: {self.hp}/{self.max_hp}   Block: {self.block}   Buffs: {buffs}   Debuffs: {debuffs}'
 
     def __repr__(self):
         return self.__str__()
@@ -44,7 +44,7 @@ class Enemy:
                 if self.debuffs['Weak'] > 1:
                     damage = int(damage * 0.75)
                 intent += f': {damage} x {self.intent[0][effects.deal_attack_damage][1]}'
-        return self.__repr__() + f'   Intent: {intent}   Buffs: {buffs}   Debuffs: {debuffs}'
+        return self.__repr__() + f'   Intent: {intent}'
     
     def turn_start(self):
         '''Method for actions done at the start of turn'''
@@ -232,7 +232,7 @@ class Enemy:
 class JawWorm(Enemy):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'Goblin Giant'
+        self.name = 'Jaw Worm'
         self.max_hp = random.randint(40, 44)
         self.hp = self.max_hp
         self.block = 0
@@ -255,11 +255,11 @@ class JawWorm(Enemy):
             self.actions_done.append('Chomp')
             # Always bellow on turn 1
             return self.intent
-        rng = random.randint(1, 100)
         # Generate a random number from 1 - 100 for percentage based actions
         action = ''
         # Initialize action variable
         while not action:
+            rng = random.randint(1, 100)
             # Loop until condition is met and the loop is broken
             if rng <= 25:
                 # 67% chance move
@@ -363,11 +363,11 @@ class MediumGreenSlime(Enemy):
         ### args: 
         combat: the combat session currently in
         '''
-        rng = random.randint(1, 100)
-        # Generate a random number from 1 - 100 for percentage based actions
         action = ''
         # Initialize action variable
         while not action:
+            rng = random.randint(1, 100)
+            # Generate a random number from 1 - 100 for percentage based actions
             # Loop until condition is met and the loop is broken
             if rng <= 40:
                 # 40% Chance move
@@ -446,11 +446,11 @@ class LargeGreenSlime(Enemy):
         ### args: 
         combat: the combat session currently in
         '''
-        rng = random.randint(1, 100)
-        # Generate a random number from 1 - 100 for percentage based actions
         action = ''
         # Initialize action variable
         while not action:
+            rng = random.randint(1, 100)
+            # Generate a random number from 1 - 100 for percentage based actions
             # Loop until condition is met and the loop is broken
             if rng <= 40:
                 # 40% Chance move
@@ -563,11 +563,11 @@ class MediumBlueSlime(Enemy):
         ### args: 
         combat: the combat session currently in
         '''
-        rng = random.randint(1, 100)
-        # Generate a random number from 1 - 100 for percentage based actions
         action = ''
         # Initialize action variable
         while not action:
+            rng = random.randint(1, 100)
+            # Generate a random number from 1 - 100 for percentage based actions
             # Loop until condition is met and the loop is broken
             if rng <= 70:
                 # 70% chance move
@@ -628,11 +628,11 @@ class LargeBlueSlime(Enemy):
         ### args: 
         combat: the combat session currently in
         '''
-        rng = random.randint(1, 100)
-        # Generate a random number from 1 - 100 for percentage based actions
         action = ''
         # Initialize action variable
         while not action:
+            rng = random.randint(1, 100)
+            # Generate a random number from 1 - 100 for percentage based actions
             # Loop until condition is met and the loop is broken
             if rng <= 70:
                 # 70% chance move
@@ -843,7 +843,7 @@ class Looter(Enemy):
         self.hp = self.max_hp
         self.block = 0
         self.actions = {
-            'Mug': ({effects.enemy_block_gain: (10, ), effects.rob: ()}, 1, 'Attack'),
+            'Mug': ({effects.deal_attack_damage: (10, 1), effects.rob: ()}, 1, 'Attack'),
             'Lunge': ({effects.deal_attack_damage: (12, 1), effects.rob: ()}, 1, 'Attack'),
             'Smoke Bomb': ({effects.enemy_block_gain: (6, )}, 0, 'Block'),
             'Escape': ({effects.bandit_escape: ()}, 0, 'Escape')
@@ -899,11 +899,11 @@ class InfestedCorpes(Enemy):
         ### args: 
         combat: the combat session currently in
         '''
-        rng = random.randint(1, 100)
-        # Generate a random number from 1 - 100 for percentage based actions
         action = ''
         # Initialize action variable
         while not action:
+            rng = random.randint(1, 100)
+            # Generate a random number from 1 - 100 for percentage based actions
             # Loop until condition is met and the loop is broken
             if rng <= 60:
                 # 60% chance move
@@ -1003,11 +1003,11 @@ class RedArachnid(Enemy):
         ### args: 
         combat: the combat session currently in
         '''
-        rng = random.randint(1, 100)
-        # Generate a random number from 1 - 100 for percentage based actions
         action = ''
         # Initialize action variable
         while not action:
+            rng = random.randint(1, 100)
+            # Generate a random number from 1 - 100 for percentage based actions
             # Loop until condition is met and the loop is broken
             if rng <= 40:
                 # 40% chance move
@@ -1100,11 +1100,11 @@ class BlueArachnid(Enemy):
                     # Use Scrape
                     return self.intent
         else:
-            rng = random.randint(1, 100)
-            # Generate a random number from 1 - 100 for percentage based actions
             action = ''
             # Initialize action variable
             while not action:
+                rng = random.randint(1, 100)
+                # Generate a random number from 1 - 100 for percentage based actions
                 # Loop until condition is met and the loop is broken
                 if rng <= 45:
                     # 45% chance move
@@ -1136,11 +1136,11 @@ class GreenLouse(Enemy):
         ### args: 
         combat: the combat session currently in
         '''
-        rng = random.randint(1, 100)
-        # Generate a random number from 1 - 100 for percentage based actions
         action = ''
         # Initialize action variable
         while not action:
+            rng = random.randint(1, 100)
+            # Generate a random number from 1 - 100 for percentage based actions
             # Loop until condition is met and the loop is broken
             if rng <= 75:
                 # 75% chance move
@@ -1161,7 +1161,7 @@ class GreenLouse(Enemy):
                 # Checks if the move was used twice in the previous 2 turns already and if not makes it the action done
             else: 
                 if self.actions_done:
-                    if len(self.actions_done) >= 1:
+                    if len(self.actions_done) >= 2:
                         if 'Grow' == self.actions_done[-1] and 'Grow' == self.actions_done[-2]:
                             continue
                         else:
@@ -1183,6 +1183,8 @@ class GreenLouse(Enemy):
         Handles damage taken by the entity
         '''
         damage = damage
+        if self.debuffs['Vulnerable'] > 0:
+            damage = int(damage * 1.5)
         self.block -= damage
         # Deal damage to block first
         if self.block >= 0:
@@ -1227,11 +1229,11 @@ class RedLouse(Enemy):
         ### args: 
         combat: the combat session currently in
         '''
-        rng = random.randint(1, 100)
-        # Generate a random number from 1 - 100 for percentage based actions
         action = ''
         # Initialize action variable
         while not action:
+            rng = random.randint(1, 100)
+            # Generate a random number from 1 - 100 for percentage based actions
             # Loop until condition is met and the loop is broken
             if rng <= 75:
                 # 75% chance move
@@ -1274,6 +1276,8 @@ class RedLouse(Enemy):
         Handles damage taken by the entity
         '''
         damage = damage
+        if self.debuffs['Vulnerable'] > 0:
+            damage = int(damage * 1.5)
         self.block -= damage
         # Deal damage to block first
         if self.block >= 0:
@@ -1437,11 +1441,44 @@ class GiantLouse(Enemy):
             return 0
         # Returns actual amount of hp loss 
 
+class GiantLouseAwake(Enemy):
+    def __init__(self) -> None:
+        super().__init__()
+        self.name = 'Giant Louse'
+        self.max_hp = random.randint(109, 111)
+        self.hp = self.max_hp
+        self.block = 0
+        self.special_done = False
+        self.counter = 0
+        self.actions = {
+            'Bite': ({effects.deal_attack_damage: (18, 1)}, 1, 'Attack'),
+            'Web': ({effects.apply_debuff: (['-Dexterity', '-Strength'], [1, 1])}, 1, 'Mega Debuff'),
+        }
+        self.intent = None
+        # Initilize Properties of an enemy
+    
+    def intent_get(self, combat):
+        '''Gets what the enemy intends to do
+    
+        ### args: 
+        combat: the combat session currently in
+        '''
+        if self.counter == 0 or self.counter == 1:
+            # Pattern move
+            self.intent = self.actions['Bite']
+            self.counter += 1
+            # Increase counter
+        else:
+            self.intent = self.actions['Web']
+            self.counter = 0
+            # Reset counter after webbing
+        return self.intent
+
 class GoblinGiant(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Goblin Giant'
-        self.max_hp = random.randint(11, 17)
+        self.max_hp = random.randint(82, 86)
         self.hp = self.max_hp
         self.block = 0
         self.actions_done = []
@@ -1463,11 +1500,11 @@ class GoblinGiant(Enemy):
             self.intent = self.actions['Bellow']
             # Always bellow on turn 1
             return self.intent
-        rng = random.randint(1, 100)
-        # Generate a random number from 1 - 100 for percentage based actions
         action = ''
         # Initialize action variable
         while not action:
+            rng = random.randint(1, 100)
+            # Generate a random number from 1 - 100 for percentage based actions
             # Loop until condition is met and the loop is broken
             if rng <= 67:
                 # 67% chance move

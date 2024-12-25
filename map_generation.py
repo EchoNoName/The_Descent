@@ -476,8 +476,16 @@ def createMap(asc):
     mapDisplay.append(floor16)
     for room_num in map[15].keys():
         path[(15, room_num)] = [[16, 4]]
+    i = 1
+    for j in range(0, 30, 2):
+        if i < 10:
+            mapDisplay[j] = f'{i}:  ' + mapDisplay[j]
+        else:
+            mapDisplay[j] = f'{i}: ' + mapDisplay[j]
+        i += 1
+    for j in range(1, 30, 2):
+        mapDisplay[j] = f'    ' + mapDisplay[j]
+        i += 1
+    for j in range(30, 35):
+        mapDisplay[j] = f'    ' + mapDisplay[j]
     return map, path, mapDisplay
-
-a, b, c = createMap(1)
-for mapLine in reversed(c):
-    print(mapLine)

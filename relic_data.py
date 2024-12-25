@@ -52,23 +52,34 @@ class Relics: # Relic Object Class
             event: The event occuring represented by a string
             combat: the combat object that holds all data related to a combat instance
         '''
-        context = {
-            # Default info to pass on for executing effects
-            'user': combat.player, # The player is playing the card
-            'enemies': combat.enemies, # List of enemies
-            'draw': combat.draw_pile, # The draw pile
-            'discard': combat.discard_pile, # The discard pile
-            'hand': combat.hand, # the hand
-            'exhaust': combat.exhaust_pile, # The exhaust pile
-            'target': None # the target of the card, This is mainly the one that gets overrided
-        }
-        context['target'] = combat.player_targeting(self.targets)
         if self.counter != None:
             if event == self.condition and self.effect_class == 'combatAct': # Check if the condition is met 
+                context = {
+                    # Default info to pass on for executing effects
+                    'user': combat.player, # The player is playing the card
+                    'enemies': combat.enemies, # List of enemies
+                    'draw': combat.draw_pile, # The draw pile
+                    'discard': combat.discard_pile, # The discard pile
+                    'hand': combat.hand, # the hand
+                    'exhaust': combat.exhaust_pile, # The exhaust pile
+                    'target': None # the target of the card, This is mainly the one that gets overrided
+                }
+                context['target'] = combat.player_targeting(self.targets)
                 for i in range(0, len(self.effect_type)):
                         self.effect_type[i](*self.effect_details[i], context, combat)
         else:
-            if event == self.condition:
+            if event == self.condition and self.effect_class == 'combatAct':
+                context = {
+                    # Default info to pass on for executing effects
+                    'user': combat.player, # The player is playing the card
+                    'enemies': combat.enemies, # List of enemies
+                    'draw': combat.draw_pile, # The draw pile
+                    'discard': combat.discard_pile, # The discard pile
+                    'hand': combat.hand, # the hand
+                    'exhaust': combat.exhaust_pile, # The exhaust pile
+                    'target': None # the target of the card, This is mainly the one that gets overrided
+                }
+                context['target'] = combat.player_targeting(self.targets)
                 self.counter += 1
                 if self.counter == self.count_needed:
                     for i in range(0, len(self.effect_type)):
@@ -97,8 +108,9 @@ class Relics: # Relic Object Class
             self.effect_type(*self.effect_details, run)
     
     def rewardModification(self, reward_type, additional_rewards):
-        if reward_type in self.condition and self.effect_class == 'rewardMod':
-            return self.effect_type(*self.effect_details, additional_rewards)
+        if self.effect_class == 'rewardMod':
+            if reward_type in self.condition:
+                return self.effect_type(*self.effect_details, additional_rewards)
         return additional_rewards
 
     def turnEff(self, combat):
@@ -108,18 +120,18 @@ class Relics: # Relic Object Class
             event: The event occuring represented by a string
             combat: the combat object that holds all data related to a combat instance
         '''
-        context = {
-            # Default info to pass on for executing effects
-            'user': combat.player, # The player is playing the card
-            'enemies': combat.enemies, # List of enemies
-            'draw': combat.draw_pile, # The draw pile
-            'discard': combat.discard_pile, # The discard pile
-            'hand': combat.hand, # the hand
-            'exhaust': combat.exhaust_pile, # The exhaust pile
-            'target': None # the target of the card, This is mainly the one that gets overrided
-        }
-        context['target'] = combat.player_targeting(self.targets)
         if combat.turn == self.condition and self.effect_class == 'turnEff':
+            context = {
+                # Default info to pass on for executing effects
+                'user': combat.player, # The player is playing the card
+                'enemies': combat.enemies, # List of enemies
+                'draw': combat.draw_pile, # The draw pile
+                'discard': combat.discard_pile, # The discard pile
+                'hand': combat.hand, # the hand
+                'exhaust': combat.exhaust_pile, # The exhaust pile
+                'target': None # the target of the card, This is mainly the one that gets overrided
+            }
+            context['target'] = combat.player_targeting(self.targets)
             self.effect_type(*self.effect_details, context, combat)
 
 def createRelic(name: str, details: tuple):
@@ -128,17 +140,17 @@ def createRelic(name: str, details: tuple):
 def createCommon():
     '''Function to create a random common relic'''
     relic_name = random.choice(list(commonRelics.keys()))
-    return Relics(relic_name, commonRelics[relic_name])
+    return Relics(relic_name, *commonRelics[relic_name])
 
 def createUncommon():
     '''Function to create a random uncommon relic'''
     relic_name = random.choice(list(UncommonRelics.keys()))
-    return Relics(relic_name, UncommonRelics[relic_name])
+    return Relics(relic_name, *UncommonRelics[relic_name])
 
 def createRare():
     '''Function to create a random rare relic'''
     relic_name = random.choice(list(rareRelics.keys()))
-    return Relics(relic_name, rareRelics[relic_name])
+    return Relics(relic_name, *rareRelics[relic_name])
 
 def spawnRelic(common = 50, uncommon = 33):
     '''Function to generate a random relic for elite fights'''
@@ -157,9 +169,9 @@ bossRelics = {
     'Rabbit\'s Foot': ('Elites now drop 2 relics instead of 1.', 1, effects.additonal_rewards, 'additionalRewards', 1, False, ['Relic'], 0),
     'Alchemical Workbench': ('Potion effects are doubled.', 1, 'Sacred Bark', 'Special', None, False, 'Potion', 0), 
     'Stasis Chamber': ('You no longer discard your hand at the end of your turn.', 1, [effects.combat_mechanic_change], 'pickUp', None, False, [['Turn_End_Discard', False]], 0),
-    'Cursed Talisman': ('Upon pickup, obtain 1 common relic, 1 uncommon relic, 1 rare relic and a Unique Curse.', 1, [effects.add_card_to_deck, effects.generate_reward], 'pickUp', None, False [[21], ['Bell']], 0),
+    'Cursed Talisman': ('Upon pickup, obtain 1 common relic, 1 uncommon relic, 1 rare relic and a Unique Curse.', 1, [effects.add_card_to_deck, effects.generate_rewards], 'pickUp', None, False, [[21], ['Bell']], 0),
     'Eye of Eris': ('Become Confused at the start of combat. Draw 2 additional cards at the start of every turn.', 1, [effects.sneko_eye], 'combatAct', 'Turn Start', False, [[]], 0),
-    'House Deed': ('Upon pickup, obtain 2 potions, gain 100 Gold. increase your Max Hp by 10, Upgrade a card and obtain a random card.', 1, [effects.upgrade_card, effects.max_hp_change, effects.generate_reward], 'pickUp', None, False, [['Card'], [10], ['Tiny House']], 0),
+    'House Deed': ('Upon pickup, obtain 2 potions, gain 100 Gold. increase your Max Hp by 10, Upgrade a card and obtain a random card.', 1, [effects.upgrade_card, effects.max_hp_change, effects.generate_rewards], 'pickUp', None, False, [['Card'], [10], ['Tiny House']], 0),
     'Bag of Holding': ('Upon pickup, choose and Remove 2 cards.', 1, [effects.card_select, effects.remove_card], 'pickUp', None, False, [[2, {}], ['Selected']], 0),
     'Threat Detector': ('During Elite and Boss combats, gain 1 Energy at the start of each turn.', 1, [], None, None, False, [], 0, 'Elite'),
     'Temporal Hiccup': ('For the first 3 turns of combat, your turns are treated as the start of combat.', 1 , [effects.temporal_hiccup], 'combatAct', 'Turn Start', False, [[]], 0),
@@ -258,26 +270,28 @@ rareRelics = {
 }
 shopRelics = {
     'Treasure Map': ('Your next Event room will always be a Treasure.', 5, [effects.change_next_event], 'pickUp', None, False, [['Treasure']], 0),
-    'Damaged Duplicator': ('Upon pickup, duplicate a card in your deck.', 5, [effects.card_select, effects.duplicate_card], 'pickUp', None, False [[1, {}], ['Selected']], 0),
+    'Damaged Duplicator': ('Upon pickup, duplicate a card in your deck.', 5, [effects.card_select, effects.duplicate_card], 'pickUp', None, False, [[1, {}], ['Selected']], 0),
     'Biomechanical Arm': ('At the start of combat, gain 1 Artifact.', 5, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Artifact'], [1]]], 0),
     'The Third Eye': ('When viewing your draw pile, it is now shown in order.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [['Ordered_Draw_Pile', True]], 0),
     'Pancakes': ('Upon pickup, increase your Max Hp by 7 and heal all your Hp.', 5, [effects.max_hp_change, effects.heal_player], 'pickUp', None, False, [[7], [9999]], 0),
     'X': ('Whenever you play an X cost card, its effects are increased by 2.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [[2]], 0),
     'Costco\'s Membership Card': ('50% discount on all shop items.', 5, effects.price_discount, 'valueMod', 'Price', False, [0.5], 0),
     'Sling of Courage': ('Gain 2 Strength during Elite combats.', 5, [effects.apply_buff], 'combatAct', 'Elite Start', False, [[['Strength'], [2]]], 0),
-    'Booster Pack': ('Upon pickup, gain 5 card rewards.', 5, [effects.generate_rewards], 'pickUp', None, False [['Booster Pack']], 0),
-    'Cauldron+': ('Upon pickup, Brew 5 potions.', 5, [effects.generate_rewards], 'pickUp', None, False [['Cauldron']], 0),
-    '2 Leaf Clover': ('Cards that Exhaust from being played don\'t 50% of the time.', 5, [effects.combat_mechanic_change], 'pickUp', None, False [['Exhaust_Chance', 50]], 0),
+    'Booster Pack': ('Upon pickup, gain 5 card rewards.', 5, [effects.generate_rewards], 'pickUp', None, False, [['Booster Pack']], 0),
+    'Cauldron+': ('Upon pickup, Brew 5 potions.', 5, [effects.generate_rewards], 'pickUp', None, False, [['Cauldron']], 0),
+    '2 Leaf Clover': ('Cards that Exhaust from being played don\'t 50% of the time.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [['Exhaust_Chance', 50]], 0),
     'Rainbow': ('At the start of combat, add a random card to your hand, it costs 0 that turn.', 5, [effects.add_card_to_pile], 'combatAct', 'Combat Start', False, [['hand', 'Card', 1, 'na']], 0),
     'Sandvich': ('Status cards can now be played, they are Exhausted when played.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [['Playable_Status', True]], 0),
     'Iron Plated Cards': ('When ever you shuffle your draw pile, gain 6 block.', 5, [effects.block_gain_power], 'combatAct', 'Shuffle', [[6]], 0)
 }
 eventRelics = {
+    'Golden Statue': ('Gain an 15 gold at the end of combat. ', 6, effects.gold_gain, 'eventMod', 'Combat End', False, [15], 0),
     'Broken Arms': ('At the start of combat, apply 1 Weak to all enemies.', 6, [effects.apply_debuff], 'combatAct', 'Combat Start', False, [[['Weak'], [1]]], 3),
     'Christmas Present': ('Rare cards appear more often.', 6, [effects.rare_base_chance_mult], 'pickUp', None, False, [[3]], 0),
     'Steroids': ('At the start of combat, gain 3 Temporary Strength.', 6, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Strength', 'Chained'], [3, 3]]], 0),
     'Necronomicon': ('Upon pickup, add a Necronomicurse to the deck. The first Attack you play every turn that costs 2 or more is played twice.', 6, [effects.add_card_to_deck, effects.combat_mechanic_change], 'pickUp', None, False, [[22], ['Necro', True]]),
-    'Knownledge Book': ('At the start of combat, add a random Power to your hand, it costs 0 that turn.', 6, [effects.add_card_to_pile], 'combatAct', 'Combat Start', False, [['hand', 'Power', 1, 0]], 0),
+    'Knownledge Book': ('At the start of combat, add a random Power to your hand, it costs 0 that turn.', 6, [effects.add_card_to_pile], 'combatAct', 'Combat Start', False, [['hand', 'Power', 1, (0, 'Turn')]], 0),
     'The Codex': ('At the start of the turn, you can choose 1 of 3 cards to add to your hand.', 6, [effects.discover], 'combatAct', 'Turn Start', False, [['Card', 'na']], 0),
-    'Heart Disease': ('You can no longer heal.', 6, effects.healing_reduction, 'valueMod', 'Healing', False, [9999], 0)
+    'Heart Disease': ('You can no longer heal.', 6, effects.healing_reduction, 'valueMod', 'Healing', False, [9999], 0),
+    'Strange Mushroom': ('At the start of combat, add a random card of any class to your hand, it costs 0 this turn. ', 6, [effects.add_card_to_pile], 'combatAct', 'Combat Start', False, [['hand', 'Card', 1, (0, 'Turn')]])
 }

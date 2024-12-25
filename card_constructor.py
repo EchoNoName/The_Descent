@@ -1,4 +1,7 @@
 import random
+import pygame
+import os
+
 common_1 = [1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024]
 uncommon_1 = [1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1050, 1051, 1052, 1053, 1054, 1055, 1056]
 rare_1 = [1057, 1058, 1059, 1060, 1061, 1062, 1063, 1064, 1065, 1066, 1067, 1068, 1069, 1070, 1071, 1072, 1073, 1074]
@@ -9,7 +12,8 @@ weak_curse = [0, 1, 2, 3, 4, 5, 6]
 medium_curse = [8, 12]
 strong_curse = [9, 10, 11]
 
-def random_card(type, character = None):
+def random_card(type: str, character = None):
+    type = type.lower()
     if type == 'curse':
         return random.choice(weak_curse + medium_curse + strong_curse)
     elif type == 'weak curse':
@@ -38,7 +42,7 @@ def random_card(type, character = None):
             return 'placeholder'
 
 class Card():
-    def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, bottled = False, removable = True, x_cost_effect = {}):
+    def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, sprite, x = 0, y = 0, bottled = False, removable = True, x_cost_effect = {}):
         self.id = id # Card ID, which is an integer
         self.name = name # Name of the card, a string
         self.rarity = rarity # rarity represented by an integer
@@ -51,12 +55,26 @@ class Card():
         self.ethereal = ethereal # Boolean representing whether a card is ethereal
         self.effect = effect # what the card actually does, represented by a dictonary that contains its actions
         self.target = target # The targets of the card, represented by an integer
+        sprite = os.path.join("assets", "sprites", sprite)
+        self.sprite = pygame.image.load(sprite) # The sprite of a card
         self.removable = removable # Whether the card can be removed from the deck
         self.combat_cost = (None, None) #(Cost, Duration of cost (Played, Turn, Combat))
         self.chaotic = False # whether a card is chaotic, represented by boolean
         self.x_cost_effect = x_cost_effect
         # rarity:(0 = starter, 1 = common, 2 = uncommon, 3 = rare, 4 = other), type: (0 = atk, 1 = skill, 2 = power, 3 = status, 4 = curse)
         self.bottled = bottled
+        self.in_hand = False
+        self.x = x
+        self.y = y
+        self.hand_location = [self.x, self.y]
+        self.collision_box = self.sprite.get_rect(topleft=(self.x, self.y))
+        self.dragging = False
+        # Position and movement attributes
+        self.current_pos = pygame.Vector2(x, y)
+        self.target_pos = pygame.Vector2(x, y)
+        self.snap_speed = 10  # Speed of snapping animation
+        self.offset = pygame.Vector2(0, 0)  # Offset between mouse and card position during drag
+
 
     def __str__(self):
         card_descrip = []
@@ -101,6 +119,42 @@ class Card():
 
     def __repr__(self):
         return self.__str__()
+
+    def update(self):
+    # If not dragging, animate snapping back to the target position
+        if not self.dragging:
+            direction = self.target_pos - self.current_pos
+            distance = direction.length()  # Distance to target
+            
+            if distance > 1:  # If far from target, move towards it
+                direction = direction.normalize()  # Normalize to get unit vector
+                self.current_pos += direction * min(self.snap_speed, distance)  # Move towards target
+            else:  # Snap to the target position when close enough
+                self.current_pos = self.target_pos
+            
+        # Update the rectangle's position for collision
+        self.collision_box.topleft = self.current_pos
+
+
+    def draw_sprite(self, screen):
+        screen.blit(self.sprite, self.current_pos)
+
+    def start_drag(self, mouse_pos):
+        """Start dragging the card"""
+        if self.collision_box.collidepoint(mouse_pos):
+            self.dragging = True
+            # Calculate the offset between the mouse position and the card's top-left corner
+            self.offset = self.current_pos - pygame.Vector2(mouse_pos)
+
+    def drag(self, mouse_pos):
+        """Update the card's position while dragging"""
+        if self.dragging:
+            # Update the card's position based on the mouse position and offset
+            self.current_pos = pygame.Vector2(mouse_pos) + self.offset
+
+    def stop_drag(self):
+        """Snap the card back to its original position when dragging stops"""
+        self.dragging = False
 
     def modify_effect(self, effect_change, modifications):
         new_eff = {}

@@ -23,6 +23,13 @@ class Character:
         self.character_class = character_class
         self.block = 0
         self.deck = []
+        if character_class == 1:
+            for i in range(5):
+                self.deck.append(card_constructor.create_card(1000, card_data.card_info[1000]))
+        if character_class == 1:
+            for i in range(5):
+                self.deck.append(card_constructor.create_card(1002, card_data.card_info[1002]))
+        self.deck.append(card_constructor.create_card(1001, card_data.card_info[1001]))
         self.selected_cards = []
         self.gold = 100
         self.thieved = 0
@@ -30,7 +37,7 @@ class Character:
         self.relics = []
         self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0, 'Parry': 0, 'Deflect': 0}
         #Debuffs: Atrophy = lose dex at the end of turn
-        self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Parry': 0, 'Deflect': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Parry': 0, 'Deflect': 0, 'Entangle': 0}
         self.bottled = []
     
     def __str__(self):
@@ -142,12 +149,16 @@ class Character:
             if card.type == 4:
                 # If the card is a curse
                 transform_id = random.choice(card_constructor.weak_curse + card_constructor.medium_curse + card_constructor.strong_curse)
-                card = card_constructor.create_card(transform_id, card_data.card_info[transform_id])
+                card_new = card_constructor.create_card(transform_id, card_data.card_info[transform_id])
+                self.deck.remove(card)
+                self.deck.append(card_new)
                 # Transform into a random non special curse
             else:
                 if self.character_class == 1:
                     transform_id = random.choice(card_constructor.attack_card_1 + card_constructor.skill_card_1 + card_constructor.power_card_1)
-                    card = card_constructor.create_card(transform_id, card_data.card_info[transform_id])
+                    card_new = card_constructor.create_card(transform_id, card_data.card_info[transform_id])
+                    self.deck.remove(card)
+                    self.deck.append(card_new)
                     # Tranfrom into a card of the character class
                 else:
                     return TypeError(f'Unknown card transform: {card}')
@@ -394,7 +405,7 @@ def main_menu():
         # To be continued
 
 class Run:
-    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True}, eggs = {}):
+    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, removals = 0, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True}, eggs = {}):
         self.player = player
         if map_info != None:
             self.map, self.path, self.map_display = map_info
@@ -417,7 +428,6 @@ class Run:
             self.boss = boss
             self.eventList = eventList
             self.shrineList = shrineList
-            self.eggs = eggs
         else:
             self.easyPool = enemy_data.act_1_easy_pool()
             self.normalPool = enemy_data.act_1_normal_pool()
@@ -438,6 +448,9 @@ class Run:
         self.shop = None
         self.treasure = None
         self.reward = None
+        self.removals = removals
+        self.lastInstance = None
+        self.eggs = eggs
         self.instances = [self.shop, self.combat, self.event, self.treasure, self.reward]
     
     def runStart(self):
@@ -447,10 +460,75 @@ class Run:
             return # placeholder
 
     def neowBlessing(self):
-        return # Placeholder
+        self.eventList = self.generate_event_list()
+        for ds in reversed(self.map_display):
+            print(ds)
+        print('    0 1 2 3 4 5 6')
+        entrances = self.map[1]
+        room_type = {
+            1: 'Normal Combat',
+            2: 'Occurance',
+            3: 'Elite Combat',
+            4: 'Shop',
+            5: 'Treasure',
+            6: 'Campfire'
+        }
+        for room, encounter_type in entrances.items():
+            print(f'Floor 1, Room {room}: {room_type[encounter_type]}')
+        room = int(input('Type the room number you wish to enter'))
+        self.room = [1, room]
+        room_entered = self.map[1][room]
+        if room_entered == 1:
+            enemies = self.get_enemies()
+            self.generage_combat_instace(enemies, 'normal')
+            self.start_combat()
+        self.mapNav()
 
     def mapNav(self):
-        return # Placeholder
+        room_type = {
+            1: 'Normal Combat',
+            2: 'Occurance',
+            3: 'Elite Combat',
+            4: 'Shop',
+            5: 'Treasure',
+            6: 'Campfire'
+        }
+        for ds in reversed(self.map_display):
+            print(ds)
+        print('    0 1 2 3 4 5 6')
+        for room in self.path[(self.room[0], self.room[1])]:
+            print(f'Floor {room[0]}, Room {room[1]}: {room_type[self.map[room[0]][room[1]]]}')
+        room = input('Type the room number you wish to enter or Back')
+        if room == 'Back':
+            if self.lastInstance not in {'E', 'C'}:
+                if self.lastInstance == 'S':
+                    self.shop.interact()
+                else:
+                    self.treasure.interact()
+            else:
+                print('Invalid')
+                self.mapNav()
+        else:
+            room = int(room)
+            self.room = [self.room[0] + 1, room]
+            room_entered = self.map[self.room[0]][room]
+            if room_entered == 1:
+                enemies = self.get_enemies()
+                self.generage_combat_instace(enemies, 'normal')
+                self.start_combat()
+            elif room_entered == 2:
+                self.unknown_location()
+            elif room_entered == 3:
+                enemies = self.get_enemies('elite')
+                self.generage_combat_instace(enemies, 'Elite')
+                self.start_combat()
+            elif room_entered == 4:
+                self.shop = shop.Shop(self)
+                self.start_shop()
+            elif room_entered == 5:
+                self.treasure = treasure.Treasure(self)
+                self.start_treasure()
+            self.mapNav()
     
     def generate_reward_screen_instance(self, reward_type, set_reward = False, additonal_rewards = {}):
         '''Method to generate a reward screen instance
@@ -462,7 +540,8 @@ class Run:
         if self.player.relics:
             for relic in self.player.relics:
                 additonal_rewards = relic.additionalRewards(reward_type, additonal_rewards)
-        self.reward = reward_screen.RewardScreen(self.player.character_class, self.rareChanceMult, self.rareChanceOffset, self.potionChance, self.cardRewardOptions, reward_type, set_reward, additonal_rewards)
+        self.reward = reward_screen.RewardScreen(self, self.player.character_class, self.rareChanceMult, self.rareChanceOffset, self.potionChance, self.cardRewardOptions, reward_type, set_reward, additonal_rewards)
+        self.reward.generate_rewards()
 
     def bonusEff(self, event):
         if self.player.relics:
@@ -545,8 +624,10 @@ class Run:
             for relic in self.player.relics:
                 potion = relic.valueModificationEff('potion', potion)
             self.player.potions[self.player.potions.index(None)] = potion
+            return True
         else:
             print('Potion Slots Full!')
+            return False
 
     def gain_rand_potion(self):
         '''Method for filling a empty slot with a random potion
@@ -581,34 +662,63 @@ class Run:
                 card.bottled = True
 
     def get_enemies(self, combat = 'normal'):
-        enemies = []
+        enemies_constructors = []
         cap = 0
         if self.act == 1:
             cap = 3
         if combat == 'elite':
-            enemies = self.combat_pool_details['elite'][self.elitePool[-1]]
+            enemies_constructors = self.combat_pool_details['elite'][self.elitePool[-1]]
             self.elitePool.pop(-1)
         elif combat == 'boss':
-            enemies = self.combat_pool_details['boss'][self.boss[-1]]
+            enemies_constructors = self.combat_pool_details['boss'][self.boss[-1]]
         elif self.combats_finished <= cap:
-            enemies = self.combat_pool_details['easy'][self.easyPool[-1]]
+            enemies_constructors = self.combat_pool_details['easy'][self.easyPool[-1]]
             self.easyPool.pop(-1)
         else:
-            enemies = self.combat_pool_details['normal'][self.normalPool[-1]]
+            enemies_constructors = self.combat_pool_details['normal'][self.normalPool[-1]]
             self.normalPool.pop(-1)
+        enemies = []
+        for enemy_class in enemies_constructors:
+            enemies.append(enemy_class())
         return enemies
 
-    def start_combat(self):
+    def generage_combat_instace(self, enemies, combatType):
+        self.combat = combat_beta.Combat(self, self.player, copy.deepcopy(self.player.deck), enemies, combatType)
+
+    def start_combat(self, set_rewards = False):
+        self.lastInstance = 'C'
         self.combat.combat_start()
         self.combats_finished += 1
+        combat_type_conversion = {
+            'normal': 0,
+            'Normal': 0,
+            'Elite': 1,
+            'Boss': 2,
+        }
+        self.generate_reward_screen_instance(combat_type_conversion[self.combat.combat_type], set_rewards, {})
+        self.reward.listRewards()
+
+    def start_treasure(self):
+        self.lastInstance = 'T'
+        self.treasure.start_event()
+    
+    def start_shop(self):
+        self.lastInstance = 'S'
+        self.shop.generate_wares()
+        self.shop.interact()
+
+    def start_event(self):
+        self.lastInstance = 'E'
+        self.event.start_event()
 
     def generate_event_list(self):
         '''Method to generate the list of random events the player will encouter'''
+        possible_events = list(events.events1.keys())
         encounter_list = []
         combat_chance = 10
         treasure_chance = 2
         shop_chance = 3
-        for i in range(0, 50):
+        while possible_events:
             rng = random.randint(1, 100)
             if rng <= combat_chance:
                 encounter_list.append('combat')
@@ -631,35 +741,32 @@ class Run:
                 shop_chance += 3
                 rng = random.randint(1, 100)
                 if rng <= 95:
-                    encounter_list.append('event')
+                    event_pick = random.choice(possible_events)
+                    encounter_list.append(event_pick)
+                    possible_events.remove(event_pick)
                 else:
-                    encounter_list.append('shrine')
+                    event_pick = random.choice(possible_events)
+                    encounter_list.append(event_pick)
+                    possible_events.remove(event_pick)
+                    # encounter_list.append('shrine') # Placeholder
         return encounter_list
 
     def unknown_location(self):
         event = self.eventList[-1]
+        self.eventList.pop(-1)
         while event == 'combat' and self.mechanics['Random_Combat'] == False:
             self.eventList.pop(-1)
             event = self.eventList[-1]
         if event == 'combat':
-            self.combat = combat_beta.Combat(self, self.player, copy.deepcopy(self.player.deck), self.get_enemies(), 'Normal')
+            enemies = self.get_enemies()
+            self.generage_combat_instace(enemies, 'normal')
+            self.start_combat()
         elif event == 'treasure':
-            self.treasure = treasure # placeHolder to be continued
-
-
-#while combat.combat_active == True:
-#    if combat.combat_active == True:
-#        combat.player_turn_start()
-#    if combat.combat_active == True:
-#        combat.player_turn()
-#    if combat.combat_active == True:
-#        combat.player_turn_end()
-#    if combat.combat_active == True:
-#        combat.enemy_turn_start()
-#    if combat.combat_active == True:
-#        combat.enemy_action()
-#    if combat.combat_active == True:
-#        combat.enemy_turn_end()
-
-
-
+            self.treasure = treasure.Treasure(self) # placeHolder to be continued
+            self.start_treasure()
+        elif event == 'shop':
+            self.shop = shop.Shop(self)
+            self.start_shop()
+        else:
+            self.event = events.events1[event](self.player, self)
+            self.start_event()

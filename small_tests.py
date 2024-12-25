@@ -1,28 +1,10 @@
-import copy
-class event:
+class player:
     def __init__(self):
-        pass
+        self.hp = 10
 
-    def __repr__(self):
-        return 'Event'
-
-class combat:
-    def __init__(self):
-        pass
-
-    def __repr__(self):
-        return 'Combat'
+    def hp_change(self, amount):
+        self.hp += amount
+        return self.hp
     
-class shop:
-    def __repr__(self):
-        return 'Shop'
-    
-    def __init__(self):
-        pass
-
-event1 = event()
-event2 = event()
-combat1 = combat()
-shop1 = shop()
-list = [event1, event2, combat1, shop1]
-print(isinstance(event1, event))
+char = player()
+print(char.hp_change(-5))

@@ -20,7 +20,7 @@ class Combat:
         self.discard_pile = [] # Discard pile
         self.exhaust_pile = [] # Exhaust pile
         self.playing = None # The card being played
-        self.energy_cap = 10 # Energy gained at the start of the turn
+        self.energy_cap = 3 # Energy gained at the start of the turn
         self.energy = 0 # Current energy
         self.retain = 0 # num of cards to keep at the end of the turn
         self.can_play_card = True # If the player can play cards
@@ -97,7 +97,7 @@ class Combat:
         if self.player.relics:
             for relic in self.player.relics:
                 # Go through all relics
-                relic.combatActionEff(cond)
+                relic.combatActionEff(cond, self)
                 # Execute condisional effects of relics
 
     def get_energy_cap(self):
@@ -769,11 +769,12 @@ class Combat:
                 # If they're dead
                 self.enemies.remove(enemy)
                 # Remove them from the enemy list
-        if not self.enemies:
+                self.passive_check_and_exe('Lethal')
+        if len(self.enemies) == 0:
             # If there are no more enemies
             self.combat_active = False
             # End the combat
-        if self.player.died == True:
+        if self.player.died() == True:
             self.combat_active = False
         # Checks if the player has died and end sthe combat if so
 
@@ -892,7 +893,6 @@ class Combat:
         ### args:
             overide: A dictionary of information that is passed on to execute effects, only inputted if some info needs to be overrided to not be the default
         '''
-        lethal_check = len(self.enemies)
         context = {
             # Default info to pass on for executing effects
             'user': self.player, # The player is playing the card
@@ -1007,10 +1007,12 @@ class Combat:
         self.resolve_action()
         if self.playing.type == 0:
             self.passive_check_and_exe('Attack Played')
-            if lethal_check > len(self.enemies):
-                self.passive_check_and_exe('Lethal')
         elif self.playing.type == 1:
             self.passive_check_and_exe('Skill Played')
+            if self.enemies:
+                for enemy in self.enemies:
+                    if 'Enraged' in enemy.buffs:
+                        enemy.gain_buff('Strength', enemy.buffs['Enraged'])
         elif self.playing.type == 2:
             self.passive_check_and_exe('Power Played')
         elif self.playing.type == 3:
@@ -1116,6 +1118,8 @@ class Combat:
         # Said debuff resets
         # Check for powers that activate at the start of a turn
         self.display_intent()
+        if self.combat_active == False:
+            return None
         self.player_turn()
     # Not completed
 
@@ -1146,19 +1150,6 @@ class Combat:
         turn = True
         # Set turn to true
         while turn:
-            if self.draw_pile:
-                print('Draw Pile:')
-                for card in self.draw_pile:
-                    print(card.name)
-            if self.discard_pile:
-                print('Discard Pile:')
-                for card in self.discard_pile:
-                    print(card.name)
-            if self.exhaust_pile:
-                print('Exhaust Pile:')
-                for card in self.exhaust_pile:
-                    print(card.name)
-            # While its still the player's turn
             print(self.player.combat_info())
             # print player info
             if self.hand:
@@ -1177,6 +1168,8 @@ class Combat:
                 # Turn to false
                 break
                 # Exits the loop
+            elif player_action == 'K':
+                self.enemies = []
             else:
                 if len(player_action) == 1:
                     # if the player is playing a card
@@ -1191,7 +1184,10 @@ class Combat:
                     # Retrieve the card that is attempting to be played
                     cost = card.get_cost(self)
                     # Retreive the cost of the card
-                    if cost == 'U':
+                    if self.player.debuffs['Entangle'] > 0 and card.type == 0:
+                        print('Card is Unplayable')
+                        # If the card is unplayable
+                    elif cost == 'U':
                         if (self.run.mechanics['Playable_Curse'] == True and card.type == 4) or (self.run.mechanics['Playable_Status'] == True and card.type == 3):
                             # If its an unplayble card but the mechanics permit it
                             self.playing = card
@@ -1224,9 +1220,14 @@ class Combat:
                     self.use_potion(potion) 
                     # Use the potion
             self.resolve_action()
-            self.display_intent()
+            if self.combat_active == False:
+                break
+            else:
+                self.display_intent()
             # Display enemy intents
             # Resolve actions
+        if self.combat_active == False:
+            return None
         self.player_turn_end()
 
     def player_turn_end(self):
@@ -1245,7 +1246,7 @@ class Combat:
             self.exhaust_entire_pile(self.discard_pile)
             self.exhaust_entire_pile(self.draw_pile)
             self.player.debuffs['Last Chance'] = 0
-        self.power_check_and_exe('Turn End')
+        self.passive_check_and_exe('Turn End')
         if self.hand:
             # If the hand isn't empty
             for card in reversed(self.hand):
@@ -1255,7 +1256,7 @@ class Combat:
                 if card.combat_cost[1] == 'Turn':
                     card.combat_cost == (None, None)
                 # update card costs
-            if self.run.mechanics['turn_end_discard']:
+            if self.run.mechanics['Turn_End_Discard']:
                 # Check if the player needs to discard their hand
                 if self.retain > 0:
                     self.soft_card_select(self.retain, self.hand)
@@ -1291,6 +1292,8 @@ class Combat:
             self.player.debuffs['Chained'] = 0
         # Chained effect
         self.counter_reset()
+        if self.combat_active == False:
+            return None
         self.enemy_turn_start()
         
     def discover(self, cards, cost):
@@ -1345,6 +1348,8 @@ class Combat:
             # For every enemy
             enemy.turn_start()
             # Execute the start of turn method
+        if self.combat_active == False:
+            return None
         self.enemy_action()
 
     def enemy_turn_end(self):
@@ -1353,6 +1358,8 @@ class Combat:
             # For every enemy
             enemy.turn_end()
             # Execute the end of turn method
+        if self.combat_active == False:
+            return False
         self.player_turn_start()
 
     def enemy_action(self):
@@ -1380,6 +1387,8 @@ class Combat:
             # Clear intent
         self.resolve_action()
         # Resolves action
+        if self.combat_active == False:
+            return None
         self.enemy_turn_end()
 
     def bandit_run(self, context):
