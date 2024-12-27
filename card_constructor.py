@@ -1,6 +1,7 @@
 import random
 import pygame
 import os
+import math
 
 common_1 = [1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024]
 uncommon_1 = [1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1050, 1051, 1052, 1053, 1054, 1055, 1056]
@@ -42,7 +43,7 @@ def random_card(type: str, character = None):
             return 'placeholder'
 
 class Card():
-    def __init__(self, id, name, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, sprite, x = 0, y = 0, bottled = False, removable = True, x_cost_effect = {}):
+    def __init__(self, id : int, name : str, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, x = 1650, y = 950, bottled = False, removable = True, x_cost_effect = {}):
         self.id = id # Card ID, which is an integer
         self.name = name # Name of the card, a string
         self.rarity = rarity # rarity represented by an integer
@@ -55,7 +56,10 @@ class Card():
         self.ethereal = ethereal # Boolean representing whether a card is ethereal
         self.effect = effect # what the card actually does, represented by a dictonary that contains its actions
         self.target = target # The targets of the card, represented by an integer
-        sprite = os.path.join("assets", "sprites", sprite)
+        sprite = name.lower()
+        sprite = sprite.replace(' ', '_')
+        sprite = f'{sprite}.png'
+        sprite = os.path.join("assets", "sprites", "cards", sprite)
         self.sprite = pygame.image.load(sprite) # The sprite of a card
         self.removable = removable # Whether the card can be removed from the deck
         self.combat_cost = (None, None) #(Cost, Duration of cost (Played, Turn, Combat))
@@ -67,14 +71,25 @@ class Card():
         self.x = x
         self.y = y
         self.hand_location = [self.x, self.y]
-        self.collision_box = self.sprite.get_rect(topleft=(self.x, self.y))
+        self.rect = self.sprite.get_rect(topleft=(self.x, self.y))
+        self.targeting = False
         self.dragging = False
         # Position and movement attributes
         self.current_pos = pygame.Vector2(x, y)
         self.target_pos = pygame.Vector2(x, y)
-        self.snap_speed = 10  # Speed of snapping animation
+        self.snap_speed = 30  # Speed of snapping animation
         self.offset = pygame.Vector2(0, 0)  # Offset between mouse and card position during drag
-
+        
+        # Add hover state attributes
+        self.is_hovered = False
+        self.original_size = self.sprite.get_size()
+        self.hover_scale = 1.5  # Scale factor when hovering
+        self.hover_y_offset = -150  # How many pixels to move up when hovering
+        self.hover_sprite = pygame.transform.scale(
+            self.sprite,
+            (int(self.original_size[0] * self.hover_scale), 
+             int(self.original_size[1] * self.hover_scale))
+        )
 
     def __str__(self):
         card_descrip = []
@@ -120,40 +135,130 @@ class Card():
     def __repr__(self):
         return self.__str__()
 
+    def set_target_position(self, x, y):
+        self.target_x = x
+        self.target_y = y
+
     def update(self):
-    # If not dragging, animate snapping back to the target position
-        if not self.dragging:
-            direction = self.target_pos - self.current_pos
-            distance = direction.length()  # Distance to target
-            
-            if distance > 1:  # If far from target, move towards it
-                direction = direction.normalize()  # Normalize to get unit vector
-                self.current_pos += direction * min(self.snap_speed, distance)  # Move towards target
-            else:  # Snap to the target position when close enough
-                self.current_pos = self.target_pos
-            
-        # Update the rectangle's position for collision
-        self.collision_box.topleft = self.current_pos
-
-
-    def draw_sprite(self, screen):
-        screen.blit(self.sprite, self.current_pos)
-
-    def start_drag(self, mouse_pos):
-        """Start dragging the card"""
-        if self.collision_box.collidepoint(mouse_pos):
-            self.dragging = True
-            # Calculate the offset between the mouse position and the card's top-left corner
-            self.offset = self.current_pos - pygame.Vector2(mouse_pos)
-
-    def drag(self, mouse_pos):
-        """Update the card's position while dragging"""
         if self.dragging:
-            # Update the card's position based on the mouse position and offset
-            self.current_pos = pygame.Vector2(mouse_pos) + self.offset
+            # When dragging, follow mouse position
+            mouse_pos = pygame.mouse.get_pos()
+            self.current_pos = pygame.Vector2(
+                mouse_pos[0] + self.drag_offset[0],
+                mouse_pos[1] + self.drag_offset[1]
+            )
+        else:
+            # Normal movement toward target position
+            direction = self.target_pos - self.current_pos
+            distance = direction.length()
+            if distance > 1:
+                direction = direction.normalize()
+                self.current_pos += direction * min(self.snap_speed, distance)
+            else:
+                self.current_pos = self.target_pos
 
-    def stop_drag(self):
-        """Snap the card back to its original position when dragging stops"""
+        # Update collision rect position
+        if self.is_hovered or self.targeting or self.dragging:  # Changed condition here
+            # Use larger collision box for hover sprite
+            scaled_hover = pygame.transform.smoothscale(self.hover_sprite,
+                (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
+            self.rect = pygame.Rect(
+                self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2,
+                self.current_pos[1],
+                scaled_hover.get_width(),
+                scaled_hover.get_height()
+            )
+        else:
+            # Use normal sprite collision box
+            scaled_sprite = pygame.transform.smoothscale(self.sprite,
+                (self.sprite.get_width()//2, self.sprite.get_height()//2))
+            self.rect = pygame.Rect(
+                self.current_pos[0],
+                self.current_pos[1], 
+                scaled_sprite.get_width(),
+                scaled_sprite.get_height()
+            )
+
+    def check_hover(self, mouse_pos):
+        # Check if mouse is over card
+        was_hovered = self.is_hovered
+        
+        # Simply check if mouse collides with card rect
+        self.is_hovered = self.rect.collidepoint(mouse_pos)
+            
+        # If hover state changed and not targeting, update target position
+        if was_hovered != self.is_hovered and not self.targeting:
+            if self.is_hovered:
+                # Move up and straighten when hovering
+                self.target_pos.y += self.hover_y_offset
+            else:
+                # Return to original position when not hovering
+                self.target_pos.y -= self.hover_y_offset
+
+    def draw(self, surface):
+        # Draw either normal or enlarged sprite based on hover/targeting/dragging state
+        if self.is_hovered or self.targeting or self.dragging:  # Changed condition here
+            # Scale down hover sprite to half size while preserving quality
+            scaled_hover = pygame.transform.smoothscale(self.hover_sprite, 
+                (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
+            surface.blit(scaled_hover,
+                        (self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2,
+                        self.current_pos[1]))
+        else:
+            # Scale down normal sprite to half size while preserving quality
+            scaled_sprite = pygame.transform.smoothscale(self.sprite,
+                (self.sprite.get_width()//2, self.sprite.get_height()//2))
+            surface.blit(scaled_sprite, self.current_pos)
+
+    def start_targeting(self, mouse_pos):
+        """Start the targeting state instead of dragging"""
+        self.targeting = True
+        self.is_hovered = True  # Keep the card in hover state while targeting
+
+    def stop_targeting(self):
+        """Stop the targeting state"""
+        self.targeting = False
+        
+    def draw_targeting_arrow(self, surface, mouse_pos):
+        """Draw an arrow from the card to the mouse position"""
+        if self.targeting:
+            # Calculate start position (center of card)
+            start_pos = (
+                self.current_pos[0] + self.sprite.get_width()//4,  # Divide by 4 because sprite is scaled by 1/2
+                self.current_pos[1] + self.sprite.get_height()//4
+            )
+            
+            # Draw the line
+            pygame.draw.line(surface, (255, 255, 255), start_pos, mouse_pos, 2)
+            
+            # Draw arrow head
+            arrow_length = 20
+            angle = math.atan2(mouse_pos[1] - start_pos[1], mouse_pos[0] - start_pos[0])
+            
+            # Calculate arrow head points
+            arrow_angle = math.pi/6  # 30 degrees
+            x1 = mouse_pos[0] - arrow_length * math.cos(angle + arrow_angle)
+            y1 = mouse_pos[1] - arrow_length * math.sin(angle + arrow_angle)
+            x2 = mouse_pos[0] - arrow_length * math.cos(angle - arrow_angle)
+            y2 = mouse_pos[1] - arrow_length * math.sin(angle - arrow_angle)
+            
+            # Draw arrow head
+            pygame.draw.polygon(surface, (255, 255, 255), [
+                mouse_pos,
+                (x1, y1),
+                (x2, y2)
+            ])
+
+    def start_dragging(self, mouse_pos):
+        """Start dragging the card"""
+        self.dragging = True
+        self.drag_offset = (
+            self.current_pos[0] - mouse_pos[0],
+            self.current_pos[1] - mouse_pos[1]
+        )
+
+    def stop_dragging(self):
+        """Stop dragging the card"""
         self.dragging = False
 
     def modify_effect(self, effect_change, modifications):

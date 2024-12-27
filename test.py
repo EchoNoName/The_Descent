@@ -7,7 +7,7 @@ pygame.init()
 # Set up the display surface (the screen)
 screen = pygame.display.set_mode((800, 600))  # A surface to render on
 
-card = card_constructor.create_card(1057, card_data.card_info[1057])
+card = card_constructor.create_card(1157, card_data.card_info[1157])
 
 running = True
 while running:

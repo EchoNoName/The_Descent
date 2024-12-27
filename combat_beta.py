@@ -2,7 +2,9 @@ import enemy_data
 import card_data
 import card_constructor
 import effects
+import math
 import random
+import pygame
 
 class Combat:
     def __init__(self, run, player, deck, enemies, combat_type):
@@ -1120,7 +1122,6 @@ class Combat:
         self.display_intent()
         if self.combat_active == False:
             return None
-        self.player_turn()
     # Not completed
 
     def display_intent(self):
@@ -1226,9 +1227,6 @@ class Combat:
                 self.display_intent()
             # Display enemy intents
             # Resolve actions
-        if self.combat_active == False:
-            return None
-        self.player_turn_end()
 
     def player_turn_end(self):
         '''Executes actions of the player's turn ending'''
@@ -1294,7 +1292,6 @@ class Combat:
         self.counter_reset()
         if self.combat_active == False:
             return None
-        self.enemy_turn_start()
         
     def discover(self, cards, cost):
         '''Ask user to add to hand one of the 3 cards given
@@ -1350,7 +1347,6 @@ class Combat:
             # Execute the start of turn method
         if self.combat_active == False:
             return None
-        self.enemy_action()
 
     def enemy_turn_end(self):
         '''Method for ending enemy's turn'''
@@ -1360,7 +1356,6 @@ class Combat:
             # Execute the end of turn method
         if self.combat_active == False:
             return False
-        self.player_turn_start()
 
     def enemy_action(self):
         '''Execute all enemy actions
@@ -1389,7 +1384,6 @@ class Combat:
         # Resolves action
         if self.combat_active == False:
             return None
-        self.enemy_turn_end()
 
     def bandit_run(self, context):
         '''Method for a bandit escape
@@ -1432,3 +1426,260 @@ class Combat:
             # Add 2 smaller slimes of the same type with the current hp of the bigger slime
         else:
             raise ValueError(f'Unknown slime type {slime_type}')
+        
+
+
+class Hand:
+    def __init__(self, cards, center_pos, spread):
+        self.cards = cards
+        self.center_pos = center_pos  # Center position of the hand
+        self.spread = spread  # Spread angle or linear spread
+        self.hover_spread = spread * 1.5  # Increased spread when hovering
+
+    def update_positions(self, dragged_card):
+        """Update the positions of the cards in the hand."""
+        num_cards = len(self.cards)
+        if num_cards == 0:
+            return
+
+        # Find hovered card index
+        hovered_index = -1
+        # Only check for hover on the topmost card at each x position
+        mouse_pos = pygame.mouse.get_pos()
+        for i, card in enumerate(reversed(self.cards)):  # Check cards from top to bottom
+            if card != dragged_card and card.rect.collidepoint(mouse_pos):
+                hovered_index = len(self.cards) - 1 - i  # Convert reversed index to normal index
+                # Set this card as hovered and ensure all others are not
+                for j, other_card in enumerate(self.cards):
+                    other_card.is_hovered = (j == hovered_index)
+                break
+        else:  # No card was hovered
+            for card in self.cards:
+                card.is_hovered = False
+
+        # Calculate total width needed
+        total_width = (num_cards - 1) * self.spread
+        start_x = self.center_pos[0] - total_width // 2
+
+        for i, card in enumerate(self.cards):
+            if card == dragged_card:
+                continue
+
+            target_x = start_x + i * self.spread
+            target_y = self.center_pos[1]
+
+            # If there's a hovered card, adjust positions
+            if hovered_index != -1:
+                if i < hovered_index:
+                    # Cards before hovered card move left
+                    target_x -= self.hover_spread/2
+                elif i > hovered_index:
+                    # Cards after hovered card move right
+                    target_x += self.hover_spread/2
+                
+                if i == hovered_index:
+                    # Move hovered card down instead of up
+                    target_y -= 150
+
+            # Set the target position for each card
+            card.target_pos = pygame.Vector2(target_x, target_y)
+
+    def draw(self, surface, dragged_card):
+        """Draw all the cards in the hand."""
+        for card in self.cards:
+            if card != dragged_card:  # Skip the dragged card
+                card.draw(surface)
+        # Draw the dragged card last for visibility
+        if dragged_card:
+            dragged_card.draw(surface)
+
+    def bring_to_top(self, card):
+        """Bring the specified card to the top of the hand."""
+        if card in self.cards:
+            self.cards.remove(card)
+            self.cards.append(card)
+
+class Enemies:
+    def __init__(self, enemies):
+        self.enemies = enemies
+        self.enemy_list = [None, None, None, None, None]
+        for enemy in self.enemies:
+            if self.enemy_list[3] == None:
+                self.enemy_list[3] = enemy
+            elif self.enemy_list[2] == None:
+                self.enemy_list[2] = enemy
+            elif self.enemy_list[1] == None:
+                self.enemy_list[1] = enemy
+            elif self.enemy_list[0] == None:
+                self.enemy_list[0] = enemy
+            elif self.enemy_list[4] == None:
+                self.enemy_list[4] = enemy
+            else:
+                raise ValueError('Too many enemies')
+            
+    def draw(self, surface):
+        screen_width = surface.get_width()
+        mid_x = screen_width // 2
+        base_y = 500  # Base y position where enemies will line up
+        
+        # Start drawing from slightly right of middle
+        current_x = mid_x + 50
+        
+        for i, enemy in enumerate(self.enemy_list):
+            if enemy is not None:
+                sprite_width = enemy.sprite.get_width()
+                sprite_height = enemy.sprite.get_height()
+                
+                # Get current enemy spacing
+                if hasattr(enemy, 'size'):
+                    if enemy.size == 'small':
+                        current_spacing = 90
+                    elif enemy.size == 'medium':
+                        current_spacing = 125
+                    else:  # large or default
+                        current_spacing = 240
+                else:
+                    current_spacing = 200  # Default spacing
+                
+                # Look ahead to next enemy's spacing
+                next_spacing = current_spacing
+                if i < len(self.enemy_list)-1 and self.enemy_list[i+1] is not None:
+                    next_enemy = self.enemy_list[i+1]
+                    if hasattr(next_enemy, 'size'):
+                        if next_enemy.size == 'small':
+                            next_spacing = 90
+                        elif next_enemy.size == 'medium':
+                            next_spacing = 125
+                        else:
+                            next_spacing = 240
+                    else:
+                        next_spacing = 200
+                
+                # Use average of current and next spacing
+                spacing = (current_spacing + next_spacing) // 2
+                
+                # Calculate y position by subtracting sprite height from base_y
+                y_pos = base_y - sprite_height
+                
+                # Update collision rect position to match sprite position
+                enemy.rect.bottomleft = (current_x - (sprite_width // 2), base_y)
+                
+                # Draw sprite
+                surface.blit(enemy.sprite, (current_x - (sprite_width // 2), y_pos))
+                
+                # Move x position for next enemy
+                current_x += spacing
+                
+                # For debugging - draw the collision box
+                # pygame.draw.rect(surface, (255, 0, 0), enemy.rect, 2)
+
+    def add_enemy(self, enemy):
+        if self.enemy_list[3] == None:
+            self.enemy_list[3] = enemy
+        elif self.enemy_list[2] == None:
+            self.enemy_list[2] = enemy
+        elif self.enemy_list[1] == None:
+            self.enemy_list[1] = enemy
+        elif self.enemy_list[0] == None:
+            self.enemy_list[0] = enemy
+        elif self.enemy_list[4] == None:
+            self.enemy_list[4] = enemy
+        else:
+            raise ValueError('Too many enemies')
+    
+    def remove_enemy(self, enemy):
+        if enemy in self.enemy_list:
+            self.enemy_list.remove(enemy)
+        else:
+            raise ValueError('Enemy not found in list')
+
+SCREEN_WIDTH = 1600
+SCREEN_HEIGHT = 900
+cards = []
+for i in range(10):
+    card = card_constructor.create_card(1000 + i, card_data.card_info[1000 + i])
+    cards.append(card)
+
+enemies = []
+
+# enemies.append(enemy_data.LargeGreenSlime())
+# enemies.append(enemy_data.MediumGreenSlime())
+enemies.append(enemy_data.SmallGreenSlime())
+enemies.append(enemy_data.LargeGreenSlime())
+enemies.append(enemy_data.MediumGreenSlime())
+enemies.append(enemy_data.SmallGreenSlime())
+enemies.append(enemy_data.SmallGreenSlime())
+
+
+enemies = Enemies(enemies)
+
+hand = Hand(cards, center_pos=(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT - 200), spread= 130 )
+
+# Initialize pygame
+pygame.init()
+
+running = True
+dragged_card = None
+
+
+# Set up the display surface
+
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+while running:
+    screen.fill((30, 30, 30))  # Fill the screen with a dark background
+    mouse_pos = pygame.mouse.get_pos()
+
+    # Event handling
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            for card in reversed(hand.cards):
+                if card.rect.collidepoint(event.pos):
+                    if card.target == 1:  # If card requires targeting
+                        card.start_targeting(event.pos)
+                        dragged_card = card
+                    else:
+                        card.start_dragging(event.pos)
+                        dragged_card = card
+                    break
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if dragged_card:
+                # Check if mouse is over a valid target
+                for enemy in enemies.enemy_list:
+                    if enemy and enemy.rect.collidepoint(event.pos):
+                        print(f"Targeting {enemy} with {dragged_card.name}")
+                        # TODO: Apply card effects to target
+                dragged_card.stop_targeting()
+                dragged_card.stop_dragging()
+                dragged_card = None
+        elif event.type == pygame.MOUSEMOTION:
+            if dragged_card:
+                dragged_card.draw_targeting_arrow(screen, event.pos)
+
+    # Check hover state for each card and print debug info
+    for card in hand.cards:
+        was_hovered = card.is_hovered
+        card.check_hover(mouse_pos)
+        if card.is_hovered != was_hovered:
+            if card.is_hovered:
+                print(f"Now hovering over: {card.name}")
+            else:
+                print(f"No longer hovering over: {card.name}")
+
+    # Update card positions
+    for card in cards:
+        card.update()
+    hand.update_positions(dragged_card)
+
+    # Draw the enemies
+    enemies.draw(screen)
+    # Draw the hand
+    hand.draw(screen, dragged_card)
+    
+
+    # Update the display
+    pygame.display.flip()
+
+pygame.quit()

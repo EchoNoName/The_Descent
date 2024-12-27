@@ -26,10 +26,9 @@ class Character:
         if character_class == 1:
             for i in range(5):
                 self.deck.append(card_constructor.create_card(1000, card_data.card_info[1000]))
-        if character_class == 1:
             for i in range(5):
                 self.deck.append(card_constructor.create_card(1002, card_data.card_info[1002]))
-        self.deck.append(card_constructor.create_card(1001, card_data.card_info[1001]))
+            self.deck.append(card_constructor.create_card(1001, card_data.card_info[1001]))
         self.selected_cards = []
         self.gold = 100
         self.thieved = 0

@@ -1,9 +1,14 @@
 import random
 import effects
 import math
+import os
+import pygame
 
 class Enemy:
-    def __init__(self) -> None:
+    def __init__(self):
+        self.x = 0  # Initial x position
+        self.y = 0  # Initial y position
+        self.rect = None  # Will store the collision box
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
         self.debuffs = {'-Strength': 0, 'Vulnerable': 0, 'Weak': 0, 'Chained': 0, 'Poison': 0}
         pass
@@ -24,6 +29,9 @@ class Enemy:
 
     def __repr__(self):
         return self.__str__()
+
+    def draw(self, surface, x = 0, y = 0):
+        surface.blit(self.sprite, (x, y))
 
     def combat_info(self):
         buffs = []
@@ -233,6 +241,14 @@ class JawWorm(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Jaw Worm'
+        self.sprite = 'jaw_worm.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite)
+        
+        # Create collision rect matching sprite size
+        self.rect = self.sprite.get_rect()  # Creates rect same size as sprite
+        
+        self.size = 'medium'
         self.max_hp = random.randint(40, 44)
         self.hp = self.max_hp
         self.block = 0
@@ -307,6 +323,15 @@ class SmallGreenSlime(Enemy):
     def __init__(self, max_hp = random.randint(8, 12)):
         super().__init__()
         self.name = 'Small Green Slime'
+        self.sprite = 'green_slime.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(
+            self.sprite, 
+            (int(self.sprite.get_width() * 0.175), int(self.sprite.get_height() * 0.175))
+        )
+        self.rect = self.sprite.get_rect()
+        self.size = 'small'
         self.max_hp = max_hp
         self.hp = self.max_hp
         self.block = 0
@@ -346,6 +371,15 @@ class MediumGreenSlime(Enemy):
     def __init__(self, max_hp = random.randint(28, 32)):
         super().__init__()
         self.name = 'Medium Green Slime'
+        self.sprite = 'green_slime.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(
+            self.sprite, 
+            (int(self.sprite.get_width() * 0.3), int(self.sprite.get_height() * 0.3))
+        )
+        self.rect = self.sprite.get_rect()
+        self.size = 'medium'
         self.max_hp = max_hp
         self.hp = self.max_hp
         self.block = 0
@@ -426,6 +460,15 @@ class LargeGreenSlime(Enemy):
     def __init__(self, max_hp = random.randint(65, 69)):
         super().__init__()
         self.name = 'Large Green Slime'
+        self.sprite = 'green_slime.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.sprite = pygame.transform.scale(
+            self.sprite, 
+            (int(self.sprite.get_width() * 0.6), int(self.sprite.get_height() * 0.6))
+        )
+        self.size = 'large'
         self.max_hp = max_hp
         self.hp = self.max_hp
         self.block = 0
@@ -525,6 +568,11 @@ class SmallBlueSlime(Enemy):
     def __init__(self, max_hp = random.randint(10, 14)) -> None:
         super().__init__()
         self.name = 'Small Blue Slime'
+        self.sprite = 'blue_slime.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'small'
         self.max_hp = max_hp
         self.hp = self.max_hp
         self.block = 0
@@ -546,6 +594,11 @@ class MediumBlueSlime(Enemy):
     def __init__(self, max_hp = random.randint(28, 32)):
         super().__init__()
         self.name = 'Medium Blue Slime'
+        self.sprite = 'blue_slime.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'medium'
         self.max_hp = max_hp
         self.hp = self.max_hp
         self.block = 0
@@ -609,6 +662,11 @@ class LargeBlueSlime(Enemy):
     def __init__(self, max_hp = random.randint(64, 70)):
         super().__init__()
         self.name = 'Large Blue Slime'
+        self.sprite = 'blue_slime.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'large'
         self.max_hp = max_hp
         self.hp = self.max_hp
         self.block = 0
@@ -690,6 +748,11 @@ class SneakyGoblin(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Sneaky Goblin'
+        self.sprite = 'sneaky_goblin.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'small'
         self.max_hp = random.randint(10, 14)
         self.hp = self.max_hp
         self.block = 0
@@ -712,6 +775,7 @@ class FatGoblin(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Fat Goblin'
+        self.size = 'small'
         self.max_hp = random.randint(13, 17)
         self.hp = self.max_hp
         self.block = 0
@@ -734,6 +798,11 @@ class WizardGoblin(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Wizard Goblin'
+        self.sprite = 'wizard_goblin.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'small'
         self.max_hp = random.randint(23, 25)
         self.hp = self.max_hp
         self.block = 0
@@ -763,6 +832,11 @@ class MadGoblin(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Mad Goblin'
+        self.sprite = 'mad_goblin.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'small'
         self.max_hp = random.randint(20, 24)
         self.hp = self.max_hp
         self.block = 0
@@ -813,6 +887,11 @@ class ShieldGoblin(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Shield Goblin'
+        self.sprite = 'shield_goblin.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'small'
         self.max_hp = random.randint(12, 15)
         self.hp = self.max_hp
         self.block = 0
@@ -839,6 +918,11 @@ class Looter(Enemy):
     def __init__(self):
         super().__init__()
         self.name = 'Looter'
+        self.sprite = 'looter.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'medium'
         self.max_hp = random.randint(44, 48)
         self.hp = self.max_hp
         self.block = 0
@@ -881,6 +965,11 @@ class InfestedCorpes(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Infested Corpes'
+        self.sprite = 'infested_corpes.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'medium'
         self.max_hp = random.randint(22, 28)
         self.hp = self.max_hp
         self.block = 0
@@ -956,6 +1045,11 @@ class Cultist(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Cultist'
+        self.sprite = 'cultist.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'medium'
         self.max_hp = random.randint(48, 54)
         self.hp = self.max_hp
         self.block = 0
@@ -986,6 +1080,11 @@ class RedArachnid(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Red Arachnid'
+        self.sprite = 'red_spider.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'medium'
         self.max_hp = random.randint(46, 52)
         self.hp = self.max_hp
         self.block = 0
@@ -1049,6 +1148,11 @@ class BlueArachnid(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Blue Arachnid'
+        self.sprite = 'blue_spider.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'medium'
         self.max_hp = random.randint(46, 50)
         self.hp = self.max_hp
         self.block = 0
@@ -1119,6 +1223,11 @@ class GreenLouse(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Green Louse'
+        self.sprite = 'green_louse.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'small'
         self.max_hp = random.randint(10, 15)
         self.hp = self.max_hp
         self.block = 0
@@ -1212,6 +1321,11 @@ class RedLouse(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Red Louse'
+        self.sprite = 'red_louse.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'small'
         self.max_hp = random.randint(11, 17)
         self.hp = self.max_hp
         self.block = 0
@@ -1305,6 +1419,11 @@ class SentryA(Enemy):
     def __init__(self):
         super().__init__()
         self.name = 'Sentry'
+        self.sprite = 'sentry.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'medium'
         self.max_hp = random.randint(38, 42)
         self.hp = self.max_hp
         self.block = 0
@@ -1341,6 +1460,11 @@ class SentryB(Enemy):
     def __init__(self):
         super().__init__()
         self.name = 'Sentry'
+        self.sprite = 'sentry.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'medium'
         self.max_hp = random.randint(38, 42)
         self.hp = self.max_hp
         self.block = 0
@@ -1377,6 +1501,11 @@ class GiantLouse(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Giant Louse'
+        self.sprite = 'red_louse.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'large'
         self.max_hp = random.randint(109, 111)
         self.hp = self.max_hp
         self.block = 0
@@ -1445,6 +1574,11 @@ class GiantLouseAwake(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Giant Louse'
+        self.sprite = 'red_louse.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'large'
         self.max_hp = random.randint(109, 111)
         self.hp = self.max_hp
         self.block = 0
@@ -1478,6 +1612,11 @@ class GoblinGiant(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Goblin Giant'
+        self.sprite = 'goblin_giant.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'large'
         self.max_hp = random.randint(82, 86)
         self.hp = self.max_hp
         self.block = 0
@@ -1546,6 +1685,11 @@ class AncientMech(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Ancient Mech'
+        self.sprite = 'ancient_mech.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.rect = self.sprite.get_rect()
+        self.size = 'large'
         self.max_hp = 250
         self.hp = self.max_hp
         self.block = 0
@@ -1689,3 +1833,5 @@ def act_1_boss_pool():
     pool = ['Ancient Mech']
     random.shuffle(pool)
     return pool
+
+
