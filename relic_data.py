@@ -1,5 +1,7 @@
 import effects
 import random
+import pygame
+import os
 
 class Relics: # Relic Object Class
     '''Class for the function and properties of relics
@@ -33,12 +35,117 @@ class Relics: # Relic Object Class
         self.counter = counter
         self.count_needed = count_needed
         self.counter_type = counter_type
+        self.is_hovered = False
+        self.sprite = pygame.image.load(os.path.join('assets', 'sprites', 'relics', f'{self.name}.png'))
+        # Scale sprite to double size while maintaining aspect ratio
+        width = self.sprite.get_width() * 2
+        height = self.sprite.get_height() * 2
+        self.sprite = pygame.transform.scale(self.sprite, (width, height))
+        self.font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 18)
+        self.name_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 24)
+        self.counter_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 22)
+        self.rect = self.sprite.get_rect()
+
 
     def __str__(self):
         return self.name
     
     def __repr__(self):
         return self.description
+
+    def hover(self):
+        self.is_hovered = True
+
+    def unhover(self):
+        self.is_hovered = False
+
+    def draw(self, screen, x, y):
+        self.rect.x = x
+        self.rect.y = y
+        if self.is_hovered:
+            screen.blit(self.sprite, (x, y))
+            self.draw_description(screen, x, y)
+        else:
+            screen.blit(self.sprite, (x, y))
+        if self.counter != None:
+            # Draw counter number with black outline
+            counter_text = str(self.counter)
+            text_color = (255, 255, 255)  # White text
+            outline_color = (0, 0, 0)     # Black outline
+            
+            # Position in bottom right of sprite
+            text_x = x + self.sprite.get_width() - 20
+            text_y = y + self.sprite.get_height() - 20
+            
+            # Draw black outline by offsetting text in each direction
+            for dx, dy in [(-1,-1), (-1,1), (1,-1), (1,1), (-1,0), (1,0), (0,-1), (0,1)]:
+                outline_surf = self.counter_font.render(counter_text, True, outline_color)
+                screen.blit(outline_surf, (text_x + dx, text_y + dy))
+            
+            # Draw main white text
+            text_surf = self.counter_font.render(counter_text, True, text_color)
+            screen.blit(text_surf, (text_x, text_y))
+
+    def draw_rect_box(self, screen):
+        """Draw a rectangular box around the relic sprite"""
+        # Create a rect for the sprite
+        rect = pygame.Rect(self.rect.x, self.rect.y, self.sprite.get_width(), self.sprite.get_height())
+        
+        # Draw white rectangle outline
+        pygame.draw.rect(screen, (255, 255, 255), rect, 2)
+
+    def draw_description(self, screen, x, y):
+        '''Draw a text box below the relic 
+        sprite showing its description'''
+        # Draw name as first line
+        name_surf = self.name_font.render(self.name, True, (255, 255, 255))
+        
+        # Split description into 30 char lines
+        desc = self.description
+        lines = []
+        while len(desc) > 40:
+            split = desc[:40].rfind(' ')
+            if split == -1:
+                split = 40
+            lines.append(desc[:split])
+            desc = desc[split:].lstrip()
+        lines.append(desc)
+        
+        # Create text surfaces for each line
+        text_surfs = [name_surf]  # Start with name surface
+        max_width = name_surf.get_width()
+        total_height = name_surf.get_height()
+        for line in lines:
+            surf = self.font.render(line, True, (255, 255, 255))
+            text_surfs.append(surf)
+            max_width = max(max_width, surf.get_width())
+            total_height += surf.get_height()
+            
+        # Calculate box dimensions
+        padding = 10
+        box_width = max_width + padding * 2
+        box_height = total_height + padding * 2
+        
+        # Position box, shift left if too far
+        box_x = x
+        if box_x + box_width > 800:
+            box_x = x - box_width
+        box_y = y + self.sprite.get_height() + 5
+        
+        # Draw semi-transparent background
+        box_surface = pygame.Surface(
+            (box_width, box_height))
+        box_surface.fill((0, 0, 0))
+        box_surface.set_alpha(200)
+        screen.blit(box_surface, (box_x, box_y))
+        
+        # Draw text lines
+        text_y = box_y + padding
+        for surf in text_surfs:
+            text_x = box_x + padding
+            screen.blit(surf, (text_x, text_y))
+            text_y += surf.get_height()
+
 
     def valueModificationEff(self, event, context): # Method to apply the effect
         if event == self.condition and self.effect_class == 'valueMod': # Check if the condition is met 
@@ -52,7 +159,7 @@ class Relics: # Relic Object Class
             event: The event occuring represented by a string
             combat: the combat object that holds all data related to a combat instance
         '''
-        if self.counter != None:
+        if self.counter == None:
             if event == self.condition and self.effect_class == 'combatAct': # Check if the condition is met 
                 context = {
                     # Default info to pass on for executing effects
@@ -64,7 +171,7 @@ class Relics: # Relic Object Class
                     'exhaust': combat.exhaust_pile, # The exhaust pile
                     'target': None # the target of the card, This is mainly the one that gets overrided
                 }
-                context['target'] = combat.player_targeting(self.targets)
+                context['target'] = combat.player_targeting(context, self.targets)
                 for i in range(0, len(self.effect_type)):
                         self.effect_type[i](*self.effect_details[i], context, combat)
         else:
@@ -79,7 +186,7 @@ class Relics: # Relic Object Class
                     'exhaust': combat.exhaust_pile, # The exhaust pile
                     'target': None # the target of the card, This is mainly the one that gets overrided
                 }
-                context['target'] = combat.player_targeting(self.targets)
+                context['target'] = combat.player_targeting(context, self.targets)
                 self.counter += 1
                 if self.counter == self.count_needed:
                     for i in range(0, len(self.effect_type)):
@@ -131,7 +238,7 @@ class Relics: # Relic Object Class
                 'exhaust': combat.exhaust_pile, # The exhaust pile
                 'target': None # the target of the card, This is mainly the one that gets overrided
             }
-            context['target'] = combat.player_targeting(self.targets)
+            context['target'] = combat.player_targeting(context, self.targets)
             self.effect_type(*self.effect_details, context, combat)
 
 def createRelic(name: str, details: tuple):
@@ -178,7 +285,7 @@ bossRelics = {
     'Coffee Mug': ('Gain 1 Energy at thes start of each turn. You can no longer Rest at Campfires.', 1, [effects.campfire_chance], 'pickUp', None, False, [['Rest']], 0, True),
     'Molten Hammer': ('Gain 1 Energy at thes start of each turn. You can no longer Upgrade at Campfires.', 1, [effects.campfire_chance], 'pickUp', None, False, [['Smith']], 0, True),
     'Erosive Slime': ('Gain 1 Energy at thes start of each turn. You can no longer gain Gold.', 1, effects.gold_amount_mod, 'valueMod', 'gold', False, [-9999], 0, True),
-    'Ball n\' Chain': ('Gain 1 Energy at thes start of each turn. You can only play 6 cards per turn.', 1, [effects.card_play_limit], 'combatAct', 'Card Played', False, [[6]], 0, True),
+    'Ball n\' Chain': ('Gain 1 Energy at thes start of each turn. You can only play 6 cards per turn.', 1, [effects.card_play_limit], 'combatAct', 'Card Played', False, [[6]], 0, True, 0, 6, 'Turn'),
     'Philosopher\'s Stone': ('Gain 1 Energy at thes start of each turn. All enemies gain 1 Strength at the start of combat.', 1, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Strength'], [1]]], 3, True),
     'Holographic Eyeglass': ('Gain 1 Energy at thes start of each turn. On card reward screens, you recieve 2 less options to pick from.', 1, [effects.card_reward_option_mod], 'pickUp', None, False, [[-2]], 0, True),
     'Cursed Tome': ('Gain 1 Energy at thes start of each turn. Upon opening a non-boss chest, gain a random Curse.', 1, effects.add_card_to_deck, 'eventMod', 'Open Chest', False, ['curse'], 0, True),
@@ -191,7 +298,6 @@ commonRelics = {
     'Backpack': ('Draw 2 Additional cards at the start of combat.', 4, effects.draw_cards, 'combatAct', 'Combat Start', False, [2], 0),
     'Art of War': ('If you do not play any Attacks during your turn, gain 1 additional Energy next turn.', 4, [effects.effect_for_card_type_not_played], 'combatAct', 'Turn End', False, [[[effects.apply_buff], [[0, ['Energized'], [1]]]]], 0),
     'Holy Cross': ('If you do not play any Skills during your turn, gain 1 additional Energy next turn.', 4, [effects.effect_for_card_type_not_played], 'combatAct', 'Turn End', False, [[[effects.apply_buff], [[1, ['Energized'], [1]]]]], 0),
-    'Omamori': ('Negate the next 2 Curses you obtain.', 4, effects.card_to_nothing, 'valueMod', 'curse', False, [], 0),
     'Sharpening Stone': ('Upon pickup, Upgrade 2 random Attakcs.', 4, [effects.upgrade_card], 'pickUp', None, False, [['Attack', 'Attack']], 0),
     'Armour Polish': ('Upon pickup, Upgrade 2 random Skills.', 4, [effects.upgrade_card], 'pickUp', None, False, [['Skill', 'Skill']], 0),
     'Anvil': ('Upon pickup, Upgrade 2 random cards.', 4, [effects.upgrade_card], 'pickUp', None, False, [['Card', 'Card']], 0),
@@ -201,7 +307,7 @@ commonRelics = {
     'Javalin': ('At the start of combat, gain 8 Vigour', 4, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Vigour'], [8]]], 0),
     'Crystal Ball': ('You can no longer encounter enemy combat in Event rooms.', 4, [effects.combat_mechanic_change], 'pickUp', None, False, [['Random_Combat', False]], 0),
     'Lucky 7': ('On turn 7, gain 17 Gold.', 4, effects.combat_gold_gain, 'turnEff', 7, False, [17], 0),
-    'Coupon Sheet': ('Removing a card at a Shop always costs 50 Gold.', 4, effects.card_removal_cost_set, 'eventMod', 'removal', False, [50], 0),
+    'Coupon': ('Removing a card at a Shop always costs 50 Gold.', 4, effects.card_removal_cost_set, 'eventMod', 'removal', False, [50], 0),
     'Strawberry': ('Upon pickup, Increase Max Hp by 7.', 4, [effects.max_hp_change], 'pickUp', None, False, [[7]], 0),
     'Fancy Bottles': ('Whenever you use a potion, heal 5 Hp.', 4, effects.heal_player, 'eventBonus', 'Used Potion', False, [5], 0),
     'Nunchuck': ('After playing 10 attacks, gian 1 Energy.', 4, [effects.energy_manip], 'combatAct', 'Attack Played', False, [[1]], 0, False, 0, 10, 'global'),
@@ -244,7 +350,7 @@ UncommonRelics = {
     'Sundial': ('Every 3 times the draw pile is shuffled, gain 2 Energy.', 3, [effects.energy_manip], 'combatAct', 'Shuffle', False, [[2]], 0, False, 0, 3, 'Global')
 }
 rareRelics = {
-    'Brewing Stand': ('Whenever you rest, obatin a random potion.', 2, effects.gain_rand_potion, 'eventBonus', 'Rest', False, [], 0),
+    'Brewing Stand': ('Whenever you rest, obatin a random potion.', 2, effects.generate_rewards, 'eventBonus', 'Rest', False, ['Brewing Stand'], 0),
     'Covert Cloak': ('At the start of combat, gain 1 Intangable.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Intangable'], [1]]], 0),
     'Magic Mushrooms': ('At the start of combat, gain 1 Duplicate.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Duplicate'], [1]]], 0),
     'Captain\'s Wheel': ('On the 3rd turn, gain 18 block.', 2, [effects.block_gain_power], 'combatAct', 'Combat Start', False, [[18]], 0),
@@ -264,7 +370,7 @@ rareRelics = {
     'Paper Shredder': ('You can now remove a card at a Campfire.', 2, [effects.additional_campfire], 'pickUp', None, False, [['Shred']], 0),
     'Drill': ('You can now dig for a relic at a Campfire.', 2, [effects.additional_campfire], 'pickUp', None, False, [['Dig']], 0),
     'Urn': ('Whenever you play a Power, heal 2 Hp.', 2, [effects.combat_heal_player], 'combatAct', 'Power Played', False, [[2]], 0),
-    'Ballistic Armour': ('Whenever you lose Hp, lose 1 less.', 2, effects.hp_loss_reduction, 'valueMod', 'HpLoss', False, [1], 0),
+    'Steel Rod': ('Whenever you lose Hp, lose 1 less.', 2, effects.hp_loss_reduction, 'valueMod', 'HpLoss', False, [1], 0),
     'The Arch': ('Whenever you take attack damage below or equal to 5, it is reduced to 1.', 2, effects.small_damage_reduction, 'valueMod', 'damageTaken', False, [5], 0),
     'Pot': ('Every 6 turns, gain 1 Intangible.', 2, [effects.apply_buff], 'combatAct', 'Turn Start', False, [[['Intangible'], [1]]], 0, False, 0, 6, 'global')
 }

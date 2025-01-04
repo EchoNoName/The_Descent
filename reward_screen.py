@@ -140,6 +140,8 @@ class RewardScreen: # Class for any reward screed
                     card_option = card_constructor.create_card(cards[i], card_data.card_info[cards[i]])
                     cards[i] = card_option
                 self.rewards['Cards'].append(cards)
+            elif self.set_reward == 'Brewing Stand':
+                self.rewards['Potions'].append(potion_data.randomPotion())
             else:
                 self.rewards = self.set_reward
 

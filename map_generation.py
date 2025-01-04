@@ -1,4 +1,7 @@
 import random
+import pygame
+import os
+
 def createMap(asc):
     '''Generates a Map with 15 floors with unique events for each room generated, the rooms are also connected with no crossing paths, the map is a 15 x 7 grid of dots that are connected with unused dots being removes, the x locations ranges from [0, 6] while the floors have a y value ranging from [1, 15]
 
@@ -489,3 +492,39 @@ def createMap(asc):
     for j in range(30, 35):
         mapDisplay[j] = f'    ' + mapDisplay[j]
     return map, path, mapDisplay
+
+class Map:
+    def __init__(self, asc):
+        self.map, self.path, self.mapDisplay = createMap(asc)
+        self.rooms = []
+        for floor, room in self.map.items():
+            for room_num, room_type in room.items():
+                self.rooms.append(Room(room_type, floor, room_num))
+        for room in self.rooms:
+            for connection in self.path[(room.floor, room.room_num)]:
+                room.add_connection(connection)
+    
+
+class Room:
+    def __init__(self, room_type, floor, room_num):
+        self.room_type = room_type
+        self.floor = floor
+        self.room_num = room_num
+        self.connections = []
+        room_type_to_sprite = {
+            1: 'assets/icons/combat.png',
+            2: 'assets/icons/event.png',
+            3: 'assets/icons/elite.png',
+            4: 'assets/icons/shop.png',
+            5: 'assets/icons/chest.png',
+            6: 'assets/icons/campfire.png',
+            7: 'assets/icons/boss.png'
+        }
+        self.sprite = pygame.image.load(room_type_to_sprite[room_type])
+
+    def add_connection(self, connection):
+        self.connections.append(connection)
+
+    def draw(self, screen, x, y):
+        screen.blit(self.sprite, (x, y))
+
