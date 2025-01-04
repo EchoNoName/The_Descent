@@ -1,59 +1,530 @@
 import enemy_data
 import card_data
+import potion_data
 import card_constructor
 import effects
 import math
 import random
 import pygame
+import os
 
 class Combat:
-    def __init__(self, run, player, deck, enemies, combat_type):
+    def __init__(self, player, deck, enemies, combat_type, run, screen):
         self.run = run # The current run
         self.player = player # The Player, can also be accessed through run but this is here for ease of use
-        self.enemies = enemies # The Enemies in a combat encounter
+        self.enemies = Enemies(enemies) # The Enemies in a combat encounter
         self.deck = deck # The player's deck
         self.combat_type = combat_type # The Type of combat, (Normal, Elite, Boss)
         self.turn = 0 # Turn counter
         self.start_of_combat = True # Whether its the start of combat
-        self.draw_pile = deck # Draw pile
+        self.draw_pile = Pile(deck, "draw") # Draw pile
         self.cards_played = 0 # num of cards played
-        self.hand = [] # Cards in hand
+        self.hand = Hand([], center_pos=(1600 // 2 - 100, 900 - 200), spread= 130 ) # Cards in hand
         self.selected = [] # Selected cards
-        self.discard_pile = [] # Discard pile
-        self.exhaust_pile = [] # Exhaust pile
+        self.discard_pile = Pile([], "discard") # Discard pile
+        self.exhaust_pile = Pile([], "exhaust") # Exhaust pile
         self.playing = None # The card being played
         self.energy_cap = 3 # Energy gained at the start of the turn
         self.energy = 0 # Current energy
         self.retain = 0 # num of cards to keep at the end of the turn
         self.can_play_card = True # If the player can play cards
         self.combat_active = True # Whether the player is in this combat
-        self.powers = [] # The powers the player has gained
+        self.powers = Pile([], "powers") # The powers the player has gained
         self.card_type_played = {}
         self.enemy_turn = False
         self.escaped = False
         self.necroed = True
+        self.clock = pygame.time.Clock()
+        self.current_phase = 'player_turn_start'
+        self.turn_phases = {
+            'player_turn_start': self.player_turn_start,
+            'player_turn': self.player_turn,
+            'player_turn_end': self.player_turn_end,
+            'enemy_turn_start': self.enemy_turn_start,
+            'enemy_actions': self.enemy_action,
+            'enemy_turn_end': self.enemy_turn_end
+        }
+        self.dragged_card = None
+        self.targetting_potion = None
+        self.clicked_potion = None
+        pygame.init()
+        self.SCREEN_WIDTH = 1600
+        self.SCREEN_HEIGHT = 900
+        self.screen = screen
+        self.combat_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.end_turn_button = pygame.image.load("assets/ui/end_turn.png")
+        # Scale down end turn button
+        self.background_sprite = pygame.image.load(os.path.join("assets", "ui", "forest.png"))
+        scaled_size = (int(self.end_turn_button.get_width() * 0.8), int(self.end_turn_button.get_height() * 0.8))
+        self.end_turn_button = pygame.transform.scale(self.end_turn_button, scaled_size)
+        self.energy_sprite = pygame.image.load(os.path.join("assets", "ui", "energy.png"))
+        scaled_size = (int(self.energy_sprite.get_width() // 6.5), int(self.energy_sprite.get_height() // 6.5))
+        self.energy_sprite = pygame.transform.scale(self.energy_sprite, scaled_size)
+        self.energy_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 48)
+        self.action_time_start = 0
+        self.last_time = 0
     
+    def run_combat(self):
+        """Main combat loop"""
+        running = True
+        self.combat_start()
+        self.clock = pygame.time.Clock()
+        while running and self.combat_active:
+            self.clock.tick(60)
+            self.last_time = pygame.time.get_ticks()
+            
+            # Clear screen and get mouse position
+            self.combat_surface.fill((30, 30, 30))
+            self.combat_surface.blit(self.background_sprite, (0, 0))
+            mouse_pos = pygame.mouse.get_pos()
+
+            # Execute current phase
+            if self.current_phase:
+                phase_result = self.turn_phases[self.current_phase]()
+                
+                # Handle phase transitions
+                if phase_result == 'next':
+                    self.advance_phase()
+                elif phase_result == 'end_combat':
+                    break
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    self.combat_active = False
+                
+                # Only handle card and potion events during player turn
+                if self.current_phase == 'player_turn':
+                    self.handle_card_events(event, mouse_pos)
+                    self.handle_potion_events(event, mouse_pos)
+                    
+
+            # Update and draw game state
+            self.handle_relic_events(event, mouse_pos)
+            self.handle_enemy_events(event, mouse_pos)
+            self.handle_pile_events(event, mouse_pos)
+            self.handle_character_events(event, mouse_pos)
+            self.update_game_state(mouse_pos)
+            self.draw_game_state(mouse_pos)
+            self.screen.blit(self.combat_surface, (0, 0))
+            pygame.display.flip()
+
+        return self.combat_result()
+
+    def combat_result(self):
+        """Determine the result of the combat"""
+        if self.player.hp <= 0:
+            return 'defeat'
+        elif self.enemies.enemy_list == []:
+            return 'victory'
+        else:
+            return 'escape'
+
+    def advance_phase(self):
+        """Advance to the next combat phase"""
+        phase_order = [
+            'player_turn_start',
+            'player_turn',
+            'player_turn_end',
+            'enemy_turn_start',
+            'enemy_actions',
+            'enemy_turn_end'
+        ]
+        current_index = phase_order.index(self.current_phase)
+        next_index = (current_index + 1) % len(phase_order)
+        self.current_phase = phase_order[next_index]
+
+    def handle_enemy_events(self, event, mouse_pos):
+        """Handle enemy-related events"""
+        for enemy in self.enemies.enemy_list:
+            if enemy and enemy.rect.collidepoint(mouse_pos):
+                enemy.hover()
+            elif enemy:
+                enemy.unhover()
+
+    def handle_pile_events(self, event, mouse_pos):
+        """Handle pile-related events"""
+        # Handle hovering
+        if self.draw_pile.rect.collidepoint(mouse_pos):
+            self.draw_pile.hover()
+        else:
+            self.draw_pile.unhover()
+            
+        if self.discard_pile.rect.collidepoint(mouse_pos):
+            self.discard_pile.hover()
+        else:
+            self.discard_pile.unhover()
+            
+        if self.exhaust_pile.rect.collidepoint(mouse_pos):
+            self.exhaust_pile.hover()
+        else:
+            self.exhaust_pile.unhover()
+            
+        if self.powers.rect.collidepoint(mouse_pos):
+            self.powers.hover()
+        else:
+            self.powers.unhover()
+            
+        # Handle clicking
+        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            if self.draw_pile.rect.collidepoint(mouse_pos):
+                self.view_pile(self.draw_pile)
+            elif self.discard_pile.rect.collidepoint(mouse_pos):
+                self.view_pile(self.discard_pile)
+            elif self.exhaust_pile.rect.collidepoint(mouse_pos):
+                self.view_pile(self.exhaust_pile)
+            elif self.powers.rect.collidepoint(mouse_pos):
+                self.view_pile(self.powers)
+
+
+    def handle_character_events(self, event, mouse_pos):
+        """Handle character-related events"""
+        if self.player.rect.collidepoint(mouse_pos):
+            self.player.hover()
+        else:
+            self.player.unhover()
+
+    def handle_card_events(self, event, mouse_pos):
+        """Handle card-related events"""
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            for card in reversed(self.hand.cards):
+                if card.rect.collidepoint(mouse_pos):
+                    if card.target == 1:
+                        card.start_targeting(mouse_pos)
+                        self.dragged_card = card
+                    else:
+                        card.start_dragging(mouse_pos)
+                        self.dragged_card = card
+                    break
+        
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if self.dragged_card:
+                cost = self.dragged_card.get_cost(self)
+                
+                def show_error_message(message):
+                    """Helper function to show temporary error message"""
+                    font = pygame.font.Font("assets/fonts/Kreon-Bold.ttf", 24)
+                    text = font.render(message, True, (255, 0, 0))
+                    text_rect = text.get_rect(center=(self.player.rect.right + 150, self.player.rect.centery))
+                    self.error_message = (text, text_rect, pygame.time.get_ticks())
+                
+                if self.player.debuffs['Entangle'] > 0 and self.dragged_card.type == 0:
+                    show_error_message("Can't play Attack cards while Entangled")
+                elif self.dragged_card.cost == 'U' and mouse_pos[1] <= 550:
+                    if (self.run.mechanics['Playable_Curse'] == True and self.dragged_card.type == 4) or (self.run.mechanics['Playable_Status'] == True and self.dragged_card.type == 3):
+                        if self.can_play_card and self.energy >= cost:
+                            self.playing = self.dragged_card
+                            self.hand.remove_card(self.dragged_card)
+                            self.play_card(self.player_targeting(0, self.dragged_card.target))
+                            self.energy -= cost
+                        elif self.energy < cost:
+                            show_error_message("Not enough energy")
+                        else:
+                            show_error_message("Can't play more cards this turn")
+                    else:
+                        show_error_message("Can't play this card")
+                elif self.dragged_card.target == 1:
+                    for enemy in self.enemies.enemy_list:
+                        if enemy and enemy.rect.collidepoint(mouse_pos):
+                            if self.can_play_card and self.energy >= cost:
+                                self.playing = self.dragged_card
+                                self.hand.remove_card(self.dragged_card)
+                                self.play_card([enemy])
+                                self.energy -= cost
+                            elif self.energy < cost:
+                                show_error_message("Not enough energy")
+                            else:
+                                show_error_message("Can't play more cards this turn")
+                else:
+                    if mouse_pos[1] <= 550:
+                        if self.can_play_card and self.energy >= cost:
+                            self.playing = self.dragged_card
+                            self.hand.remove_card(self.dragged_card) 
+                            self.play_card(self.player_targeting(0, self.dragged_card.target))
+                            self.energy -= cost
+                        elif self.energy < cost:
+                            show_error_message("Not enough energy")
+                        else:
+                            show_error_message("Can't play more cards this turn")
+                self.dragged_card.stop_targeting()
+                self.dragged_card.stop_dragging()
+                self.dragged_card = None
+
+    def handle_potion_events(self, event, mouse_pos):
+        """Handle potion-related events"""
+        for potion in self.player.potions:
+            if potion:
+                was_hovered = potion.is_hovered
+                if potion.rect.collidepoint(mouse_pos):
+                    potion.hover()
+                    # Handle clicking
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        if event.button == 1:  # Left click
+                            if self.clicked_potion:
+                                self.clicked_potion.unclick()
+                            potion.click()
+                            self.clicked_potion = potion
+                else:
+                    potion.unhover()
+                if potion.is_hovered != was_hovered:
+                    if potion.is_hovered:
+                        print(f"Now hovering over: {potion.name}")
+                    else:
+                        print(f"No longer hovering over: {potion.name}")
+                if potion.clicked:
+                    box_width = 100
+                    box_height = 40
+                    box_x = potion.rect.x + (potion.sprite.get_width() - box_width) // 2
+                    box_y = potion.rect.y + potion.sprite.get_height() + 10
+                    use_rect = pygame.Rect(box_x, box_y, box_width, box_height)
+                    # Draw outline of use and cancel button collision boxes in red
+                    cancel_rect = pygame.Rect(box_x, box_y + 45, 100, 40) 
+                    if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                        if self.targetting_potion:
+                            for enemy in self.enemies.enemy_list:
+                                if enemy and enemy.rect.collidepoint(mouse_pos):
+                                    self.use_potion(potion, [enemy])
+                                    self.targetting_potion = None
+                                    self.clicked_potion = None
+                                    break
+                        if use_rect.collidepoint(mouse_pos):
+                            # Only allow use if time_of_use is combat or all
+                            print("Use button clicked")
+                            if potion.time_of_use in ['combat', 'all']:
+                                print(f"Using potion: {potion.name}")
+                                if potion.target == 1:
+                                    print("Potion requires targeting")
+                                    potion.start_targeting()
+                                    self.targetting_potion = potion
+                                    self.dragged_card = None  # Clear any dragged card
+                                else:
+                                    self.use_potion(potion)
+                            else:
+                                print(f"Cannot use {potion.name} at this time")
+                            potion.unclick()
+                        elif cancel_rect.collidepoint(mouse_pos):
+                            print("Cancel button clicked")
+                            potion.unclick()
+                            self.clicked_potion = None
+                else:
+                    if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                        if potion.rect.collidepoint(mouse_pos):
+                            self.clicked_potion.unclick()
+                            self.clicked_potion = None
+                            potion.click()
+                            self.clicked_potion = potion
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+                    potion.unclick()
+                    if self.targetting_potion:
+                        self.targetting_potion.stop_targeting()
+                        self.targetting_potion = None
+                    if self.clicked_potion:
+                        self.clicked_potion.unclick()
+                        self.clicked_potion = None
+        if self.targetting_potion:
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                for enemy in self.enemies.enemy_list:
+                    if enemy and enemy.rect.collidepoint(mouse_pos):
+                        self.use_potion(self.targetting_potion, [enemy])
+                        self.targetting_potion = None
+                        self.clicked_potion = None
+                        break
+
+    def handle_relic_events(self, event, mouse_pos):
+        """Handle relic-related events"""
+        for relic in self.player.relics:
+            if relic.rect.collidepoint(mouse_pos):
+                relic.hover()
+            else:
+                relic.unhover()
+
+    def update_game_state(self, mouse_pos):
+        """Update all game objects"""
+        for card in self.hand.cards:
+            card.update()
+            card.check_hover(mouse_pos)
+        
+        self.hand.update_positions(self.dragged_card)
+
+    def view_pile(self, pile):
+        """Draw all piles"""
+        if pile.is_empty():
+            # If the pile to select from is empty
+            return None
+        else:
+            # Create a new surface for viewing the cards
+            viewing_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+            viewing_surface.fill((0, 0, 0, 0))  # Completely transparent background
+            
+            # Create a Pile object to handle drawing the cards in a grid
+            pile.scroll_offset = 0  # Initialize scroll position
+            
+            # Create a confirm button in bottom right
+            confirm_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
+            confirm_button = pygame.Rect(1600 - confirm_sprite.get_width(), 520, confirm_sprite.get_width(), confirm_sprite.get_height())
+            
+            viewing = True
+            while viewing:
+                # Handle events
+                for event in pygame.event.get():
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        mouse_pos = pygame.mouse.get_pos()
+                        
+                        # Check if confirm button clicked
+                        if confirm_button.collidepoint(mouse_pos):
+                            viewing = False
+                            break
+                    
+                    elif event.type == pygame.QUIT:
+                        viewing = False
+                        break
+                
+                # Draw cards
+                pile.draw(viewing_surface)
+                
+                # Draw confirm button
+                viewing_surface.blit(confirm_sprite, confirm_button)
+                
+                # Update display
+                # Create a transparent surface for the background
+                background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
+                background.fill((50, 50, 50))  # Semi-transparent dark gray
+                background.set_alpha(200)
+                pygame.display.get_surface().blit(background, (0, 0))
+                pygame.display.get_surface().blit(viewing_surface, (0, 0))
+                pygame.display.flip()
+
+    def draw_game_state(self, mouse_pos):
+        """Draw all game objects"""
+        
+        player_x, player_y = 300, self.SCREEN_HEIGHT//2.9
+
+        # Draw power cards in a row above player, scaled down
+        spacing = 50  # Space between cards
+        start_x = player_x - (len(self.powers.cards) * spacing) / 2  # Center the row above player
+        for i, card in enumerate(self.powers.cards):
+            card.draw_as_power(self.combat_surface, x=start_x + (i * spacing), y=player_y - 100)
+
+
+        # Draw enemies
+        self.enemies.draw(self.combat_surface, self.run.mechanics['Intent'])
+        
+        # Draw energy
+        self.draw_energy(self.combat_surface)
+
+        # Only draw targeting effects if card is being dragged
+        if self.dragged_card:
+            self.dragged_card.draw_targeting_arrow(self.combat_surface, mouse_pos)
+            if self.dragged_card.target in [1, 2, 3]:
+                for enemy in self.enemies.enemy_list:
+                    if enemy:
+                        enemy.draw_collision_box(self.combat_surface)
+            else:
+                self.player.rect.x = player_x
+                self.player.rect.y = player_y
+                self.player.draw_collision_box(self.combat_surface)
+
+        # Draw hand
+        self.hand.draw(self.combat_surface, self.dragged_card)
+        
+        # Draw potion targeting effects
+        if self.targetting_potion:
+            self.targetting_potion.start_targeting()
+            print(self.targetting_potion.name)
+            self.targetting_potion.draw_targeting_arrow(self.combat_surface, mouse_pos)
+            for enemy in self.enemies.enemy_list:
+                if enemy:
+                    enemy.draw_collision_box(self.combat_surface)
+        
+        self.draw_pile.draw_icon(self.combat_surface)
+        self.discard_pile.draw_icon(self.combat_surface)
+        self.exhaust_pile.draw_icon(self.combat_surface)
+        self.powers.draw_icon(self.combat_surface)
+        # Draw player
+        
+        self.player.draw(self.combat_surface, x=player_x, y=player_y)
+        self.player.draw_ui(self.combat_surface)
+
+    def draw_energy(self, surface):
+        """Draw energy counter in bottom left"""
+        # Load and scale energy orb sprite
+        scaled_width = int(self.energy_sprite.get_width() * 0.75)
+        scaled_height = int(self.energy_sprite.get_height() * 0.75)
+        
+        # Position in bottom left with some padding
+        x = 100
+        y = self.SCREEN_HEIGHT - scaled_height - 250
+        
+        # Draw energy orb
+        surface.blit(self.energy_sprite, (x, y))
+
+        # Draw energy text
+        energy_text = f"{self.energy}/{self.energy_cap}"
+        # Draw black outline by rendering text in black and offsetting slightly
+        outline_color = (0, 0, 0)
+        for dx, dy in [(-2,0), (2,0), (0,-2), (0,2)]:
+            outline = self.energy_font.render(energy_text, True, outline_color)
+            text_x = x + (scaled_width - outline.get_width()) // 2 + 20 + dx
+            text_y = y + (scaled_height - outline.get_height()) // 2 + 15 + dy
+            surface.blit(outline, (text_x, text_y))
+        
+        # Draw main white text on top
+        text = self.energy_font.render(energy_text, True, (255, 255, 255))
+        text_x = x + (scaled_width - text.get_width()) // 2 + 20
+        text_y = y + (scaled_height - text.get_height()) // 2 + 18
+        surface.blit(text, (text_x, text_y))
+        # Get mouse position
+        mouse_pos = pygame.mouse.get_pos()
+                
+        # Create rect for collision detection
+        energy_rect = pygame.Rect(x, y, scaled_width, scaled_height)
+        
+        # Check if mouse is hovering over energy orb
+        if energy_rect.collidepoint(mouse_pos):
+            # Create tooltip text
+            tooltip_text = "Energy"
+            tooltip_surface = self.energy_font.render(tooltip_text, True, (255, 255, 255))
+            
+            # Create background box
+            padding = 10
+            box_width = tooltip_surface.get_width() + padding * 2
+            box_height = tooltip_surface.get_height() + padding * 2
+            box = pygame.Surface((box_width, box_height), pygame.SRCALPHA)
+            box.fill((0, 0, 0))
+            box.set_alpha(100)
+            
+            # Position tooltip to right of energy orb
+            box_x = x + scaled_width + 10
+            box_y = y + (scaled_height - box_height) // 2
+            
+            # Draw tooltip
+            surface.blit(box, (box_x, box_y))
+            surface.blit(tooltip_surface, (box_x + padding, box_y + padding))
+
     def combat_start(self):
         '''Method for starting combat'''
+        self.get_energy_cap()
         if self.combat_type == 'Elite':
             if self.player.relics:
                 for relic in self.player.relics:
                     relic.combatActionEff('Elite Start', self)
         if self.run.mechanics['Insect'] == True and self.combat_type == 'Elite':
-            for enemy in self.enemies:
-                enemy.hp = int(enemy.hp * 0.75)
+            for enemy in self.enemies.enemy_list:
+                if enemy != None:
+                    enemy.hp = int(enemy.hp * 0.75)
         # check for preserved insect condition
         innate_or_bottled = []
         for card in reversed(self.draw_pile):
             if card.innate == True or card.bottled == True:
                 innate_or_bottled.append(card)
-                self.draw_pile.remove(card)
-        random.shuffle(self.draw_pile)
+                self.draw_pile.remove_card(card)
+        self.draw_pile.shuffle()
         random.shuffle(innate_or_bottled)
-        self.draw_pile.extend(innate_or_bottled)
+        for card in innate_or_bottled:
+            self.draw_pile.add_top(card)
         innate_or_bottled = []
         # put all innate and bottled cards at the top of the draw pile
-        self.player_turn_start()
 
     def counter_reset(self):
         '''Method for resetting turn counters'''
@@ -76,8 +547,8 @@ class Combat:
         ### args:
             cond (string): The event that is occuring
         '''
-        if self.powers: # If there are powers played
-            for card in self.powers: # For all powers
+        if not self.powers.is_empty(): # If there are powers played
+            for card in self.powers.cards: # For all powers
                 context = {
                     # Basic info to be passed on for executing effects
                     'user': self.player,
@@ -88,6 +559,7 @@ class Combat:
                     'exhaust': self.exhaust_pile,
                     'target': card.target
                 }
+                context['target'] = self.player_targeting(context, card.target)
                 if 'Power' in card.effect and card.effect['Power'] != None:
                     # The power effect in a card
                     for power_cond, effect in card.effect['Power'].items():
@@ -120,21 +592,13 @@ class Combat:
         '''Counts the number of curses in play'''
         curse = 0
         if self.draw_pile:
-            for card in self.draw_pile:
-                if card.type == 4:
-                    curse += 1
+            curse += self.draw_pile.curse_count()
         if self.discard_pile:
-            for card in self.discard_pile:
-                if card.type == 4:
-                    curse += 1
+            curse += self.discard_pile.curse_count()
         if self.hand:
-            for card in self.hand:
-                if card.type == 4:
-                    curse += 1
+            curse += self.hand.curse_count()
         if self.exhaust_pile:
-            for card in self.exhaust_pile:
-                if card.type == 4:
-                    curse += 1
+            curse += self.exhaust_pile.curse_count()
         return curse
         # counts the number of curses in play
     
@@ -176,17 +640,13 @@ class Combat:
             return None
         if target_code == 0:
             # If its 0
-            return [context['user']]
+            return [self.player]
             # Returns the player
         elif target_code == 1:
-            # If its 1
-            i = int(input('Enter the index of the enemy'))
-            # Asks the player for which enemy to target
-            return [self.enemies[i]]
-            # returns that target
+            raise ValueError('Should not have accessed this method')
         elif target_code == 2:
             # if its 2
-            return [self.enemies[random.randint(0, len(self.enemies) - 1)]]
+            return [self.enemies.random_enemy()]
             # Returns a random enemy
         elif target_code == 3:
             # if its 3
@@ -209,38 +669,38 @@ class Combat:
             # If a cost change is needed
             card.cost_change(*cost)
             # Modifies the cards cost
-        if location_name == 'draw':
-            if self.draw_pile:
-            # If its the draw pile, insert is somewhere random
-                location.insert(random.randint(0, len(location) - 1), card)
+        if location.type == 'hand':
+            if self.hand.cards_in_hand() == 10:
+                self.discard_pile.add_card(card)
             else:
-                location.append(card)
+                location.add_top(card)
         else:
-            # If its anywhere else adding it to the top works
-            location.append(card)
+            location.add_top(card)
     
     def shuffle(self):
         '''
         Method for shuffling the discard pile into the draw pile and shuffling the order of the draw pile
         '''
-        if self.draw_pile:
+        if not self.draw_pile.is_empty():
             # If the draw pile is not empty
-            if self.discard_pile:
+            if not self.discard_pile.is_empty():
                 # If the discard pile is not empty
-                self.draw_pile.extend(self.discard_pile)
+                for card in self.discard_pile.cards:
+                    self.draw_pile.add_card(card)
                 # Add the discard pile to the draw pile
-                random.shuffle(self.draw_pile)
-                # Shuffle the draw pile
-                self.discard_pile[:] = []
-                # Empty the discard pile
+            self.draw_pile.shuffle()
+            # Shuffle the draw pile
+            self.discard_pile.empty()
+            # Empty the discard pile
         else:
-            if self.discard_pile:
+            if not self.discard_pile.is_empty():
                 # If the discard pile is not empty
-                self.draw_pile.extend(self.discard_pile)
+                for card in self.discard_pile.cards:
+                    self.draw_pile.add_card(card)
                 # Make the draw pile the discard pile
-                random.shuffle(self.draw_pile)
+                self.draw_pile.shuffle()
                 # Shuffle the draw pile
-                self.discard_pile[:] = []
+                self.discard_pile.empty()
                 # Empty the discard pile
         self.passive_check_and_exe('Shuffle')
             # Active the relic effects with the event being shuffling
@@ -252,33 +712,32 @@ class Combat:
             num (int): The number of cards that needs to be drawn
         '''
         while num > 0: # While drawing still needs to be done
-            if self.hand:
-                if len(self.hand) == 10: 
-                    # If the hand is full
-                    num -= 1
-                    # One less card to draw
-                    continue
-                    # To the next iteration
-            if not self.draw_pile:
-                # If the draw piel is empty
+            if self.hand.cards_in_hand() == 10:
+                # If the hand is full 
+                num -= 1
+                # One less card to draw
+                continue
+                # To the next iteration
+            elif self.draw_pile.is_empty():
+                # If the draw pile is empty
                 self.shuffle()
                 # shuffle the draw pile
-                if not self.draw_pile:
+                if self.draw_pile.is_empty():
                     # If the draw pile is still empty
                     num -= 1
                     # One less card to draw
                     continue
                     # To the next iteration
             else:
-                self.hand.append(self.draw_pile[-1])
-                # "draw" a card
+                drawn_card = self.draw_pile.remove_top()
+                # "draw" a card from top of draw pile
                 if self.player.debuffs['Chaotic'] > 0:
-                    self.hand[-1].chaos()
+                    drawn_card.chaos()
                 # If the player is chaotic, randomize the cost of drawn cards
-                if self.hand[-1].effect:
-                    if 'Drawn' in self.hand[-1].effect:
+                if drawn_card.effect:
+                    if 'Drawn' in drawn_card.effect:
                         # If the card has a when drawn effect
-                        for effect, details in self.hand[-1].effect['Drawn'].items():
+                        for effect, details in drawn_card.effect['Drawn'].items():
                             context = {
                                 # Basic info to be passed on for executing effects
                                 'user': self.player,
@@ -287,24 +746,52 @@ class Combat:
                                 'discard': self.discard_pile,
                                 'hand': self.hand,
                                 'exhaust': self.exhaust_pile,
-                                'target': self.hand[-1].target
+                                'target': drawn_card.target
                             }
                             effect(*details, context, self)
                             # Execute the drawn effect
-                self.draw_pile.pop(-1)
-                # Remove the top card of the draw pile as thats where we drew from
-                if self.hand[-1].type in {3, 4}:
+                self.hand.add_card(drawn_card)
+                # Add card to hand
+                if drawn_card.type in {3, 4}:
                     # If the card drawn is a negative card
                     self.passive_check_and_exe('Draw Negative')
                     # Check for effects
-                    if self.hand[-1].type == 3:
+                    if drawn_card.type == 3:
                         self.passive_check_and_exe('Draw Status')
-                    elif self.hand[-1].type == 4:
+                    elif drawn_card.type == 4:
                         self.passive_check_and_exe('Draw Curse')
                     # If they drew a status or a curse and check for effects
                 num -= 1
                 # One less card to draw
     
+    def view_pile(self, pile):
+        '''Method for viewing a pile of cards
+
+        ### args:
+            pile (list): The pile of cards to view
+        '''
+        card_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+        card_surface.fill((0, 0, 0, 0))  # Completely transparent background
+        confirm_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
+        confirm_button = pygame.Rect(1600 - confirm_sprite.get_width(), 520, confirm_sprite.get_width(), confirm_sprite.get_height())
+        viewing = True
+        while viewing:
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    if confirm_button.collidepoint(mouse_pos):
+                        viewing = False
+                        break
+            
+            pile.draw(card_surface)
+            card_surface.blit(confirm_sprite, confirm_button)
+            background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
+            background.fill((50, 50, 50))  # Semi-transparent dark gray
+            background.set_alpha(10)
+            pygame.display.get_surface().blit(background, (0, 0))
+            pygame.display.get_surface().blit(card_surface, (0, 0))
+            pygame.display.flip()
+
     def soft_card_select(self, num : int, pile : list): # Needs to be changed to match hard card select
         '''A soft card select refers to when the game needs the player to select up to x amount of cards but can choose to select below x amount of cards or none at all
         
@@ -315,67 +802,80 @@ class Combat:
         ### Returns:
             Number of cards selected (If more than 1) or the type of card selected (If 1 card was selected) or None (No cards were selected)
             '''
-        cards_selected = []
         if not pile:
             # If the pile to select from is empty
             return None
         else:
-            confirm = True
-            # Initialize confirm selection boolean
-            while confirm:
-                # While the player hasn't confirmed yet
-                if pile:
-                    i = 0
-                    # If the pile to select from isn't empty
-                    for card in pile:
-                        # Prints all cards in the pile with relevent detail
-                        print(f'{i}: {card}')
-                        i += 1
-                if cards_selected:
-                    # If there has been cards already selected
-                    print('selected: ')
-                    print(cards_selected)
-                select = input(f"Enter the index of the card u wish to select or unselect by typing the index and cs to confirm choices, you can selected up to {num} cards.")
-                # Request for player input
-                if select != 'cs' and 'r' not in select:
-                    # Select another card
-                    select = int(select)
-                    if pile[select] in self.selected:
-                        # Card is already selected
-                        self.selected.remove(pile[select])
-                        cards_selected.remove(select)
-                        # Unselected the card
-                    elif len(self.selected) == num:
-                        # If they already selected the max num of cards
-                        continue
-                        # Do nothing
-                    else:
-                        self.selected.append(pile[select])
-                        cards_selected.append(select)
-                        # Add the chosen card to selected
-                else:
-                    confirm = False
-                    # Confirming choices
-                    if len(self.selected) == 1:
-                        # If only 1 card was selected
-                        if pile == self.draw_pile:
-                            # If its the draw pile
-                            random.shuffle(self.draw_pile)
-                            # Shuffle the draw pile
-                        pile.remove(self.selected[0])
-                        # Remove the selected card from the pile
-                        return self.selected[0].type
-                        # Returns the type of card selected
-                    else:
-                        if pile == self.draw_pile:
-                            # If its the draw pile
-                            random.shuffle(self.draw_pile)
-                            # Shuffle the draw pile
-                        for card in self.selected:
-                            pile.remove(card)
-                            # Remove the selected card from the pile
-                        return len(self.selected)
-                        # Returns the number of cards selected
+            # Create a new surface for the card selection screen
+            selection_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+            selection_surface.fill((0, 0, 0, 0))  # Completely transparent background
+            
+            # Create a Pile object to handle drawing the cards in a grid
+            selection_pile = Pile(pile.cards, "selection")
+            selection_pile.scroll_offset = 0  # Initialize scroll position
+            
+            # Create a confirm button in bottom right
+            confirm_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
+            confirm_button = pygame.Rect(1600 - confirm_sprite.get_width(), 520, confirm_sprite.get_width(), confirm_sprite.get_height())
+            
+            selecting = True
+            while selecting:
+                # Handle events
+                for event in pygame.event.get():
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        mouse_pos = pygame.mouse.get_pos()
+                        
+                        # Check if confirm button clicked
+                        if confirm_button.collidepoint(mouse_pos):
+                            selecting = False
+                            break
+                            
+                        # Check if card clicked
+                        for card in pile:
+                            if card.rect.collidepoint(mouse_pos):
+                                if card in self.selected:
+                                    # Unselect card if already selected
+                                    self.selected.remove(card)
+                                elif len(self.selected) < num:
+                                    # Select card if under max selections
+                                    self.selected.append(card)
+                                break
+
+                    elif event.type == pygame.QUIT:
+                        selecting = False
+                        break
+                
+                # Draw cards
+                selection_pile.draw(selection_surface)
+                
+                # Draw highlights around selected cards
+                for card in self.selected:
+                    card.draw_highlight(selection_surface)
+                    
+                # Draw confirm button
+                selection_surface.blit(confirm_sprite, confirm_button)
+                
+                # Update display
+                # Create a transparent surface for the background
+                background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
+                background.fill((50, 50, 50))  # Semi-transparent dark gray
+                background.set_alpha(10)
+                pygame.display.get_surface().blit(background, (0, 0))
+                pygame.display.get_surface().blit(selection_surface, (0, 0))
+                pygame.display.flip()
+            
+            # Return results
+            if len(self.selected) == 1:
+                if pile == self.draw_pile:
+                    random.shuffle(self.draw_pile)
+                pile.remove_card(self.selected[0])
+                return self.selected[0].type
+            else:
+                if pile == self.draw_pile:
+                    random.shuffle(self.draw_pile)
+                for card in self.selected:
+                    pile.remove_card(card)
+                return len(self.selected)
 
     def hard_card_select(self, num, pile):
         '''A hard card select refers to when the game needs the player to select x amount of cards and they must choose the maximum amount of cards to select
@@ -387,82 +887,89 @@ class Combat:
         ### Returns:
             Number of cards selected (If more than 1) or the type of card selected (If 1 card was selected) or None (No cards were selected)
         '''
-        selected_cards = []
-        if not pile:
-            # If the pile to select from is empty
+        if pile.is_empty():
             return None
-            # Doesn't select anything
-        elif len(pile) <= num:
-            # If the # of cards in pile is equal to or less then the # of cards that needs to be selected
-            self.selected.extend(pile)
-            # Add all cards in pile to selected
-            pile[:] = []
-            # Empty the pile
+            
+        if len(pile.cards) <= num:
+            self.selected.extend(pile.cards)
+            pile.empty()
             if num == 1:
                 return self.selected[0].type
             else:
                 return len(self.selected)
-            # Returns the # of cards selected or type of card selected depending on if more than 1 card was selected
-        else:
-            confirm = True
-            # Initialize confirm selection boolean
-            while confirm:
-                # While the player hasn't confirmed yet
-                i = 0
-                if pile:
-                    # If the pile to select from isn't empty
+                
+        # Create selection surface and pile
+        selection_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+        selection_surface.fill((0, 0, 0, 0))  # Completely transparent background
+        
+        # Create a Pile object to handle drawing the cards in a grid
+        selection_pile = Pile(pile.cards, "selection")
+        selection_pile.scroll_offset = 0  # Initialize scroll position
+        
+        # Create a confirm button in bottom right
+        confirm_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
+        confirm_button = pygame.Rect(1600 - confirm_sprite.get_width(), 520, confirm_sprite.get_width(), confirm_sprite.get_height())
+        
+        selecting = True
+        while selecting:
+            # Handle events
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    
+                    # Check if confirm button clicked
+                    if confirm_button.collidepoint(mouse_pos):
+                        if len(self.selected) == num:
+                            selecting = False
+                            break
+                            
+                    # Check if card clicked
                     for card in pile:
-                        # Prints all cards in the pile with relevent detail
-                        print(f'{i}: {card}')
-                        i += 1
-                if selected_cards:
-                    # If there has been cards already selected
-                    print('selected: ')
-                    print(selected_cards)
-                    # Prints the indexes of all selected cards
-                select = input("Enter the index of the card u wish to select or unselect and cs to confirm choices")
-                # Request for player input
-                if select != 'cs':
-                    # Select another card
-                    select = int(select)
-                    if pile[int(select)] in self.selected:
-                        # Card is already selected
-                        self.selected.remove(pile[select])
-                        selected_cards.remove(select)
-                        # Unselected the card
-                    elif len(self.selected) == num:
-                        # If they already selected the max num of cards
-                        continue
-                        # Do nothing
-                    else:
-                        self.selected.append(pile[select])
-                        selected_cards.append(select)
-                        # Add the chosen card to selected
-                else:
-                    if len(self.selected) < num:
-                        # If not enought cards were selected
-                        continue
-                        # Does nothing
-                    else:
-                        confirm = False
-                        # Turns off loop
-                        for card in self.selected:
-                            pile.remove(card)
-                            # Remove the selected card from the pile
-                        if len(self.selected) == 1:
-                            if pile == self.draw_pile:
-                                # If its the draw pile
-                                random.shuffle(self.draw_pile)
-                                # Shuffle the draw pile
-                            return self.selected[0].type
-                            # Returns the type of card selected
-                        else:
-                            if pile == self.draw_pile:
-                                # If its the draw pile
-                                random.shuffle(self.draw_pile)
-                                # Shuffle the draw pile
-                            return len(self.selected)
-                            # Returns the number of cards selected
+                        if card.rect.collidepoint(mouse_pos):
+                            if card in self.selected:
+                                # Unselect card if already selected
+                                self.selected.remove(card)
+                            elif len(self.selected) < num:
+                                # Select card if under max selections
+                                self.selected.append(card)
+                            break
+                
+                elif event.type == pygame.QUIT:
+                    selecting = False
+                    break
+            
+            # Draw cards
+            selection_pile.draw(selection_surface)
+            
+            # Draw highlights around selected cards
+            for card in self.selected:
+                card.draw_highlight(selection_surface)
+                
+            # Draw confirm button
+            confirm_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
+            selection_surface.blit(confirm_sprite, confirm_button)
+            
+            # Update display
+            # Create a transparent surface for the background
+            background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
+            background.fill((50, 50, 50))  # Semi-transparent dark gray
+            background.set_alpha(10)
+            pygame.display.get_surface().blit(background, (0, 0))
+            pygame.display.get_surface().blit(selection_surface, (0, 0))
+            pygame.display.flip()
+        
+        # Return results
+        if len(self.selected) == 1:
+            if pile == self.draw_pile:
+                random.shuffle(self.draw_pile)
+            pile.remove_card(self.selected[0])
+            return self.selected[0].type
+        else:
+            if pile == self.draw_pile:
+                random.shuffle(self.draw_pile)
+            for card in self.selected:
+                pile.remove_card(card)
+            return len(self.selected)
 
     def place_selected_cards(self, end_pile, cost):
         '''Method for placing a selected card into a specific pile
@@ -473,13 +980,19 @@ class Combat:
         '''
         if self.selected:
             # If there are cards selected
-            if cost != 'na':
-                # If there is a cost change needed
-                for card in self.selected:
-                    # Change the cost for everycard in selected
+            for card in self.selected:
+                if cost != 'na':
+                    # If there is a cost change needed
                     card.cost_change(*cost)
-            end_pile.extend(self.selected)
-            # Adds all selected cards to the top of the end pile
+                    # Change the cost for everycard in selected
+                if end_pile.type == 'hand':
+                    if self.hand.cards_in_hand() == 10:
+                        self.discard_pile.add_card(card)
+                    else:
+                        self.hand.add_card(card)
+                else:
+                    end_pile.add_card(card)
+                # Adds all selected cards to the top of the end pile
             self.selected[:] = []
             # Empty selected cards
     
@@ -495,7 +1008,7 @@ class Combat:
             return None
             # Returns nothing
         eligible_cards = []
-        # Initilize eligible_cards
+        # Initialize eligible_cards
         if type == 'all':
             # If all cards can be searched
             eligible_cards.extend(self.draw_pile)
@@ -504,17 +1017,15 @@ class Combat:
             # If searching based on rarity
             rarity = {
                 'common': 1,
-                'uncommon' : 2,
+                'uncommon': 2,
                 'rare': 3
             }
             for card in reversed(self.draw_pile):
                 # Go through every card in the draw pile
                 if card.rarity == rarity[type]:
-                    # The the rarity match the seach type
+                    # If the rarity matches the search type
                     eligible_cards.append(card)
                     # Add it to eligible cards
-                    self.draw_pile.remove(card)
-                    # Remove the cards from the draw pile
             if eligible_cards:
                 # If there are eligible cards
                 self.hard_card_select(num, eligible_cards)
@@ -523,24 +1034,23 @@ class Combat:
                     # Loop through every card in selected
                     if len(self.hand) < 10:
                         # While the hand is below the hand size limit
-                        self.hand.append(self.selected)
+                        self.hand.add_card(card)
                         # Add the selected card to hand
                         self.selected.remove(card)
                         # Remove it from selected
+                        self.draw_pile.remove_card(card)
+                        # Remove the cards from the draw pile
                     else:
-                        self.discard_pile.extend(self.selected)
-                        # Add remaining cards the discard pile
-                        self.selected[:] = []
-                        # Empty selected cards
+                        self.discard_pile.add_cards(self.selected)
+                        # Add remaining cards to the discard pile
+                        self.selected.remove(card)
+                        # Remove it from selected
+                        self.draw_pile.remove_card(card)
+                        # Remove the cards from the draw pile
                         break
                         # Exit the loop
-                # Place them in the hand
-                self.draw_pile.extend(eligible_cards)
-                # Read the cards back to the draw pile
-                random.shuffle(self.draw_pile)
+                self.draw_pile.shuffle()
                 # Shuffle the draw pile
-                eligible_cards = []
-                # Empty eligible cards
 
         elif type in {'atk', 'skill', 'power'}:
             return None
@@ -560,7 +1070,7 @@ class Combat:
                 # Loop through cards selected
                 if card.type == 4:
                     # If the card is a curse
-                    self.exhaust_pile.append(card)
+                    self.exhaust_pile.add_card(card)
                     # add the card to the exhaust pile
                     self.if_card_cond(card, 'Exhausted')
                     # Executes exhausted effects
@@ -568,7 +1078,7 @@ class Combat:
                     # Remove the card from selected
                     self.passive_check_and_exe('Exhaust')
                 else:
-                    self.discard_pile.append(card)
+                    self.discard_pile.add_card(card)
                     # Add the card to the discard pile
                     self.if_card_cond(card, 'Discarded')
                     # Executes Discarded effects
@@ -580,30 +1090,30 @@ class Combat:
         
         ### args:
             num: The Number of cards to randomly discard'''
-        if self.hand:
+        if not self.hand.is_empty():
             # If there are cards in hand
-            if len(self.hand) > num:
+            if len(self.hand.cards) > num:
                 # There are more cards in hand than the amount needed to be discarded
                 for i in range(0, num):
                     # Iterate num amount of times
-                    card = random.choice(self.hand)
+                    card = random.choice(self.hand.cards)
                     # Choose a random card
                     if card.effect:
                         self.if_card_cond(card, 'Discarded')
                         # Execute the discarded effect
-                    self.discard_pile.append(card)
+                    self.discard_pile.add_card(card)
                     # Add the card to the discard pile
-                    self.hand.remove(card)
+                    self.hand.remove_card(card)
                     # Remove the card from hand
             else:
-                for card in reversed(self.hand):
-                    # Go throught every card
+                for card in reversed(self.hand.cards):
+                    # Go through every card
                     if card.effect:
                         self.if_card_cond(card, 'Discarded')
                         # Execute the discarded effect
-                    self.discard_pile.append(card)
+                    self.discard_pile.add_card(card)
                     # Add the card to the discard pile
-                    self.hand.remove(card)
+                    self.hand.remove_card(card)
                     # Remove the card from hand
 
     def choose_discard(self, num: int):
@@ -621,8 +1131,10 @@ class Combat:
                 if card.effect:
                     self.if_card_cond(card, 'Discarded')
                     # Executes all if Discarded effects
-                self.discard_pile.append(card)
+                self.discard_pile.add_card(card)
                 # Add the card to the discard pile
+                self.hand.remove_card(card)
+                # Remove card from hand
                 self.selected.remove(card)
                 # remove the card from selected
 
@@ -630,32 +1142,32 @@ class Combat:
         '''Exhausts a number of random cards from the hand
         
         ### args:
-            num: The number of cards that needs to be exausted'''
-        if self.hand:
+            num: The number of cards that needs to be exhausted'''
+        if not self.hand.is_empty():
             # If there are cards in hand
-            if len(self.hand) > num:
+            if len(self.hand.cards) > num:
                 # There are more cards in hand than the amount needed to be Exhausted
                 for i in range(0, num):
                     # Iterate num amount of times
-                    card = random.choice(self.hand)
+                    card = random.choice(self.hand.cards)
                     # Choose a random card
                     if card.effect:
                         # If that card has a effect when exhausted
                         self.if_card_cond(card, 'Exhausted')
-                    self.exhaust_pile.append(card)
+                    self.exhaust_pile.add_card(card)
                     # Add the card to the Exhausted pile
-                    self.hand.remove(card)
+                    self.hand.remove_card(card)
                     # Remove the card from hand
                     self.passive_check_and_exe('Exhaust')
             else:
-                for card in reversed(self.hand):
-                    # Go throught every card
+                for card in reversed(self.hand.cards):
+                    # Go through every card
                     if card.effect:
                         self.if_card_cond(card, 'Exhausted')
                         # Execute the Exhausted effect
-                    self.exhaust_pile.append(card)
+                    self.exhaust_pile.add_card(card)
                     # Add the card to the Exhausted pile
-                    self.hand.remove(card)
+                    self.hand.remove_card(card)
                     # Remove the card from hand
                     self.passive_check_and_exe('Exhaust')
     
@@ -678,7 +1190,7 @@ class Combat:
             for card in reversed(self.selected):
                 # Go through every selected card
                 self.if_card_cond(card, 'Exhausted')
-                self.exhaust_pile.append(card)
+                self.exhaust_pile.add_card(card)
                 self.selected.remove(card)
                 # Exhaust all selected cards
                 self.passive_check_and_exe('Exhaust')
@@ -686,7 +1198,7 @@ class Combat:
             return True
         return False
     
-    def if_card_cond(self, card, cond : str, override = None):
+    def if_card_cond(self, card : card_constructor.Card, cond : str, override = None):
         '''Executes card effects that happens when something happens to a card (IE: Discarded, Exhausted, etc)
         
         ### args:
@@ -710,7 +1222,7 @@ class Combat:
         if card.effect:
             # If the cards have effects
             if cond in card.effect:
-                # If the cards have an exhausted effect
+                # If the cards have an conditional effect
                 for effect, details in card.effect[cond].items():
                     effect(*details, context, self)
                     # Executing effects
@@ -765,14 +1277,17 @@ class Combat:
 
     def resolve_action(self):
         '''Resolves an action done by the player, mainly just checks for deaths of enemies and if a end of combat condition is met'''
-        for enemy in reversed(self.enemies):
+        for enemy in reversed(self.enemies.enemy_list):
             # Goes throught every enemy
-            if enemy.died(self) == True:
-                # If they're dead
-                self.enemies.remove(enemy)
-                # Remove them from the enemy list
+            if enemy != None:
+                if enemy.died(self) == True:
+                    # If they're dead
+                    self.enemies.remove_enemy(enemy)
+                    # Remove them from the enemy list
                 self.passive_check_and_exe('Lethal')
-        if len(self.enemies) == 0:
+        if self.hand.is_empty():
+            self.passive_check_and_exe('Empty Hand')
+        if self.enemies.is_empty():
             # If there are no more enemies
             self.combat_active = False
             # End the combat
@@ -788,16 +1303,16 @@ class Combat:
             special: true or false to represent whether to exhaust the card played this way'''
         for i in range(0, num):
             # Iterate a certain amount of times
-            if self.draw_pile:
+            if not self.draw_pile.is_empty():
                 # If there are cards in the draw pile
                 holding = None
                 # Initialize holding
                 if self.playing:
                     holding = self.playing
                 # temporily holds the current playing card
-                self.playing = self.draw_pile[-1]
+                self.playing = self.draw_pile.top_card()
                 # Make the top card the card being played
-                self.draw_pile.pop(-1)
+                self.draw_pile.remove_card(self.playing)
                 # Remove the top card of the draw pile
                 if special == True:
                     # If the played card needs to be exhausted
@@ -813,8 +1328,11 @@ class Combat:
                     'exhaust': self.exhaust_pile,
                     'target': 2
                 }
-                context['target'] = self.player_targeting(context, 2)
-                self.play_card(context)
+                if self.playing.target == 1:
+                    context['target'] = self.player_targeting(context, 2)
+                else:
+                    context['target'] = self.player_targeting(context, self.playing.target)
+                self.play_card(context['target'])
                 # Play the card
                 if holding:
                     self.playing = holding
@@ -837,9 +1355,9 @@ class Combat:
                     # If the card type is a type that needs to be exhausted
                     cards_exhausted_type.append(card.type)
                     # Save the type of the card exhausted to the list
-                    self.exhaust_pile.append(card)
+                    self.exhaust_pile.add_card(card)
                     # Add the card to the exhaust pile
-                    self.hand.remove(card)
+                    self.hand.remove_card(card)
                     # remove the card from hand
                     self.passive_check_and_exe('Exhaust')
         return cards_exhausted_type
@@ -867,7 +1385,7 @@ class Combat:
                 amount = len(self.selected)
                 # Save amount of cards selected
                 for card in reversed(self.selected):
-                    self.discard_pile.append(card)
+                    self.discard_pile.add_card(card)
                     self.selected.remove(card)
                 # Add cards to discard pile
                 self.draw(amount)
@@ -882,17 +1400,18 @@ class Combat:
             # if the pile is not empty
             for card in reversed(pile):
                 # Goes through every card in the pile
-                self.exhaust_pile.append(card)
+                self.exhaust_pile.add_card(card)
                 # Add the card to the exhaust pile
-                pile.remove(card)
+                pile.remove_card(card)
                 # remove the card from the pile
                 self.passive_check_and_exe('Exhaust')
                 # Check for effects
 
-    def play_card(self, override = None):
+    def play_card(self, target = None):
         '''Method used for playing cards in combat
 
         ### args:
+            target: The target of the card, only inputted if some info needs to be overrided to not be the default or if the card targets a specific enemy
             overide: A dictionary of information that is passed on to execute effects, only inputted if some info needs to be overrided to not be the default
         '''
         context = {
@@ -903,20 +1422,17 @@ class Combat:
             'discard': self.discard_pile, # The discard pile
             'hand': self.hand, # the hand
             'exhaust': self.exhaust_pile, # The exhaust pile
-            'target': None # the target of the card, This is mainly the one that gets overrided
+            'target': target # the target of the card, This is mainly the one that gets overrided
         }
-        context['target'] = self.player_targeting(context, self.playing.target)
-        if override: # If there is an override
-            context = override # Use the override instead
-        # Context used for certain effects such as attacking where getting buffs is needed
+        # Queue effects with delay to start after animation
         if self.can_play_card == False:
-            self.discard_pile.append(self.playing)
+            self.discard_pile.add_card(self.playing)
             # Add the card to the discard pile
         elif self.playing.cost == 'U':
             # If the card being played is Unplayable
             if self.playing.type == 3 and self.run.mechanics['Playable_Status']:
                 # If the type of card is a status and the mechanic Playable_Status is activated
-                self.exhaust_pile.append(self.playing)
+                self.exhaust_pile.add_card(self.playing)
                 # Add the card to the exhaust pile
                 self.playing = None
                 # Empty the playing card
@@ -926,48 +1442,60 @@ class Combat:
                 # If the type of card is a Curse and the mechanic Playable_Curse is activated
                 effects.lose_hp(1, context, self)
                 # Execute the effect for playing a curse
-                self.exhaust_pile.append(self.playing)
+                self.exhaust_pile.add_card(self.playing)
                 # Add the card to the exhaust pile
                 self.passive_check_and_exe('Exhaust')
                 # Check for effects
             else:
-                self.discard_pile.append(self.playing)
+                self.discard_pile.add_card(self.playing)
                 # Does nothing
         elif self.playing.cost == 'X':
             # If you are playing an X cost card (A card that spends all you energy and has effects scale off of energy spent)
             self.playing.play_x_cost(self.energy + self.run.mechanics['X_Bonus'])
             # Aquire the complete details of the effect being executed
             times = 1
-            if self.necroed == True and self.run.mechanics['Necro'] == True and self.playing.type == 0:
+            if self.necroed == True and self.run.mechanics['Necro'] == True and self.playing.type == 0 and self.playing.get_cost() >= 2:
                 self.necroed = False
                 times = 2
+            if self.player.buffs['Duplicate'] > 0:
+                times += 1
+                self.player.buffs['Duplicate'] -= 1
+            if self.player.buffs['Double Tap'] > 0 and self.playing.type == 0:
+                times += 1
+                self.player.buffs['Double Tap'] -= 1
             for i in range(0, times):
                 for effect, details in self.playing.x_cost_effect.items():
                     effect(*details, context, self)
                 # Execute the X cost effect
             if self.playing.exhaust == True:
                 rng = random.randint(1, 100)
-                if rng <= self.run.mechanics['Exhaust Chance']:
+                if rng <= self.run.mechanics['Exhaust_Chance']:
                     # If the card exhausts
-                    self.exhaust_pile.append(self.playing)
+                    self.exhaust_pile.add_card(self.playing)
                     # Add the card to the exhaust pile 
                     self.if_card_cond(self.playing, 'Exhausted')
                     # Execute Exhausted effects
                     self.passive_check_and_exe('Exhaust')
                     # Check for effects
                 else:
-                    self.discard_pile.append(self.playing)
+                    self.discard_pile.add_card(self.playing)
                     # Discard instead
             else:
-                self.discard_pile.append(self.playing)
+                self.discard_pile.add_card(self.playing)
                 # Add the card to the discard pile
         else: 
             if self.playing.effect:
                 # If the card has an effect
                 times = 1
-                if self.necroed == True and self.run.mechanics['Necro'] == True and self.playing.type == 0:
+                if self.necroed == True and self.run.mechanics['Necro'] == True and self.playing.type == 0 and self.playing.get_cost() >= 2:
                     self.necroed = False
                     times = 2
+                if self.player.buffs['Duplicate'] > 0:
+                    times += 1
+                    self.player.buffs['Duplicate'] -= 1
+                if self.player.buffs['Double Tap'] > 0 and self.playing.type == 0:
+                    times += 1
+                    self.player.buffs['Double Tap'] -= 1
                 for i in range(0, times):
                     for effect, details in self.playing.effect.items():
                         # Iterates through every effect
@@ -978,30 +1506,23 @@ class Combat:
                 # If the card played was a power
                 if 'Power' in self.playing.effect:
                     # If the power card played has an actual effect that isn't just giving an normal buff
-                    self.powers.append(self.playing)
+                    self.powers.add_card(self.playing)
                     # Add the card played to the player powers
-                    if f'{self.playing.name}' in self.player.buffs:
-                        # If the power has been recorded in buffs
-                        self.player.buffs[f'{self.playing.name}'] += 1
-                        # add 1 for the player to see
-                    else:
-                        self.player.buffs[f'{self.playing.name}'] = 1
-                        # Record that a power was played so the player knows what powers they have active
             elif self.playing.exhaust == True:
                 rng = random.randint(1, 100)
-                if rng <= self.run.mechanics['Exhaust Chance']:
+                if rng <= self.run.mechanics['Exhaust_Chance']:
                     # If the card exhausts
-                    self.exhaust_pile.append(self.playing)
+                    self.exhaust_pile.add_card(self.playing)
                     # Add the card to the exhaust pile 
                     self.if_card_cond(self.playing, 'Exhausted')
                     # Execute Exhausted effects
                     self.passive_check_and_exe('Exhaust')
                     # Check for effects
                 else:
-                    self.discard_pile.append(self.playing)
+                    self.discard_pile.add_card(self.playing)
                     # Discard instead
             else:
-                self.discard_pile.append(self.playing)
+                self.discard_pile.add_card(self.playing)
                 # Add the card to the discard pile
         if self.playing.combat_cost[1] == 'Played':
             self.playing.combat_cost = (None, None)
@@ -1011,10 +1532,11 @@ class Combat:
             self.passive_check_and_exe('Attack Played')
         elif self.playing.type == 1:
             self.passive_check_and_exe('Skill Played')
-            if self.enemies:
-                for enemy in self.enemies:
-                    if 'Enraged' in enemy.buffs:
-                        enemy.gain_buff('Strength', enemy.buffs['Enraged'])
+            if self.enemies.is_empty() == False:
+                for enemy in self.enemies.enemy_list:
+                    if enemy != None:
+                        if 'Enraged' in enemy.buffs:
+                            enemy.gain_buff('Strength', enemy.buffs['Enraged'])
         elif self.playing.type == 2:
             self.passive_check_and_exe('Power Played')
         elif self.playing.type == 3:
@@ -1038,7 +1560,7 @@ class Combat:
                 self.resolve_action()
                 # Resolve effects
     
-    def use_potion(self, potion):
+    def use_potion(self, potion, targets = None):
         '''Method used for using potions in combat
 
         ### args:
@@ -1052,8 +1574,10 @@ class Combat:
             'discard': self.discard_pile,
             'hand': self.hand,
             'exhaust': self.exhaust_pile,
-            'target': potion.target
+            'target': targets
         }
+        if targets == None or isinstance(targets, int):
+            context['target'] = self.player_targeting(context, potion.target)
         if potion.time_of_use == 'combat':
             # If the potion that is being used can be used during combat
             i = 1
@@ -1067,14 +1591,15 @@ class Combat:
                     effect(*details, context, self)
                 # Execute effects
             self.bonusEff('Used Potion')
-            self.player.potions.remove(potion)
+            self.player.potions[self.player.potions.index(potion)] = None
             # Remove the potion from combat and the player object
         elif potion.time_of_use == 'all':
-            self.player.use_potion(potion)
+            self.run.use_potion(potion)
             # Use potion using player method
         else:
             print(f'Invalid time of use: {potion.time_of_use}')
             # Invalid time of use
+        self.resolve_action()
 
     def player_turn_start(self):
         '''Method for doing everything that needs to be done at the start of combat'''
@@ -1100,17 +1625,15 @@ class Combat:
         else:
             self.player.block = max(0, self.player.block - self.run.mechanics['Block_Loss'])
         # Lose all block at the start of turn
-        self.passive_check_and_exe('Turn Start')
         if self.start_of_combat == True:
-            # If its the start of combat
-            self.get_energy_cap()
             # Retrieve the enery cap for this combat
             self.passive_check_and_exe('Combat Start')
             # Execute start of combat effects of passives
+            self.start_of_combat = False
         self.energy += self.energy_cap
         # Add energy cap to energy
         self.energy += self.player.buffs['Energized']
-        self.player.buffs['Energized'] == 0
+        self.player.buffs['Energized'] = 0
         # Add extra energy equal to energized
         self.draw(5 + self.player.buffs['Draw Card'] - self.player.debuffs['Draw Reduction'])
         # Draw 5 cards for the start of turn, modified depending on buffs and debuffs that affect draw
@@ -1118,120 +1641,35 @@ class Combat:
         # Said buff resets
         self.player.debuffs['Draw Reduction'] = 0
         # Said debuff resets
+        self.passive_check_and_exe('Turn Start')
         # Check for powers that activate at the start of a turn
-        self.display_intent()
-        if self.combat_active == False:
-            return None
-    # Not completed
+        self.get_intent()
+        return 'next'
 
-    def display_intent(self):
-        '''Method for displating all enemy intents to the player'''
-        if self.run.mechanics['Intent'] == True:
-            # If intents are enabled
-            for enemy in self.enemies:
-                # for every enemy
+    def get_intent(self):
+        '''Method for getting the intent of the enemies'''
+        for enemy in self.enemies.enemy_list:
+            if enemy != None:
                 if enemy.intent == None:
-                    # If the intent has not been determained yet
                     enemy.intent_get(self)
-                    # Determain intent
-                print(enemy.combat_info())
-                # Print enemy information
-        else:
-            for enemy in self.enemies:
-                # for every enemy
-                if enemy.intent == None:
-                    # If the intent has not been determained yet
-                    enemy.intent_get(self)
-                    # Determain intent
-                print(enemy)
-                # Print enemy information without intent
 
     def player_turn(self):
         '''Execute actions the player does during their turn'''
-        turn = True
-        # Set turn to true
-        while turn:
-            print(self.player.combat_info())
-            # print player info
-            if self.hand:
-                # If there are cards in hand
-                i = 0
-                for card in self.hand:
-                    # For every card in hand
-                    print(f'{i}: {card}')
-                    i += 1
-                    # Print details of card
-            player_action = input(f'Enter the index of the card you wish to play or P# with # being index of the potion being used or END for end turn. You have {self.energy} energy left.')
-            # Asks player for input on what to do
-            if player_action == 'END':
-                # If the player wants to end the turn
-                turn = False
-                # Turn to false
-                break
-                # Exits the loop
-            elif player_action == 'K':
-                self.enemies = []
-            else:
-                if len(player_action) == 1:
-                    # if the player is playing a card
-                    if self.can_play_card == False:
-                        # If they can't play anymore cards
-                        print(f'You cannot play anymore cards!')
-                        # Give player feedback
-                        continue
-                    player_action = int(player_action)
-                    # Convert to an int
-                    card = self.hand[player_action]
-                    # Retrieve the card that is attempting to be played
-                    cost = card.get_cost(self)
-                    # Retreive the cost of the card
-                    if self.player.debuffs['Entangle'] > 0 and card.type == 0:
-                        print('Card is Unplayable')
-                        # If the card is unplayable
-                    elif cost == 'U':
-                        if (self.run.mechanics['Playable_Curse'] == True and card.type == 4) or (self.run.mechanics['Playable_Status'] == True and card.type == 3):
-                            # If its an unplayble card but the mechanics permit it
-                            self.playing = card
-                            self.hand.remove(card)
-                            self.play_card()
-                            # play the card
-                            self.energy -= cost
-                        else:
-                            print('Card is Unplayable')
-                            # If the card is unplayable
-                    elif cost > self.energy:
-                        # If the cost is higher then the energy the player has
-                        print('Not enought energy')
-                        # Gives feedback
-                        continue
-                    else:
-                        # Hold the updated energy
-                        self.playing = card
-                        self.hand.remove(card)
-                        self.play_card()
-                        # play the card
-                        self.energy -= cost
-                        # Update energy
-                else: 
-                    # For potions
-                    player_action = int(player_action[1])
-                    # Gets the index of the potion being used
-                    potion = self.player.potions[player_action]
-                    # Retreives the correct potion
-                    self.use_potion(potion) 
-                    # Use the potion
-            self.resolve_action()
-            if self.combat_active == False:
-                break
-            else:
-                self.display_intent()
-            # Display enemy intents
-            # Resolve actions
+        # Draw end turn button
+        end_turn_rect = pygame.Rect(self.SCREEN_WIDTH - 250, self.SCREEN_HEIGHT - 250, 150, 50)
+        self.combat_surface.blit(self.end_turn_button, end_turn_rect)
+
+        # Check for end turn button click
+        mouse_pos = pygame.mouse.get_pos()
+        if end_turn_rect.collidepoint(mouse_pos):
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    return 'next'
+        return None
 
     def player_turn_end(self):
         '''Executes actions of the player's turn ending'''
-        self.passive_check_and_exe('Turn End')
-        # Execute all end of turn passives
+        
         if self.player.debuffs['Vulnerable'] > 0:
             self.player.debuffs['Vulnerable'] -= 1
         if self.player.debuffs['Weak'] > 0:
@@ -1244,6 +1682,7 @@ class Combat:
             self.exhaust_entire_pile(self.discard_pile)
             self.exhaust_entire_pile(self.draw_pile)
             self.player.debuffs['Last Chance'] = 0
+        # Execute all end of turn passives
         self.passive_check_and_exe('Turn End')
         if self.hand:
             # If the hand isn't empty
@@ -1268,16 +1707,16 @@ class Combat:
                         # skip over
                     elif card.ethereal:
                         # if its ethereal
-                        self.exhaust_pile.append(card)
+                        self.exhaust_pile.add_card(card)
                         # Exhaust the card
                         self.if_card_cond(card, 'Exhaust')
                         # Activate Exhausted effects
                         self.passive_check_and_exe('Exhaust')
                         # Check for effects
                     else:
-                        self.discard_pile.append(card)
+                        self.discard_pile.add_card(card)
                         # Discard the card
-                    self.hand.remove(card)
+                    self.hand.remove_card(card)
                     # removes the card from hand
                 if self.selected:
                     # If cards were selected to be retained
@@ -1289,9 +1728,11 @@ class Combat:
             self.player.lose_buff('Strength', self.player.debuffs['Chained'])
             self.player.debuffs['Chained'] = 0
         # Chained effect
+        if self.player.debuffs['Atrophy'] > 0:
+            self.player.lose_buff('Dexterity', self.player.debuffs['Atrophy'])
+            self.player.debuffs['Atrophy'] = 0
         self.counter_reset()
-        if self.combat_active == False:
-            return None
+        return 'next'
         
     def discover(self, cards, cost):
         '''Ask user to add to hand one of the 3 cards given
@@ -1302,25 +1743,26 @@ class Combat:
         '''
         for i in range(0, 3):
             cards[i] = card_constructor.create_card(cards[i], card_data.card_info[cards[i]])
+        cards = Pile(cards, 'discover')
         self.hard_card_select(1, cards)
         # Select 1 card from the list
-        if self.hand:
+        if not self.hand.is_empty():
             if len(self.hand) == 10:
                 # If the player is at hand size
-                self.discard_pile.append(self.selected)
+                self.discard_pile.add_card(self.selected[-1])
                 self.selected[:] = []
                 # Add to discard pile
             else:
-                self.hand.append(self.selected)
+                self.hand.add_card(self.selected[-1])
                 self.selected[:] = []
                 # Add to hand instead
         else:
-            self.hand.append(self.selected)
+            self.hand.add_card(self.selected[-1])
             self.selected[:] = []
             # Add to hand instead
         if cost != 'na':
             # If the cost needs to be modified
-            self.hand[-1].cost_change(cost, 'Turn')
+            self.hand.cards[-1].cost_change(cost, 'Turn')
             # Change the cost until end of turn
 
     def upgrade(self, cards):
@@ -1335,55 +1777,74 @@ class Combat:
                 # go through every card
                 if card.id + 100 in card_data.card_info:
                     # If a card can be upgraded
-                    card = card_constructor.create_card(card.id + 100, card_data.card_info[card.id + 100])
+                    upgraded_card = card_constructor.create_card(card.id + 100, card_data.card_info[card.id + 100])
+                    if cards == self.hand:
+                        self.hand[self.hand.index(card)] = upgraded_card
+                    elif cards == self.draw_pile:
+                        self.draw_pile[self.draw_pile.index(card)] = upgraded_card
+                    elif cards == self.discard_pile:
+                        self.discard_pile[self.discard_pile.index(card)] = upgraded_card
+                    else:
+                        cards[cards.index(card)] = upgraded_card
                 # upgrade the card by making its id and effects of the card 100 higher
 
     def enemy_turn_start(self):
         '''Method for the enemy turn starting'''
         self.enemy_turn = True
-        for enemy in self.enemies:
+        for enemy in self.enemies.enemy_list:
             # For every enemy
-            enemy.turn_start()
-            # Execute the start of turn method
-        if self.combat_active == False:
-            return None
+            if enemy != None:
+                enemy.turn_start()
+                # Execute the start of turn method
+        return 'next'
 
     def enemy_turn_end(self):
         '''Method for ending enemy's turn'''
-        for enemy in self.enemies:
+        for enemy in self.enemies.enemy_list:
             # For every enemy
-            enemy.turn_end()
-            # Execute the end of turn method
-        if self.combat_active == False:
-            return False
+            if enemy != None:
+                enemy.turn_end()
+                # Execute the end of turn method
+        return 'next'
 
     def enemy_action(self):
         '''Execute all enemy actions
         '''
-        for enemy in self.enemies:
+        for enemy in self.enemies.enemy_list:
             # Go through every enemy
-            if enemy.intent[0]:
-                # If the enemy has an intent
-                context = {
-                    # Default info to pass on for executing effects
-                    'user': enemy, # The enemy doing the action
-                    'enemies': self.enemies, # List of enemies
-                    'target': enemy.intent[1], # the target of the card, This is mainly the one that gets overrided
-                    'draw': self.draw_pile,
-                    'discard': self.discard_pile,
-                    'hand': self.hand,
-                    'exhaust': self.exhaust_pile
-                }
-                if enemy.intent[0] != None:
-                    for effect, details in enemy.intent[0].items():
-                        effect(*details, context, self)
-                # Execute the ffects
-            enemy.intent = None
+            if enemy != None:
+                pygame.time.wait(500)
+                if enemy.intent == None:
+                    continue
+                if enemy.intent[0]:
+                    # If the enemy has an intent
+                    context = {
+                        # Default info to pass on for executing effects
+                        'user': enemy, # The enemy doing the action
+                        'enemies': self.enemies, # List of enemies
+                        'target': enemy.intent[1], # the target of the card, This is mainly the one that gets overrided
+                        'draw': self.draw_pile,
+                        'discard': self.discard_pile,
+                        'hand': self.hand,
+                        'exhaust': self.exhaust_pile
+                    }
+                    if enemy.intent[0] != None or enemy.intent[2] != 'Special':
+                        for effect, details in enemy.intent[0].items():
+                            effect(*details, context, self)
+                    # Execute the ffects
+                    self.resolve_action()
+                    mouse_pos = pygame.mouse.get_pos()
+                    enemy.intent = None
+                    self.update_game_state(mouse_pos)
+                    self.draw_game_state(mouse_pos)
+                    self.screen.blit(self.combat_surface, (0, 0))
+                    pygame.display.flip()
+                enemy.intent = None
+
             # Clear intent
         self.resolve_action()
         # Resolves action
-        if self.combat_active == False:
-            return None
+        return 'next'
 
     def bandit_run(self, context):
         '''Method for a bandit escape
@@ -1412,29 +1873,296 @@ class Combat:
         if slime_type == 'Slime Boss':
             # if the slime boss is splitting
             enemies = [enemy_data.LargeBlueSlime(hp), enemy_data.LargeGreenSlime(hp)]
-            self.enemies.extend(enemies)
+            for enemy in enemies:
+                self.enemies.add_enemy(enemy)
             # Add 2 smaller slimes of the each type with the current hp of the bigger slime
         elif slime_type == 'Blue':
             # If a large Blue slime is splitting
             enemies = [enemy_data.MediumBlueSlime(hp), enemy_data.MediumBlueSlime(hp)]
-            self.enemies.extend(enemies)
+            for enemy in enemies:
+                self.enemies.add_enemy(enemy)
             # Add 2 smaller slimes of the same type with the current hp of the bigger slime
         elif slime_type == 'Green':
             # If a large green slime is splitting
             enemies = [enemy_data.MediumGreenSlime(hp), enemy_data.MediumGreenSlime(hp)]
-            self.enemies.extend(enemies)
+            for enemy in enemies:
+                self.enemies.add_enemy(enemy)
             # Add 2 smaller slimes of the same type with the current hp of the bigger slime
         else:
             raise ValueError(f'Unknown slime type {slime_type}')
         
 
 
+class Pile:
+    def __init__(self, cards, type):
+        self.cards = cards
+        self.type = type
+        self.is_hover = False
+        self.is_clicked = False
+        self.scroll_offset = 0
+        self.icon_sprite = pygame.image.load(os.path.join("assets", "icons", "pile_icon.png"))
+        # Scale down the pile icon sprite
+        scaled_width = int(self.icon_sprite.get_width() / 10)
+        scaled_height = int(self.icon_sprite.get_height() / 10)
+        self.icon_sprite = pygame.transform.scale(self.icon_sprite, (scaled_width, scaled_height))
+        self.rect = self.icon_sprite.get_rect()
+        pygame.font.init()
+        self.font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 30)
+    
+    def index(self, card):
+        """Return the index of a card in the pile"""
+        return self.cards.index(card)
+
+    def __setitem__(self, index, card):
+        """Allow setting cards by index"""
+        self.cards[index] = card
+
+    def __len__(self):
+        """Return the number of cards in the pile"""
+        return len(self.cards)
+
+    def __iter__(self):
+        """Make pile iterable by returning iterator of self.cards"""
+        return iter(self.cards)
+        
+    def __reversed__(self):
+        """Make pile reversible by returning reversed iterator of self.cards"""
+        return reversed(self.cards)
+
+    def is_empty(self):
+        """Check if the pile is empty"""
+        return len(self.cards) == 0
+
+    def curse_count(self):
+        """Count the number of curse cards in the hand"""
+        return sum(1 for card in self.cards if card.type == 4)
+
+    def top_card(self):
+        """Return the top card of the pile"""
+        return self.cards[-1]
+    
+    def add_top(self, card):
+        """Add a card to the top of the pile"""
+        self.cards.append(card)
+
+    def add_card(self, card):
+        """Add a card to the pile"""
+        if not self.type == 'draw' or self.is_empty():
+            self.cards.append(card)
+        else:
+            self.cards.insert(random.randint(0, len(self.cards) - 1), card)
+
+    def shuffle(self):
+        """Shuffle the cards in the pile"""
+        random.shuffle(self.cards)
+    
+    def empty(self):
+        """Empty the pile"""
+        self.cards = []
+
+    def remove_card(self, card):
+        """Remove a card from the pile"""
+        self.cards.remove(card)
+
+    def remove_top(self):
+        """Remove the top card from the pile"""
+        return self.cards.pop()
+
+    def hover(self):
+        self.is_hover = True
+
+    def unhover(self):
+        self.is_hover = False
+
+    def click(self):
+        self.is_clicked = True
+    
+    def unclick(self):
+        self.is_clicked = False
+
+    def draw_icon(self, surface):
+        """Draw the icon of the pile"""
+        if self.type == 'draw':
+            # Draw pile icon in bottom right
+            icon_x = surface.get_width() - self.icon_sprite.get_width() - 20  # 20px padding from right
+            icon_y = surface.get_height() - self.icon_sprite.get_height() - 20  # 20px padding from bottom
+            surface.blit(self.icon_sprite, (icon_x, icon_y))
+            # Update collision box to match icon position
+            self.rect = pygame.Rect(icon_x, icon_y, self.icon_sprite.get_width(), self.icon_sprite.get_height())
+            
+        elif self.type == 'discard':
+            # Discard pile icon in bottom left
+            icon_x = 20  # 20px padding from left
+            icon_y = surface.get_height() - self.icon_sprite.get_height() - 20  # 20px padding from bottom
+            surface.blit(self.icon_sprite, (icon_x, icon_y))
+            # Update collision box to match icon position
+            self.rect = pygame.Rect(icon_x, icon_y, self.icon_sprite.get_width(), self.icon_sprite.get_height())
+        elif self.type == 'exhaust':
+            # Exhaust pile icon in bottom right above draw pile
+            icon_x = surface.get_width() - self.icon_sprite.get_width() - 20  # 20px padding from right
+            icon_y = surface.get_height() - self.icon_sprite.get_height() - 100  # 100px above draw pile
+            surface.blit(self.icon_sprite, (icon_x, icon_y))
+            # Update collision box to match icon position
+            self.rect = pygame.Rect(icon_x, icon_y, self.icon_sprite.get_width(), self.icon_sprite.get_height())
+            
+            # Draw number of exhausted cards
+            # Black outline
+            outline = self.font.render(str(len(self.cards)), True, (0, 0, 0))
+            # Purple text
+            text = self.font.render(str(len(self.cards)), True, (128, 0, 128))
+            
+            # Position text centered above icon
+            text_x = icon_x + (self.icon_sprite.get_width() - text.get_width()) // 2
+            text_y = icon_y + 5
+            
+            # Draw outline by offsetting in all directions
+            for dx, dy in [(-1,0), (1,0), (0,-1), (0,1)]:
+                surface.blit(outline, (text_x + dx, text_y + dy))
+            # Draw main text
+            surface.blit(text, (text_x, text_y))
+        elif self.type == 'powers':
+            # Exhaust pile icon in bottom right above draw pile
+            icon_x =  20  # 20px padding from left
+            icon_y = surface.get_height() - self.icon_sprite.get_height() - 100  # 100px above draw pile
+            surface.blit(self.icon_sprite, (icon_x, icon_y))
+            # Update collision box to match icon position
+            self.rect = pygame.Rect(icon_x, icon_y, self.icon_sprite.get_width(), self.icon_sprite.get_height())
+            
+            # Draw number of exhausted cards
+            # Black outline
+            outline = self.font.render(str(len(self.cards)), True, (0, 0, 0))
+            # Purple text
+            text = self.font.render(str(len(self.cards)), True, (128, 0, 128))
+            
+            # Position text centered above icon
+            text_x = icon_x + (self.icon_sprite.get_width() - text.get_width()) // 2
+            text_y = icon_y + 5
+            
+            # Draw outline by offsetting in all directions
+            for dx, dy in [(-1,0), (1,0), (0,-1), (0,1)]:
+                surface.blit(outline, (text_x + dx, text_y + dy))
+            # Draw main text
+            surface.blit(text, (text_x, text_y))
+        
+        if self.is_hover:
+            # Draw textbox showing pile name
+            if self.type != 'powers':
+                text = self.font.render(self.type.capitalize() + " Pile", True, (255, 255, 255))
+            else:
+                text = self.font.render("Active Powers", True, (255, 255, 255))
+            padding = 10
+            box_width = text.get_width() + padding * 2
+            box_height = text.get_height() + padding * 2
+            
+            # Position box to left or right of icon based on pile type
+            if self.type == 'discard' or self.type == 'powers':
+                # Position to right of discard pile
+                box_x = self.rect.right + 10
+            else:
+                # Position to left of draw/exhaust piles
+                box_x = self.rect.left - box_width - 10
+            box_y = self.rect.centery - box_height//2
+            
+            # Draw semi-transparent black background
+            box_surface = pygame.Surface((box_width, box_height))
+            box_surface.fill((0, 0, 0))
+            box_surface.set_alpha(200)
+            surface.blit(box_surface, (box_x, box_y))
+            
+            # Draw text centered in box
+            text_x = box_x + padding
+            text_y = box_y + padding 
+            surface.blit(text, (text_x, text_y))
+
+    def draw(self, surface):
+        """Draw all cards in the pile in a scrollable grid formation"""
+        CARDS_PER_ROW = 5
+        CARD_SPACING = 50  # Pixels between cards
+        SCROLL_SPEED = 30
+        
+        # Get scaled card dimensions (assuming all cards have same size)
+        if self.cards:
+            card_width = self.cards[0].sprite.get_width() // 2  # Using scaled width
+            card_height = self.cards[0].sprite.get_height() // 2  # Using scaled height
+        else:
+            return
+            
+        # Calculate grid dimensions
+        row_width = (card_width * CARDS_PER_ROW) + (CARD_SPACING * (CARDS_PER_ROW - 1))
+        num_rows = (len(self.cards) + CARDS_PER_ROW - 1) // CARDS_PER_ROW
+        total_height = (card_height * num_rows) + (CARD_SPACING * (num_rows - 1))
+        
+        # Calculate starting x position to center the grid
+        start_x = (surface.get_width() - row_width) // 2
+        
+        # Handle scrolling with mouse wheel
+        for event in pygame.event.get(pygame.MOUSEWHEEL):
+            self.scroll_offset = max(min(self.scroll_offset + event.y * SCROLL_SPEED, 0), 
+                                    -max(0, total_height - surface.get_height()))
+                
+        # Draw each card in grid
+        for i, card in enumerate(self.cards):
+            row = i // CARDS_PER_ROW
+            col = i % CARDS_PER_ROW
+            
+            x = start_x + (col * (card_width + CARD_SPACING))
+            y = (row * (card_height + CARD_SPACING)) + CARD_SPACING + self.scroll_offset
+            
+            # Only draw if card would be visible on screen
+            if 0 <= y <= surface.get_height():
+                card.current_pos = (x, y)
+                card.draw(surface)
+                # Update cards collision rect
+                card.rect = pygame.Rect(x, y, card_width, card_height)
+
 class Hand:
     def __init__(self, cards, center_pos, spread):
         self.cards = cards
+        self.type = 'hand'
         self.center_pos = center_pos  # Center position of the hand
         self.spread = spread  # Spread angle or linear spread
-        self.hover_spread = spread * 1.5  # Increased spread when hovering
+        self.hover_spread = spread * 1.3  # Increased spread when hovering
+
+    def index(self, card):
+        """Return the index of a card in the pile"""
+        return self.cards.index(card)
+
+    def __setitem__(self, index, card):
+        """Allow setting cards by index"""
+        self.cards[index] = card
+
+    def __len__(self):
+        """Return the number of cards in the hand"""
+        return len(self.cards)
+
+    def __reversed__(self):
+        """Make pile reversible by returning reversed iterator of self.cards"""
+        return reversed(self.cards)
+
+    def __iter__(self):
+        """Make Hand iterable by returning iterator of self.cards"""
+        return iter(self.cards)
+
+    def is_empty(self):
+        """Check if the hand is empty"""
+        return len(self.cards) == 0
+
+    def cards_in_hand(self):
+        """Return the number of cards in the hand"""
+        return len(self.cards)
+
+    def curse_count(self):
+        """Count the number of curse cards in the hand"""
+        return sum(1 for card in self.cards if card.type == 4)
+
+    def add_card(self, card):
+        """Add a card to the hand and position it in the bottom right corner"""
+        card.current_pos = (1600, 900)
+        self.cards.append(card)
+    
+    def remove_card(self, card):
+        """Remove a card from the hand"""
+        self.cards.remove(card)
 
     def update_positions(self, dragged_card):
         """Update the positions of the cards in the hand."""
@@ -1479,7 +2207,7 @@ class Hand:
                 
                 if i == hovered_index:
                     # Move hovered card down instead of up
-                    target_y -= 150
+                    target_y -= card.hover_y_offset
 
             # Set the target position for each card
             card.target_pos = pygame.Vector2(target_x, target_y)
@@ -1514,10 +2242,24 @@ class Enemies:
                 self.enemy_list[0] = enemy
             elif self.enemy_list[4] == None:
                 self.enemy_list[4] = enemy
-            else:
-                raise ValueError('Too many enemies')
-            
-    def draw(self, surface):
+
+    def random_enemy(self):
+        """Return a random enemy from the list"""
+        return random.choice([enemy for enemy in self.enemy_list if enemy is not None])
+
+    def __iter__(self):
+        """Make Enemies iterable by returning iterator of self.enemy_list"""
+        return (enemy for enemy in self.enemy_list if enemy is not None)
+
+    def __len__(self):
+        """Return the number of enemies in the list"""
+        i = 0
+        for enemy in self.enemy_list:
+            if enemy is not None:
+                i += 1
+        return i
+
+    def draw(self, surface, intent):
         screen_width = surface.get_width()
         mid_x = screen_width // 2
         base_y = 500  # Base y position where enemies will line up
@@ -1535,9 +2277,9 @@ class Enemies:
                     if enemy.size == 'small':
                         current_spacing = 90
                     elif enemy.size == 'medium':
-                        current_spacing = 125
+                        current_spacing = 140
                     else:  # large or default
-                        current_spacing = 240
+                        current_spacing = 275
                 else:
                     current_spacing = 200  # Default spacing
                 
@@ -1549,9 +2291,9 @@ class Enemies:
                         if next_enemy.size == 'small':
                             next_spacing = 90
                         elif next_enemy.size == 'medium':
-                            next_spacing = 125
+                            next_spacing = 140
                         else:
-                            next_spacing = 240
+                            next_spacing = 275
                     else:
                         next_spacing = 200
                 
@@ -1565,13 +2307,14 @@ class Enemies:
                 enemy.rect.bottomleft = (current_x - (sprite_width // 2), base_y)
                 
                 # Draw sprite
-                surface.blit(enemy.sprite, (current_x - (sprite_width // 2), y_pos))
+                enemy.draw(surface, current_x - (sprite_width // 2), y_pos)
+                if intent:
+                    enemy.draw_intent(surface, current_x - (sprite_width // 2), y_pos)
                 
                 # Move x position for next enemy
                 current_x += spacing
-                
-                # For debugging - draw the collision box
-                # pygame.draw.rect(surface, (255, 0, 0), enemy.rect, 2)
+            else:
+                current_x += 100
 
     def add_enemy(self, enemy):
         if self.enemy_list[3] == None:
@@ -1589,97 +2332,20 @@ class Enemies:
     
     def remove_enemy(self, enemy):
         if enemy in self.enemy_list:
-            self.enemy_list.remove(enemy)
+            self.enemy_list[self.enemy_list.index(enemy)] = None
         else:
             raise ValueError('Enemy not found in list')
-
-SCREEN_WIDTH = 1600
-SCREEN_HEIGHT = 900
-cards = []
-for i in range(10):
-    card = card_constructor.create_card(1000 + i, card_data.card_info[1000 + i])
-    cards.append(card)
-
-enemies = []
-
-# enemies.append(enemy_data.LargeGreenSlime())
-# enemies.append(enemy_data.MediumGreenSlime())
-enemies.append(enemy_data.SmallGreenSlime())
-enemies.append(enemy_data.LargeGreenSlime())
-enemies.append(enemy_data.MediumGreenSlime())
-enemies.append(enemy_data.SmallGreenSlime())
-enemies.append(enemy_data.SmallGreenSlime())
-
-
-enemies = Enemies(enemies)
-
-hand = Hand(cards, center_pos=(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT - 200), spread= 130 )
-
-# Initialize pygame
-pygame.init()
-
-running = True
-dragged_card = None
-
-
-# Set up the display surface
-
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-while running:
-    screen.fill((30, 30, 30))  # Fill the screen with a dark background
-    mouse_pos = pygame.mouse.get_pos()
-
-    # Event handling
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            for card in reversed(hand.cards):
-                if card.rect.collidepoint(event.pos):
-                    if card.target == 1:  # If card requires targeting
-                        card.start_targeting(event.pos)
-                        dragged_card = card
-                    else:
-                        card.start_dragging(event.pos)
-                        dragged_card = card
-                    break
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if dragged_card:
-                # Check if mouse is over a valid target
-                for enemy in enemies.enemy_list:
-                    if enemy and enemy.rect.collidepoint(event.pos):
-                        print(f"Targeting {enemy} with {dragged_card.name}")
-                        # TODO: Apply card effects to target
-                dragged_card.stop_targeting()
-                dragged_card.stop_dragging()
-                dragged_card = None
-        elif event.type == pygame.MOUSEMOTION:
-            if dragged_card:
-                dragged_card.draw_targeting_arrow(screen, event.pos)
-
-    # Check hover state for each card and print debug info
-    for card in hand.cards:
-        was_hovered = card.is_hovered
-        card.check_hover(mouse_pos)
-        if card.is_hovered != was_hovered:
-            if card.is_hovered:
-                print(f"Now hovering over: {card.name}")
-            else:
-                print(f"No longer hovering over: {card.name}")
-
-    # Update card positions
-    for card in cards:
-        card.update()
-    hand.update_positions(dragged_card)
-
-    # Draw the enemies
-    enemies.draw(screen)
-    # Draw the hand
-    hand.draw(screen, dragged_card)
     
-
-    # Update the display
-    pygame.display.flip()
-
-pygame.quit()
+    def is_empty(self):
+        if self.enemy_list[0] != None:
+            return False
+        elif self.enemy_list[1] != None:
+            return False
+        elif self.enemy_list[2] != None:
+            return False
+        elif self.enemy_list[3] != None:
+            return False
+        elif self.enemy_list[4] != None:
+            return False
+        else:
+            return True
