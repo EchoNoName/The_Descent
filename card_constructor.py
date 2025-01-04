@@ -56,6 +56,12 @@ class Card():
         self.ethereal = ethereal # Boolean representing whether a card is ethereal
         self.effect = effect # what the card actually does, represented by a dictonary that contains its actions
         self.target = target # The targets of the card, represented by an integer
+        self.arrow_body_sprite = pygame.image.load(os.path.join("assets", "arrows", "arrow_body.png"))
+        self.arrow_head_sprite = pygame.image.load(os.path.join("assets", "arrows", "arrow_head.png"))
+        self.arrow_body_sprite = pygame.transform.scale(self.arrow_body_sprite, 
+            (self.arrow_body_sprite.get_width()//4, self.arrow_body_sprite.get_height()//4))
+        self.arrow_head_sprite = pygame.transform.scale(self.arrow_head_sprite,
+            (self.arrow_head_sprite.get_width()//4, self.arrow_head_sprite.get_height()//4))
         sprite = name.lower()
         sprite = sprite.replace(' ', '_')
         sprite = f'{sprite}.png'
@@ -77,19 +83,30 @@ class Card():
         # Position and movement attributes
         self.current_pos = pygame.Vector2(x, y)
         self.target_pos = pygame.Vector2(x, y)
-        self.snap_speed = 30  # Speed of snapping animation
+        self.snap_speed = 45  # Speed of snapping animation
         self.offset = pygame.Vector2(0, 0)  # Offset between mouse and card position during drag
         
         # Add hover state attributes
         self.is_hovered = False
         self.original_size = self.sprite.get_size()
-        self.hover_scale = 1.5  # Scale factor when hovering
-        self.hover_y_offset = -150  # How many pixels to move up when hovering
+        self.hover_scale = 1.25  # Scale factor when hovering
+        self.hover_y_offset = 100  # How many pixels to move up when hovering
         self.hover_sprite = pygame.transform.scale(
             self.sprite,
             (int(self.original_size[0] * self.hover_scale), 
              int(self.original_size[1] * self.hover_scale))
         )
+        self.arrow_body_sprite = pygame.image.load(os.path.join("assets", "arrows", "arrow_body.png"))
+        self.arrow_head_sprite = pygame.image.load(os.path.join("assets", "arrows", "arrow_head.png"))
+        self.arrow_body_sprite = pygame.transform.scale(self.arrow_body_sprite, 
+            (self.arrow_body_sprite.get_width()//4, self.arrow_body_sprite.get_height()//4))
+        self.arrow_head_sprite = pygame.transform.scale(self.arrow_head_sprite,
+            (self.arrow_head_sprite.get_width()//4, self.arrow_head_sprite.get_height()//4))
+        pygame.font.init()
+        self.energy_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 24)
+        self.energy_sprite = pygame.image.load(os.path.join("assets", "ui", "energy.png"))
+        self.energy_sprite = pygame.transform.scale(self.energy_sprite,
+            (self.energy_sprite.get_width()//16, self.energy_sprite.get_height()//16))
 
     def __str__(self):
         card_descrip = []
@@ -199,16 +216,68 @@ class Card():
         # Draw either normal or enlarged sprite based on hover/targeting/dragging state
         if self.is_hovered or self.targeting or self.dragging:  # Changed condition here
             # Scale down hover sprite to half size while preserving quality
-            scaled_hover = pygame.transform.smoothscale(self.hover_sprite, 
-                (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
-            surface.blit(scaled_hover,
-                        (self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2,
-                        self.current_pos[1]))
+            scaled_hover = pygame.transform.smoothscale(self.hover_sprite, (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
+            surface.blit(scaled_hover, (self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2, self.current_pos[1]))
         else:
             # Scale down normal sprite to half size while preserving quality
-            scaled_sprite = pygame.transform.smoothscale(self.sprite,
-                (self.sprite.get_width()//2, self.sprite.get_height()//2))
+            scaled_sprite = pygame.transform.smoothscale(self.sprite, (self.sprite.get_width()//2, self.sprite.get_height()//2))
             surface.blit(scaled_sprite, self.current_pos)
+        self.draw_energy_cost(surface)
+
+    def draw_as_power(self, surface, x, y):
+        scaled_sprite = pygame.transform.smoothscale(self.sprite, (self.sprite.get_width()//20, self.sprite.get_height()//20))
+        surface.blit(scaled_sprite, (x, y))
+
+        
+    def draw_energy_cost(self, surface):
+        """Draw the energy cost in the top left corner of the card"""
+        # Scale energy sprite based on hover state
+        if self.is_hovered or self.targeting or self.dragging:
+            scaled_energy = pygame.transform.scale(self.energy_sprite, (int(self.energy_sprite.get_width() * 1.25), int(self.energy_sprite.get_height() * 1.25)))
+        else:
+            scaled_energy = self.energy_sprite
+        
+        # Position in top left corner with small offset
+        x_offset = 30
+        if self.is_hovered or self.targeting or self.dragging:
+            x_offset = 50
+        y_offset = 20
+        if self.is_hovered or self.targeting or self.dragging:
+            y_offset = 28
+        energy_x = self.current_pos[0] - x_offset
+        energy_y = self.current_pos[1] - y_offset
+        
+        # Draw energy orb
+        surface.blit(scaled_energy, (energy_x, energy_y))
+        
+        # Create font for energy cost
+        cost_font = self.energy_font
+
+        cost = 0
+        if self.combat_cost[0] != None:
+            cost = self.combat_cost[0]
+        else:
+            cost = self.cost
+
+        # Draw black outline
+        outline_color = (0, 0, 0)
+        # Scale up font size when hovered
+        if self.is_hovered or self.targeting or self.dragging:
+            cost_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 30)
+        else:
+            cost_font = self.energy_font
+
+        for dx, dy in [(-1,0), (1,0), (0,-1), (0,1)]:
+            outline = cost_font.render(str(self.cost), True, outline_color)
+            text_x = energy_x + (scaled_energy.get_width() - outline.get_width())//2 + dx
+            text_y = energy_y + (scaled_energy.get_height() - outline.get_height())//2 + dy
+            surface.blit(outline, (text_x, text_y))
+            
+        # Draw white cost text
+        text = cost_font.render(str(cost), True, (255, 255, 255))
+        text_x = energy_x + (scaled_energy.get_width() - text.get_width())//2
+        text_y = energy_y + (scaled_energy.get_height() - text.get_height())//2
+        surface.blit(text, (text_x, text_y))
 
     def start_targeting(self, mouse_pos):
         """Start the targeting state instead of dragging"""
@@ -220,7 +289,7 @@ class Card():
         self.targeting = False
         
     def draw_targeting_arrow(self, surface, mouse_pos):
-        """Draw an arrow from the card to the mouse position"""
+        """Draw an arrow from the card to the mouse position using separate head and body sprites"""
         if self.targeting:
             # Calculate start position (center of card)
             start_pos = (
@@ -228,26 +297,77 @@ class Card():
                 self.current_pos[1] + self.sprite.get_height()//4
             )
             
-            # Draw the line
-            pygame.draw.line(surface, (255, 255, 255), start_pos, mouse_pos, 2)
             
-            # Draw arrow head
-            arrow_length = 20
-            angle = math.atan2(mouse_pos[1] - start_pos[1], mouse_pos[0] - start_pos[0])
+            # Calculate angle between start and mouse pos
+            angle = math.degrees(math.atan2(mouse_pos[1] - start_pos[1], mouse_pos[0] - start_pos[0]))
             
-            # Calculate arrow head points
-            arrow_angle = math.pi/6  # 30 degrees
-            x1 = mouse_pos[0] - arrow_length * math.cos(angle + arrow_angle)
-            y1 = mouse_pos[1] - arrow_length * math.sin(angle + arrow_angle)
-            x2 = mouse_pos[0] - arrow_length * math.cos(angle - arrow_angle)
-            y2 = mouse_pos[1] - arrow_length * math.sin(angle - arrow_angle)
+            # Get the arrow head dimensions
+            head_width = self.arrow_head_sprite.get_width()
+            head_height = self.arrow_head_sprite.get_height()
             
-            # Draw arrow head
-            pygame.draw.polygon(surface, (255, 255, 255), [
-                mouse_pos,
-                (x1, y1),
-                (x2, y2)
-            ])
+            # Calculate the position where the arrow head should end (at mouse cursor)
+            # Then work backwards to find where the body should end
+            head_offset = head_width // 2  # Distance from head center to tip
+            
+            # Calculate the actual end point for the body (where head begins)
+            body_end_x = mouse_pos[0] - math.cos(math.radians(angle)) * head_offset
+            body_end_y = mouse_pos[1] - math.sin(math.radians(angle)) * head_offset
+            body_end_pos = (body_end_x, body_end_y)
+            
+            # Calculate distance between start and body end
+            distance = math.sqrt((body_end_x - start_pos[0])**2 + (body_end_y - start_pos[1])**2)
+            
+            # Calculate number of body segments needed
+            segment_width = self.arrow_body_sprite.get_width()
+            spacing = segment_width * 1.2  # Add 20% spacing between segments
+            num_segments = int(distance / spacing)
+            
+            # Rotate sprites
+            rotated_body = pygame.transform.rotate(self.arrow_body_sprite, -angle)
+            rotated_head = pygame.transform.rotate(self.arrow_head_sprite, -angle)
+            
+            # Draw body segments
+            for i in range(num_segments):
+                # Calculate position for this segment
+                segment_pos = (
+                    start_pos[0] + math.cos(math.radians(angle)) * (i * spacing),
+                    start_pos[1] + math.sin(math.radians(angle)) * (i * spacing)
+                )
+                segment_rect = rotated_body.get_rect()
+                segment_rect.center = segment_pos
+                surface.blit(rotated_body, segment_rect)
+            
+            # Draw final shortened body segment to reach arrow head
+            final_segment_pos = (
+                start_pos[0] + math.cos(math.radians(angle)) * (num_segments * spacing),
+                start_pos[1] + math.sin(math.radians(angle)) * (num_segments * spacing)
+            )
+            remaining_distance = distance - (num_segments * spacing)
+            if remaining_distance > 0:
+                # Scale the final segment to fit the remaining distance
+                scale_factor = remaining_distance / segment_width
+                final_segment = pygame.transform.scale(
+                    self.arrow_body_sprite,
+                    (int(self.arrow_body_sprite.get_width() * scale_factor), 
+                    self.arrow_body_sprite.get_height())
+                )
+                final_rotated = pygame.transform.rotate(final_segment, -angle)
+                final_rect = final_rotated.get_rect()
+                final_rect.center = final_segment_pos
+                surface.blit(final_rotated, final_rect)
+            
+            # Draw arrow head at mouse position
+            head_rect = rotated_head.get_rect()
+            # Position the head so its tip is at the mouse cursor
+            head_rect.center = (
+                mouse_pos[0] - math.cos(math.radians(angle)) * head_offset,
+                mouse_pos[1] - math.sin(math.radians(angle)) * head_offset
+            )
+            surface.blit(rotated_head, head_rect)
+
+    def draw_highlight(self, surface):
+        """Draw a highlight around the card"""
+        pygame.draw.rect(surface, (0, 145, 255), self.rect, 3)
 
     def start_dragging(self, mouse_pos):
         """Start dragging the card"""
@@ -271,6 +391,9 @@ class Card():
             else:
                 new_eff[effect] = details
         self.effect = new_eff
+
+    def create_copy(self):
+        return Card(self.id, self.name, self.rarity, self.type, self.cost, self.card_text, self.innate, self.exhaust, self.retain, self.ethereal, self.effect, self.target, self.x, self.y, self.bottled, self.removable)
 
     def get_cost(self, combat = None):
         if combat == None:
@@ -300,7 +423,8 @@ class Card():
             self.combat_cost = (random.randint(0, 3), 'Combat')
     
     def cost_change(self, cost, duration):
-        self.combat_cost = (cost, duration)
+        if self.cost not in {'U', 'X'}:
+            self.combat_cost = (cost, duration)
 
     def property_change(self, property, new_value):
         properties = {

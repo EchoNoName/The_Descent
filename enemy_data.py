@@ -9,9 +9,57 @@ class Enemy:
         self.x = 0  # Initial x position
         self.y = 0  # Initial y position
         self.rect = None  # Will store the collision box
-        self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0}
-        self.debuffs = {'-Strength': 0, 'Vulnerable': 0, 'Weak': 0, 'Chained': 0, 'Poison': 0}
-        pass
+        self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0, 'Split': 0, 'Anger': 0, 'Enraged': 0, 'Thievery': 0, 'Stolen': 0, 'Infestation': 0, 'Curl Up': 0}
+        self.debuffs = {'-Strength': 0, 'Vulnerable': 0, 'Weak': 0, 'Chained': 0, 'Poison': 0, 'Asleep': 0}
+        self.block_overlay_sprite = pygame.image.load(os.path.join("assets", "ui", "hp_bar", "block_overlay.png"))
+        hp_bar_path = os.path.join("assets", "ui", "hp_bar", f"hp_bar_8_8.png")
+        self.hp_bar_sprite = pygame.image.load(hp_bar_path)
+        
+        # Set font sizes based on enemy size
+        pygame.font.init()
+        self.size_scales = {
+            'small': {
+                'block_font_size': 10,
+                'hp_font_size': 16,
+                'block_x_offset': -1,  # Smaller offset for small enemies
+                'hp_x_offset': 8,
+                'y_spacing': 5  # Less vertical space between sprite and health bar
+            },
+            'medium': {
+                'block_font_size': 18,
+                'hp_font_size': 20,
+                'block_x_offset': -2,
+                'hp_x_offset': 12,
+                'y_spacing': 8
+            },
+            'large': {
+                'block_font_size': 26,
+                'hp_font_size': 24,
+                'block_x_offset': 0,
+                'hp_x_offset': 25,
+                'y_spacing': 10
+            }
+        }
+        self.font_initialized = False
+        self.intent_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 18)
+        self.attack_intent_sprite = pygame.image.load(os.path.join("assets", "icons", "intents", "attack.png"))
+        self.block_intent_sprite = pygame.image.load(os.path.join("assets", "icons", "intents", "block.png"))
+        self.debuff_intent_sprite = pygame.image.load(os.path.join("assets", "icons", "intents", "debuff.png"))
+        self.mega_debuff_intent_sprite = pygame.image.load(os.path.join("assets", "icons", "intents", "mega_debuff.png"))
+        self.buff_intent_sprite = pygame.image.load(os.path.join("assets", "icons", "intents", "buff.png"))
+        self.special_intent_sprite = pygame.image.load(os.path.join("assets", "icons", "intents", "special.png"))
+        self.buff_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 12)
+        self.debuff_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 12)
+        self.attack_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "attack_buff.png"))
+        self.defense_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "defense_buff.png"))
+        self.misc_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "misc_buff.png"))
+        self.vulnerable_sprite = pygame.image.load(os.path.join("assets", "icons", "vulnerable.png"))
+        self.weak_sprite = pygame.image.load(os.path.join("assets", "icons", "weak.png"))
+        self.frail_sprite = pygame.image.load(os.path.join("assets", "icons", "frail.png"))
+        self.debuff_sprite = pygame.image.load(os.path.join("assets", "icons", "debuff.png"))
+        self.is_hover = False
+        self.name_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 24)
+        self.description_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 20)
 
     def __str__(self):
         '''Override for String representation'''
@@ -30,8 +78,360 @@ class Enemy:
     def __repr__(self):
         return self.__str__()
 
+    def hover(self):
+        self.is_hover = True
+
+    def unhover(self):
+        self.is_hover = False
+
+    def get_buff_description(self, buff):
+        desc = {
+            'Strength': f'Increases attack damage by {self.buffs["Strength"]}. ',
+            'Vigour': f'Increases next attack damage by {self.buffs["Vigour"]}. ',
+            'Ritual': f'At the start of your turn, gain {self.buffs["Ritual"]} Strength. ',
+            'Plated Armour': f'At the end of your turn, gain {self.buffs["Plated Armour"]} Block, when you take unblocked attack damage, lose 1 Plated Armour. ',
+            'Metalicize': f'At the end of your turn, gain {self.buffs["Metalicize"]} Block. ',
+            'Thorns': f'When you take unblocked attack damage, deal {self.buffs["Thorns"]} damage to the attacker. ',
+            'Regen': f'At the start of your turn, heal {self.buffs["Regen"]} HP. ',
+            'Artifact': f'Negate the next {self.buffs["Artifact"]} debuffs. ',
+            'Next Turn Block': f'At the start of your next turn, gain {self.buffs["Next Turn Block"]} Block. ',
+            'Split': f'When this enemy goes below half HP, split into 2 smaller variants of themselves. ',
+            'Anger': f'When this enemy is attacked, it gain {self.buffs["Anger"]} Strength. ',
+            'Enraged': f'When a skill card is played, this enemy gains {self.buffs["Enraged"]} Strength. ',
+            'Thievery': f'When this enemy attacks, it steals {self.buffs["Thievery"]} gold from the you. ',
+            'Stolen': f'This enemy has stolen {self.buffs["Stolen"]} gold from you. ',
+            'Infestation': f'When this enemy is killed, apply {self.buffs["Infestation"]} Vulnerable to you. ',
+            'Curl Up': f'When this enemy is attacked, it gains {self.buffs["Curl Up"]} Block. ',
+        }
+        return desc[buff]
+
+    def get_debuff_description(self, debuff):
+        desc = {
+            'Vulnerable': f'Take 50% more attack damage. ',
+            'Weak': f'Deal 25% less attack damage. ',
+            'Frail': f'Gain 25% less block from cards. ',
+            '-Strength': f'Deal {self.debuffs["-Strength"]} less attack damage. ',
+            'Chained': f'Lose {self.debuffs["Chained"]} Strength at the end of your turn. ',
+            'Poison': f'Lose {self.debuffs["Poison"]} HP at the start of your turn. ',
+            'Asleep': f'This enemy is asleep. ',
+        }
+        return desc[debuff]
+
+    def set_font_size(self):
+        scales = self.size_scales[self.size]
+        self.block_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), scales['block_font_size'])
+        self.hp_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), scales['hp_font_size'])
+        
+        # Pre-render block text surfaces
+        self.block_text_surfaces = {}
+        for i in range(1000):  # Pre-render numbers 0-999
+            outline = self.block_font.render(str(i), True, (0, 0, 0))
+            text = self.block_font.render(str(i), True, (255, 255, 255))
+            self.block_text_surfaces[i] = (outline, text)
+
+    def update_hp_bar(self):
+        health_percent = self.hp / self.max_hp
+        health_segment = 0
+        if health_percent <= 0:
+            health_segment = 0
+        elif health_percent == 1:
+            health_segment = 8
+        elif health_percent <= 0.125:
+            health_segment = 1
+        elif health_percent <= 0.25:
+            health_segment = 2
+        elif health_percent <= 0.375:
+            health_segment = 3
+        elif health_percent <= 0.5:
+            health_segment = 4
+        elif health_percent <= 0.625:
+            health_segment = 5
+        elif health_percent <= 0.75:
+            health_segment = 6
+        else:
+            health_segment = 7
+        
+        # Load health bar sprite
+        self.hp_bar_sprite = pygame.image.load(os.path.join("assets", "ui", "hp_bar", f"hp_bar_{health_segment}_8.png"))
+
     def draw(self, surface, x = 0, y = 0):
+        if not self.font_initialized:
+            self.set_font_size()
+            self.font_initialized = True
+        # Draw enemy sprite
         surface.blit(self.sprite, (x, y))
+        
+        scales = self.size_scales[self.size]
+        
+        # Scale up the health bar
+        sprite_width = self.sprite.get_width()
+        original_ratio = self.hp_bar_sprite.get_height() / self.hp_bar_sprite.get_width()
+        scaled_width = sprite_width
+        scaled_height = int(scaled_width * original_ratio)
+        hp_bar = pygame.transform.scale(self.hp_bar_sprite, (scaled_width, scaled_height))
+        
+        # Position health bar below character
+        bar_x = x + self.sprite.get_width()//2 - hp_bar.get_width()//2
+        bar_y = y + self.sprite.get_height() + scales['y_spacing']
+        surface.blit(hp_bar, (bar_x, bar_y))
+        
+        # Draw block overlay and number if enemy has block
+        if self.block > 0:
+            # Scale block overlay to match health bar size
+            block_overlay = pygame.transform.scale(self.block_overlay_sprite, (scaled_width, scaled_height))
+            surface.blit(block_overlay, (bar_x, bar_y))
+            
+            # Use pre-rendered block text surfaces
+            block_outline, block_text = self.block_text_surfaces.get(self.block, 
+                (self.block_font.render(str(self.block), True, (0, 0, 0)),
+                self.block_font.render(str(self.block), True, (255, 255, 255))))
+            
+            # Position block text
+            text_x = bar_x + (scaled_width // 10) + scales['block_x_offset']
+            text_y = bar_y + (scaled_height - block_outline.get_height()) // 2
+            
+            # Draw black outline
+            for dx, dy in [(-2,0), (2,0), (0,-2), (0,2), (-1,-1), (1,-1), (-1,1), (1,1)]:
+                surface.blit(block_outline, (text_x + dx, text_y + dy))
+            
+            # Draw white text
+            surface.blit(block_text, (text_x, text_y))
+        
+        # Draw HP text
+        hp_text = f"{self.hp}/{self.max_hp}"
+        hp_outline = self.hp_font.render(hp_text, True, (0, 0, 0))
+        text_x = bar_x + (scaled_width - hp_outline.get_width()) // 2 + scales['hp_x_offset']
+        text_y = bar_y + (scaled_height - hp_outline.get_height()) // 2
+        
+        # Draw black outline for HP text
+        for dx, dy in [(-2,0), (2,0), (0,-2), (0,2), (-1,-1), (1,-1), (-1,1), (1,1)]:
+            surface.blit(hp_outline, (text_x + dx, text_y + dy))
+        
+        # Draw white HP text
+        hp_text = self.hp_font.render(hp_text, True, (255, 255, 255))
+        surface.blit(hp_text, (text_x, text_y))
+
+        status_x = x + 10  # Start from character's left edge
+        status_y = bar_y + scaled_height + 10  # Position below health bar
+
+        for buff, amount in self.buffs.items():
+            if amount > 0:
+                # Choose correct buff sprite
+                if buff == 'Strength' or buff == 'Vigour' or buff == 'Double Tap':
+                    sprite = self.attack_buff_sprite
+                elif buff == 'Dexterity' or buff == 'Plated Armour' or buff == 'Metalicize' or buff == 'Blur' or buff == 'Thorns' or buff == 'Regen' or buff == 'Artifact' or buff == 'Parry' or buff == 'Deflect':
+                    sprite = self.defense_buff_sprite
+                else:
+                    sprite = self.misc_buff_sprite
+                
+                # Draw buff sprite
+                surface.blit(sprite, (status_x, status_y))
+                
+                # Draw amount number in bottom right
+                amount_text = self.buff_font.render(str(amount), True, (255, 255, 255))
+                amount_x = status_x + sprite.get_width() - amount_text.get_width()
+                amount_y = status_y + sprite.get_height() - amount_text.get_height()
+                surface.blit(amount_text, (amount_x, amount_y))
+                
+                status_x += sprite.get_width() + 5  # Shift right for next icon
+
+        # Draw debuffs
+        for debuff, amount in self.debuffs.items():
+            text_colour = (255, 255, 255)
+            if amount > 0:
+                # Choose correct debuff sprite
+                if debuff == 'Vulnerable':
+                    sprite = self.vulnerable_sprite
+                elif debuff == 'Weak':
+                    sprite = self.weak_sprite
+                elif debuff == 'Frail':
+                    sprite = self.frail_sprite
+                elif debuff == '-Strength':
+                    sprite = self.attack_buff_sprite
+                    text_colour = (255, 0, 0)
+                elif debuff == '-Dexterity':
+                    sprite = self.defense_buff_sprite
+                    text_colour = (255, 0, 0)
+                else:
+                    sprite = self.debuff_sprite
+                    
+                # Draw debuff sprite
+                surface.blit(sprite, (status_x, status_y))
+                
+                # Draw amount number in bottom right
+                amount_text = self.debuff_font.render(str(amount), True, text_colour)
+                amount_x = status_x + sprite.get_width() - amount_text.get_width()
+                amount_y = status_y + sprite.get_height() - amount_text.get_height()
+                surface.blit(amount_text, (amount_x, amount_y))
+                
+                status_x += sprite.get_width() + 5  # Shift right for next icon
+
+        if self.is_hover:
+            # Combine active buffs and debuffs into one list
+            active_effects = []
+            active_effects.extend([(buff, amount, True) for buff, amount in self.buffs.items() if amount > 0])
+            active_effects.extend([(debuff, amount, False) for debuff, amount in self.debuffs.items() if amount > 0])
+            
+            box_width = 300
+            line_height = 25
+            effects_per_column = 3
+            previous_box_heights = []
+            
+            for i, (effect, amount, is_buff) in enumerate(active_effects):
+                # Get effect description
+                desc = self.get_buff_description(effect) if is_buff else self.get_debuff_description(effect)
+                
+                # Split description into 35 char lines
+                desc_lines = []
+                while len(desc) > 35:
+                    split_index = desc.rfind(' ', 0, 35)
+                    if split_index == -1:
+                        split_index = 35
+                    desc_lines.append(desc[:split_index])
+                    desc = desc[split_index:].strip()
+                desc_lines.append(desc)
+                
+                # Get correct sprite based on effect type
+                if is_buff:
+                    if effect == 'Strength' or effect == 'Vigour' or effect == 'Double Tap':
+                        sprite = self.attack_buff_sprite
+                    elif effect == 'Dexterity' or effect == 'Plated Armour' or effect == 'Metalicize' or effect == 'Blur' or effect == 'Thorns' or effect == 'Regen' or effect == 'Artifact' or effect == 'Parry' or effect == 'Deflect':
+                        sprite = self.defense_buff_sprite
+                    else:
+                        sprite = self.misc_buff_sprite
+                else:
+                    if effect == 'Vulnerable':
+                        sprite = self.vulnerable_sprite
+                    elif effect == 'Weak':
+                        sprite = self.weak_sprite
+                    elif effect == 'Frail':
+                        sprite = self.frail_sprite
+                    elif effect == '-Strength':
+                        sprite = self.attack_buff_sprite
+                    elif effect == '-Dexterity':
+                        sprite = self.defense_buff_sprite
+                    else:
+                        sprite = self.debuff_sprite
+
+                # Calculate box dimensions
+                box_height = (len(desc_lines) + 1) * line_height + 15
+                previous_box_heights.append(box_height)
+                
+                # Calculate column and row position
+                column = i // effects_per_column
+                row = i % effects_per_column
+                
+                # Position box in grid layout, lowered by 50 pixels
+                # Start at base x position (x)
+                # Add smaller offset from left edge (50px instead of 100px)
+                # For each column, add box_width + smaller spacing to position boxes horizontally
+                box_x = x - self.sprite.get_width() - (box_width + 10) * column  # Reduced left offset and column spacing
+                # Calculate y position based on row number
+                if row == 0:
+                    box_y = y
+                elif row == 1:
+                    box_y = y + previous_box_heights[i-1]
+                else:
+                    box_y = y + previous_box_heights[i-2] + previous_box_heights[i-1]
+                
+                # Draw semi-transparent black background
+                desc_box = pygame.Surface((box_width, box_height))
+                desc_box.fill((0, 0, 0))
+                surface.blit(desc_box, (box_x, box_y))
+                
+                # Draw effect name and icon
+                name_text = self.name_font.render(effect, True, (255, 255, 255))
+                surface.blit(sprite, (box_x + 5, box_y + 5))
+                surface.blit(name_text, (box_x + sprite.get_width() + 10, box_y + 5))
+                
+                # Draw description lines
+                for j, line in enumerate(desc_lines):
+                    desc_text = self.description_font.render(line, True, (255, 255, 255))
+                    surface.blit(desc_text, (box_x + 5, box_y + (j + 1) * line_height + 10))
+            # Draw name below health bar
+            name_text = self.hp_font.render(self.name, True, (255, 255, 255))
+            name_x = x + (self.sprite.get_width() - name_text.get_width()) // 2
+            name_y = bar_y - 10  # Position below health bar with small gap
+            # Draw black outline
+            name_outline = self.hp_font.render(self.name, True, (0, 0, 0))
+            for dx, dy in [(-2,0), (2,0), (0,-2), (0,2), (-1,-1), (1,-1), (-1,1), (1,1)]:
+                surface.blit(name_outline, (name_x + dx, name_y + dy))
+            surface.blit(name_text, (name_x, name_y))
+
+    def draw_intent(self, surface, x = 0, y = 0):
+        # Draw intent
+        if self.intent != None:
+            intent = self.intent[-1]
+            # Draw intent sprite above enemy
+            if 'Attack' in intent:
+                intent_sprite = self.attack_intent_sprite
+            elif 'Block' in intent:
+                intent_sprite = self.block_intent_sprite
+            elif 'Mega Debuff' in intent:
+                intent_sprite = self.mega_debuff_intent_sprite
+            elif 'Special' in intent:
+                intent_sprite = self.special_intent_sprite
+            # For complex attacks that also apply debuffs/buffs, overlay the icons
+            if 'Attack' in intent or 'Block' in intent:
+                sprite_x = x + (self.sprite.get_width() - intent_sprite.get_width()) // 2
+                sprite_y = y - intent_sprite.get_height() - 10  # 10px padding
+                if 'Debuff' in intent:
+                    surface.blit(self.debuff_intent_sprite, (sprite_x, sprite_y))
+                elif 'Buff' in intent:
+                    surface.blit(self.buff_intent_sprite, (sprite_x, sprite_y))
+            else:
+                # For pure debuff/buff intents, set the main sprite
+                if 'Debuff' in intent:
+                    intent_sprite = self.debuff_intent_sprite
+                elif 'Buff' in intent:
+                    intent_sprite = self.buff_intent_sprite
+            
+            # Draw intent sprite above enemy
+            sprite_x = x + (self.sprite.get_width() - intent_sprite.get_width()) // 2
+            sprite_y = y - intent_sprite.get_height() - 10  # 10px padding
+            surface.blit(intent_sprite, (sprite_x, sprite_y))
+            # Draw damage text below intent sprite if it's an attack
+            if 'Attack' in intent:
+                damage = self.intent[0][effects.deal_attack_damage][0] + self.buffs['Strength'] - self.debuffs['-Strength']
+                if self.debuffs['Weak'] > 0:
+                    damage = int(damage * 0.75)
+                hits = self.intent[0][effects.deal_attack_damage][1]
+                damage_text = f"{damage} x {hits}"
+                
+                # Render damage text
+                damage_outline = self.intent_font.render(damage_text, True, (0, 0, 0))
+                damage_surface = self.intent_font.render(damage_text, True, (255, 255, 255))
+                
+                # Position text below intent sprite
+                text_x = sprite_x + (intent_sprite.get_width() - damage_outline.get_width()) // 2
+                text_y = sprite_y + intent_sprite.get_height() - 10  # 5px padding
+                
+                # Draw black outline
+                for dx, dy in [(-1,0), (1,0), (0,-1), (0,1)]:
+                    surface.blit(damage_outline, (text_x + dx, text_y + dy))
+                    
+                # Draw white text
+                surface.blit(damage_surface, (text_x, text_y))
+
+    def draw_collision_box(self, surface):
+        # Load and transform target corner sprite
+        target_corner = pygame.image.load(os.path.join("assets", "ui", "target_corners.png"))
+        
+        # Draw corners at each corner of the rectangle
+        # Top left - no rotation needed
+        surface.blit(target_corner, (self.rect.left, self.rect.top))
+        
+        # Top right - rotate 90 degrees clockwise
+        rotated = pygame.transform.rotate(target_corner, -90)
+        surface.blit(rotated, (self.rect.right - rotated.get_width(), self.rect.top))
+        
+        # Bottom right - rotate 180 degrees
+        rotated = pygame.transform.rotate(target_corner, -180) 
+        surface.blit(rotated, (self.rect.right - rotated.get_width(), self.rect.bottom - rotated.get_height() + 10))
+        
+        # Bottom left - rotate 270 degrees clockwise
+        rotated = pygame.transform.rotate(target_corner, -270)
+        surface.blit(rotated, (self.rect.left, self.rect.bottom - rotated.get_height() + 10))
 
     def combat_info(self):
         buffs = []
@@ -84,6 +484,7 @@ class Enemy:
         ### args:
             amount: amount to heal by'''
         self.hp = min(self.max_hp, self.hp + amount)
+        self.update_hp_bar()
 
     def damage_taken(self, damage):
         '''
@@ -110,6 +511,7 @@ class Enemy:
             # Update entity status
             return self.hp_loss(damage)
             # Hp loss
+        self.update_hp_bar()
     
     def true_damage_taken(self, damage):
         '''
@@ -128,7 +530,8 @@ class Enemy:
             # Update entity status
             self.hp_loss(damage)
             # Hp loss
-        
+        self.update_hp_bar()
+
     def hp_loss(self, amount):
         '''Handles enemy losing Hp in anyway
         
@@ -139,6 +542,7 @@ class Enemy:
             the amount of hp lost, accounting for negatives'''
         self.hp -= amount
         # Subtract amount from hp
+        self.update_hp_bar()
         if amount > 0:
             if self.died == True:
                 return amount + self.hp
@@ -239,7 +643,6 @@ class Enemy:
 
 class JawWorm(Enemy):
     def __init__(self) -> None:
-        super().__init__()
         self.name = 'Jaw Worm'
         self.sprite = 'jaw_worm.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
@@ -259,6 +662,7 @@ class JawWorm(Enemy):
             'Bellow': ({effects.apply_buff: (['Strength'], [3]), effects.enemy_block_gain: (6, )}, 0, 'Block Buff')
         }
         self.intent = None
+        super().__init__()
     
     def intent_get(self, combat):
         '''Gets what the enemy intends to do
@@ -463,11 +867,11 @@ class LargeGreenSlime(Enemy):
         self.sprite = 'green_slime.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
-        self.rect = self.sprite.get_rect()
         self.sprite = pygame.transform.scale(
             self.sprite, 
             (int(self.sprite.get_width() * 0.6), int(self.sprite.get_height() * 0.6))
         )
+        self.rect = self.sprite.get_rect()
         self.size = 'large'
         self.max_hp = max_hp
         self.hp = self.max_hp
@@ -1562,6 +1966,7 @@ class GiantLouse(Enemy):
             self.intent = self.actions['Stunned']
             self.special_done = True
             # Awakens
+            self.update_hp_bar()
             if self.died == True:
                 return amount + self.hp
             else:
@@ -1688,6 +2093,7 @@ class AncientMech(Enemy):
         self.sprite = 'ancient_mech.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (self.sprite.get_width() // 1.5, self.sprite.get_height() // 1.5))
         self.rect = self.sprite.get_rect()
         self.size = 'large'
         self.max_hp = 250

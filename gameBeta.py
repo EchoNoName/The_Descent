@@ -5,6 +5,7 @@ import effects
 import combat_beta
 import potion_data
 import enemy_data
+import relic_data
 import map_generation
 import reward_screen
 import events
@@ -12,6 +13,8 @@ import math
 import shop
 import treasure
 import copy
+import pygame
+import os  
 
 Instances = []
 
@@ -23,12 +26,17 @@ class Character:
         self.character_class = character_class
         self.block = 0
         self.deck = []
+        self.x = 0
+        self.y = 0
         if character_class == 1:
             for i in range(5):
                 self.deck.append(card_constructor.create_card(1000, card_data.card_info[1000]))
             for i in range(5):
                 self.deck.append(card_constructor.create_card(1002, card_data.card_info[1002]))
             self.deck.append(card_constructor.create_card(1001, card_data.card_info[1001]))
+            sprite = pygame.image.load('assets/sprites/characters/swordsman.png')
+            self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 2.75, sprite.get_height() // 2.75))
+        self.rect = self.sprite.get_rect()
         self.selected_cards = []
         self.gold = 100
         self.thieved = 0
@@ -36,15 +44,378 @@ class Character:
         self.relics = []
         self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0, 'Parry': 0, 'Deflect': 0}
         #Debuffs: Atrophy = lose dex at the end of turn
-        self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Parry': 0, 'Deflect': 0, 'Entangle': 0}
+        self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Entangle': 0}
         self.bottled = []
+        self.attack_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "attack_buff.png"))
+        self.defense_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "defense_buff.png"))
+        self.misc_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "misc_buff.png"))
+        self.vulnerable_sprite = pygame.image.load(os.path.join("assets", "icons", "vulnerable.png"))
+        self.weak_sprite = pygame.image.load(os.path.join("assets", "icons", "weak.png"))
+        self.frail_sprite = pygame.image.load(os.path.join("assets", "icons", "frail.png"))
+        self.debuff_sprite = pygame.image.load(os.path.join("assets", "icons", "debuff.png"))
+        self.block_overlay_sprite = pygame.image.load(os.path.join("assets", "ui", "hp_bar", "block_overlay.png"))
+        hp_bar_path = os.path.join("assets", "ui", "hp_bar", f"hp_bar_8_8.png")
+        self.hp_bar_sprite = pygame.image.load(hp_bar_path)
+        self.top_ui_sprite = pygame.image.load(os.path.join("assets", "ui", "ui_bar.png"))
+        heart_sprite = pygame.image.load(os.path.join("assets", "icons", "hp.png"))
+        gold_sprite = pygame.image.load(os.path.join("assets", "icons", "gold.png"))
+        self.heart_sprite = pygame.transform.scale(heart_sprite, (heart_sprite.get_width()//2, heart_sprite.get_height()//2))
+        self.gold_sprite = pygame.transform.scale(gold_sprite, (gold_sprite.get_width()//11, gold_sprite.get_height()//11))
+        self.empty_potion_sprite = pygame.image.load(os.path.join("assets", "icons", "empty_potion_slot .png"))
+        
+        # Pre-load fonts
+        pygame.font.init()
+        self.block_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 20)
+        self.hp_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 24)
+        # Pre-render block text surfaces
+        self.block_text_surfaces = {}
+        for i in range(1000):  # Pre-render numbers 0-999
+            outline = self.block_font.render(str(i), True, (0, 0, 0))
+            text = self.block_font.render(str(i), True, (255, 255, 255))
+            self.block_text_surfaces[i] = (outline, text)
+        self.buff_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 12)
+        self.debuff_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 12)
+        self.is_hover = False
+        self.name_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 24)
+        self.description_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 20)
     
+
+    def hover(self):
+        self.is_hover = True
+    
+    def unhover(self):
+        self.is_hover = False
+
     def __str__(self):
         '''Override for String representation'''
         return f'{self.name}   HP: {self.hp}/{self.maxHp}   Block: {self.block}   Gold: {self.gold}   Potions: {self.potions}   Relics: {self.relics}'
 
     def __repr__(self):
         return self.__str__()
+
+    def draw(self, surface, x = 0, y = 0):
+        '''Method for drawing the character and health bar'''
+        # Draw character sprite
+        surface.blit(self.sprite, (x, y))
+        
+        # Update collision box position to match sprite position
+        self.x = x
+        self.y = y
+        self.rect.x = x
+        self.rect.y = y
+        
+        # Scale up the health bar
+        scaled_width = int(self.hp_bar_sprite.get_width() * 2.25)  
+        scaled_height = int(self.hp_bar_sprite.get_height() * 2.25) 
+        hp_bar = pygame.transform.scale(self.hp_bar_sprite, (scaled_width, scaled_height))
+        
+        # Position health bar below character, shifted left by 20 pixels
+        bar_x = x + self.sprite.get_width()//2 - hp_bar.get_width()//2 - 20
+        bar_y = y + self.sprite.get_height() + 10  # Moved below sprite with small gap
+        surface.blit(hp_bar, (bar_x, bar_y))
+        
+        # Draw block overlay if character has block
+        if self.block > 0:
+            # Scale block overlay to match health bar size
+            block_overlay = pygame.transform.scale(self.block_overlay_sprite, (scaled_width, scaled_height))
+            surface.blit(block_overlay, (bar_x, bar_y))
+            
+            # Use pre-rendered block text surfaces
+            block_outline, block_text = self.block_text_surfaces.get(self.block, 
+                (self.block_font.render(str(self.block), True, (0, 0, 0)),
+                self.block_font.render(str(self.block), True, (255, 255, 255))))
+            
+            text_x = bar_x + (scaled_width - block_outline.get_width()) // 2 - 63
+            text_y = bar_y + (scaled_height - block_outline.get_height()) // 2
+            
+            # Draw black outline
+            for dx, dy in [(-2,0), (2,0), (0,-2), (0,2), (-1,-1), (1,-1), (-1,1), (1,1)]:
+                surface.blit(block_outline, (text_x + dx, text_y + dy))
+            
+            # Draw white text
+            surface.blit(block_text, (text_x, text_y))
+        
+        # Draw HP text overlapping the hp bar
+        hp_text = f"{self.hp}/{self.maxHp}"
+        hp_outline = self.hp_font.render(hp_text, True, (0, 0, 0))
+        text_x = bar_x + (scaled_width - hp_outline.get_width()) // 2 + 17
+        text_y = bar_y + (scaled_height - hp_outline.get_height()) // 2
+        
+        # Draw black outline in all 8 directions
+        for dx, dy in [(-2,0), (2,0), (0,-2), (0,2), (-1,-1), (1,-1), (-1,1), (1,1)]:
+            surface.blit(hp_outline, (text_x + dx, text_y + dy))
+            
+        # Draw white HP text
+        hp_text = self.hp_font.render(hp_text, True, (255, 255, 255))
+        surface.blit(hp_text, (text_x, text_y))
+
+        # Draw buffs and debuffs below character
+        status_x = x  # Start from character's left edge
+        status_y = bar_y + scaled_height + 10  # Position below health bar
+        
+        # Draw buffs
+        for buff, amount in self.buffs.items():
+            if amount > 0:
+                # Choose correct buff sprite
+                if buff == 'Strength' or buff == 'Vigour' or buff == 'Double Tap':
+                    sprite = self.attack_buff_sprite
+                elif buff == 'Dexterity' or buff == 'Plated Armour' or buff == 'Metalicize' or buff == 'Blur' or buff == 'Thorns' or buff == 'Regen' or buff == 'Artifact' or buff == 'Parry' or buff == 'Deflect':
+                    sprite = self.defense_buff_sprite
+                else:
+                    sprite = self.misc_buff_sprite
+                
+                # Draw buff sprite
+                surface.blit(sprite, (status_x, status_y))
+                
+                # Draw amount number in bottom right
+                amount_text = self.buff_font.render(str(amount), True, (255, 255, 255))
+                amount_x = status_x + sprite.get_width() - amount_text.get_width()
+                amount_y = status_y + sprite.get_height() - amount_text.get_height()
+                surface.blit(amount_text, (amount_x, amount_y))
+                
+                # If hovering over character, draw buff description box
+                
+                
+                status_x += sprite.get_width() + 5  # Shift right for next icon
+
+        if self.is_hover:
+            # Combine active buffs and debuffs into one list
+            active_effects = []
+            active_effects.extend([(buff, amount, True) for buff, amount in self.buffs.items() if amount > 0])
+            active_effects.extend([(debuff, amount, False) for debuff, amount in self.debuffs.items() if amount > 0])
+            
+            box_width = 300
+            line_height = 25
+            spacing = 20  # Space between boxes
+            effects_per_column = 3
+            previous_box_heights = []
+            
+            for i, (effect, amount, is_buff) in enumerate(active_effects):
+                # Get effect description
+                desc = self.get_buff_description(effect) if is_buff else self.get_debuff_description(effect)
+                
+                # Split description into 35 char lines
+                desc_lines = []
+                while len(desc) > 35:
+                    split_index = desc.rfind(' ', 0, 35)
+                    if split_index == -1:
+                        split_index = 35
+                    desc_lines.append(desc[:split_index])
+                    desc = desc[split_index:].strip()
+                desc_lines.append(desc)
+                
+                # Get correct sprite based on effect type
+                if is_buff:
+                    if effect == 'Strength' or effect == 'Vigour' or effect == 'Double Tap':
+                        sprite = self.attack_buff_sprite
+                    elif effect == 'Dexterity' or effect == 'Plated Armour' or effect == 'Metalicize' or effect == 'Blur' or effect == 'Thorns' or effect == 'Regen' or effect == 'Artifact' or effect == 'Parry' or effect == 'Deflect':
+                        sprite = self.defense_buff_sprite
+                    else:
+                        sprite = self.misc_buff_sprite
+                else:
+                    if effect == 'Vulnerable':
+                        sprite = self.vulnerable_sprite
+                    elif effect == 'Weak':
+                        sprite = self.weak_sprite
+                    elif effect == 'Frail':
+                        sprite = self.frail_sprite
+                    elif effect == '-Strength':
+                        sprite = self.attack_buff_sprite
+                    elif effect == '-Dexterity':
+                        sprite = self.defense_buff_sprite
+                    else:
+                        sprite = self.debuff_sprite
+
+                # Calculate box dimensions
+                box_height = (len(desc_lines) + 1) * line_height + 15
+                previous_box_heights.append(box_height)
+                
+                # Calculate column and row position
+                column = i // effects_per_column
+                row = i % effects_per_column
+                
+                # Position box in grid layout, lowered by 50 pixels
+                # Start at base x position (x)
+                # Add smaller offset from left edge (50px instead of 100px)
+                # For each column, add box_width + smaller spacing to position boxes horizontally
+                box_x = x + 150 + (box_width + 10) * column  # Reduced left offset and column spacing
+                # Calculate y position based on row number
+                if row == 0:
+                    box_y = y
+                elif row == 1:
+                    box_y = y + previous_box_heights[i-1]
+                else:
+                    box_y = y + previous_box_heights[i-2] + previous_box_heights[i-1]
+                
+                # Draw semi-transparent black background
+                desc_box = pygame.Surface((box_width, box_height))
+                desc_box.fill((0, 0, 0))
+                surface.blit(desc_box, (box_x, box_y))
+                
+                # Draw effect name and icon
+                name_text = self.name_font.render(effect, True, (255, 255, 255))
+                surface.blit(sprite, (box_x + 5, box_y + 5))
+                surface.blit(name_text, (box_x + sprite.get_width() + 10, box_y + 5))
+                
+                # Draw description lines
+                for j, line in enumerate(desc_lines):
+                    desc_text = self.description_font.render(line, True, (255, 255, 255))
+                    surface.blit(desc_text, (box_x + 5, box_y + (j + 1) * line_height + 10))
+
+        # Draw debuffs
+        for debuff, amount in self.debuffs.items():
+            text_colour = (255, 255, 255)
+            if amount > 0:
+                # Choose correct debuff sprite
+                if debuff == 'Vulnerable':
+                    sprite = self.vulnerable_sprite
+                elif debuff == 'Weak':
+                    sprite = self.weak_sprite
+                elif debuff == 'Frail':
+                    sprite = self.frail_sprite
+                elif debuff == '-Strength':
+                    sprite = self.attack_buff_sprite
+                    text_colour = (255, 0, 0)
+                elif debuff == '-Dexterity':
+                    sprite = self.defense_buff_sprite
+                    text_colour = (255, 0, 0)
+                else:
+                    sprite = self.debuff_sprite
+                    
+                # Draw debuff sprite
+                surface.blit(sprite, (status_x, status_y))
+                
+                # Draw amount number in bottom right
+                amount_text = self.debuff_font.render(str(amount), True, text_colour)
+                amount_x = status_x + sprite.get_width() - amount_text.get_width()
+                amount_y = status_y + sprite.get_height() - amount_text.get_height()
+                surface.blit(amount_text, (amount_x, amount_y))
+                
+                status_x += sprite.get_width() + 5  # Shift right for next icon
+
+    def get_buff_description(self, buff):
+        desc = {
+            'Strength': f'Increases attack damage by {self.buffs["Strength"]}. ',
+            'Dexterity': f'Increases block gain from cards by {self.buffs["Dexterity"]}. ',
+            'Vigour': f'Increases next attack damage by {self.buffs["Vigour"]}. ',
+            'Ritual': f'At the start of your turn, gain {self.buffs["Ritual"]} Strength. ',
+            'Plated Armour': f'At the end of your turn, gain {self.buffs["Plated Armour"]} Block, when you take unblocked attack damage, lose 1 Plated Armour. ',
+            'Metalicize': f'At the end of your turn, gain {self.buffs["Metalicize"]} Block. ',
+            'Blur': f'For the next {self.buffs["Blur"]} turns, retain all block. ',
+            'Thorns': f'When you take unblocked attack damage, deal {self.buffs["Thorns"]} damage to the attacker. ',
+            'Regen': f'At the start of your turn, heal {self.buffs["Regen"]} HP. ',
+            'Artifact': f'Negate the next {self.buffs["Artifact"]} debuffs. ',
+            'Double Tap': f'Your next {self.buffs["Double Tap"]} attack is played twice. ',
+            'Duplicate': f'Your next {self.buffs["Duplicate"]} card is played twice. ',
+            'Draw Card': f'At the start of your turn, draw {self.buffs["Draw Card"]} cards. ',
+            'Energized': f'At the start of your turn, gain {self.buffs["Energized"]} energy. ',
+            'Next Turn Block': f'At the start of your next turn, gain {self.buffs["Next Turn Block"]} Block. ',
+            'Parry': f'When you take unblocked attack damage, Apply {self.buffs["Parry"]} Vulnerable to the attacker. ',
+            'Deflect': f'When you take unblocked attack damage, deal {self.buffs["Deflect"]} damage to the attacker. ',
+        }
+        return desc[buff]
+
+    def get_debuff_description(self, debuff):
+        desc = {
+            'Vulnerable': f'Take 50% more attack damage. ',
+            'Weak': f'Deal 25% less attack damage. ',
+            'Frail': f'Gain 25% less block from cards. ',
+            '-Strength': f'Deal {self.debuffs["-Strength"]} less attack damage. ',
+            '-Dexterity': f'Gain {self.debuffs["-Dexterity"]} less block from cards. ',
+            'Atrophy': f'Lose {self.debuffs["Atrophy"]} Dexterity at the end of your turn. ',
+            'Chained': f'Lose {self.debuffs["Chained"]} Strength at the end of your turn. ',
+            'Poison': f'Lose {self.debuffs["Poison"]} HP at the start of your turn. ',
+            'No Draw': f'You can no longer draw cards until the end of your turn. ',
+            'Chaotic': f'Randomize the cost of all cards you draw. ',
+            'Last Chance': f'At the end of your turn, Exhaust EVERY card in combat. ',
+            'Draw Reduction': f'At the start of your turn, draw {self.debuffs["No Draw"]} less cards.  ',
+            'Entangle': f'You cannot play any attack cards for the next {self.debuffs["Entangle"]} turns. ',
+        }
+        return desc[debuff]
+
+    def draw_ui(self, surface):
+        # Draw the UI bar background
+        ui_y = 0  # Place at top of screen
+        surface.blit(self.top_ui_sprite, (0, ui_y))
+        
+        # Draw character name
+        font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 36)
+        name_text = font.render(self.name, True, (255, 255, 255))
+        surface.blit(name_text, (20, ui_y + 15))
+        
+        # Draw heart icon and HP
+        surface.blit(self.heart_sprite, (350, ui_y + 15))
+        # Draw black outline for HP text
+        hp_outline = font.render(f"{self.hp}/{self.maxHp}", True, (0, 0, 0))
+        surface.blit(hp_outline, (428, ui_y + 13))
+        surface.blit(hp_outline, (432, ui_y + 13))
+        surface.blit(hp_outline, (430, ui_y + 11))
+        surface.blit(hp_outline, (430, ui_y + 15))
+        surface.blit(hp_outline, (429, ui_y + 14))
+        surface.blit(hp_outline, (431, ui_y + 14))
+        surface.blit(hp_outline, (430, ui_y + 13))
+        surface.blit(hp_outline, (430, ui_y + 15))
+        # Draw red HP text
+        hp_text = font.render(f"{self.hp}/{self.maxHp}", True, (255, 0, 0))
+        surface.blit(hp_text, (430, ui_y + 15))
+        
+        # Draw gold icon and amount
+        surface.blit(self.gold_sprite, (600, ui_y + 15))
+        # Draw black outline for gold text
+        gold_outline = font.render(str(self.gold), True, (0, 0, 0))
+        surface.blit(gold_outline, (668, ui_y + 13))
+        surface.blit(gold_outline, (672, ui_y + 13))
+        surface.blit(gold_outline, (670, ui_y + 11))
+        surface.blit(gold_outline, (670, ui_y + 15))
+        surface.blit(gold_outline, (669, ui_y + 14))
+        surface.blit(gold_outline, (671, ui_y + 14))
+        surface.blit(gold_outline, (670, ui_y + 13))
+        surface.blit(gold_outline, (670, ui_y + 15))
+        # Draw gold text
+        gold_text = font.render(str(self.gold), True, (255, 215, 0))
+        surface.blit(gold_text, (670, ui_y + 15))
+        
+        # Draw potion slots
+        potion_x = 800
+        for potion in self.potions:
+            if potion is None:
+                surface.blit(self.empty_potion_sprite, (potion_x, ui_y + 25))
+            else:
+                potion.draw(surface, potion_x, ui_y + 25)
+            potion_x += 60
+        
+        # Draw relics
+        relic_x = 20  # Start 20 pixels from left edge
+        relic_y = ui_y + 80  # Position below UI bar
+        for relic in self.relics:
+            relic.draw(surface, relic_x, relic_y)
+            relic_x += 60  # Shift right 60 pixels for next relic
+
+    def draw_collision_box(self, surface):
+        # Load and transform target corner sprite
+        target_corner = pygame.image.load(os.path.join("assets", "ui", "target_corners.png"))
+        
+        # Get sprite rect and position
+        sprite_rect = self.sprite.get_rect()
+        sprite_rect.x = self.x
+        sprite_rect.y = self.y
+        self.rect = sprite_rect
+        
+        # Draw corners at each corner of the rectangle
+        # Top left - no rotation needed
+        surface.blit(target_corner, (sprite_rect.left, sprite_rect.top))
+        
+        # Top right - rotate 90 degrees clockwise
+        rotated = pygame.transform.rotate(target_corner, -90)
+        surface.blit(rotated, (sprite_rect.right - rotated.get_width(), sprite_rect.top))
+        
+        # Bottom right - rotate 180 degrees
+        rotated = pygame.transform.rotate(target_corner, -180)
+        surface.blit(rotated, (sprite_rect.right - rotated.get_width(), sprite_rect.bottom - rotated.get_height() + 10))
+        
+        # Bottom left - rotate 270 degrees clockwise
+        rotated = pygame.transform.rotate(target_corner, -270)
+        surface.blit(rotated, (sprite_rect.left, sprite_rect.bottom - rotated.get_height() + 10))
 
     def combat_info(self):
         buffs = []
@@ -184,6 +555,31 @@ class Character:
         self.deck.append(new_card)
         # Add the copy to the deck
 
+    def update_hp_bar(self):
+        health_percent = self.hp / self.maxHp
+        health_segment = 0
+        if health_percent <= 0:
+            health_segment = 0
+        elif health_percent == 1:
+            health_segment = 8
+        elif health_percent <= 0.125:
+            health_segment = 1
+        elif health_percent <= 0.25:
+            health_segment = 2
+        elif health_percent <= 0.375:
+            health_segment = 3
+        elif health_percent <= 0.5:
+            health_segment = 4
+        elif health_percent <= 0.625:
+            health_segment = 5
+        elif health_percent <= 0.75:
+            health_segment = 6
+        else:
+            health_segment = 7
+        
+        # Load health bar sprite
+        self.hp_bar_sprite = pygame.image.load(os.path.join("assets", "ui", "hp_bar", f"hp_bar_{health_segment}_8.png"))
+
     def heal(self, amount):
         '''Method to heal the player by an amount or percentage
         
@@ -221,7 +617,11 @@ class Character:
         
         ### args:
             amount: amount gained'''
-        self.block += amount + self.buffs['Dexterity']
+        amount = amount + self.buffs['Dexterity']
+        if self.debuffs['Frail'] > 0:
+            amount = math.floor(amount * 0.75)
+        amount = max(0, amount)
+        self.block += amount 
         # add more block and adding the dexterity bonus
     
     def gain_block_power(self, amount):
@@ -287,7 +687,7 @@ class Character:
             return None
         if self.buffs['Artifact'] > 0:
             # If player has artifact
-            self.buffs['ArtiFact'] -= 1
+            self.buffs['Artifact'] -= 1
             # Lose 1 artifact and negate the debuff
         elif debuff_type == "No Draw" or debuff_type == "Chaotic" or debuff_type == 'Last Chance':
             # If its non stackable
@@ -406,6 +806,12 @@ def main_menu():
 class Run:
     def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, removals = 0, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True}, eggs = {}):
         self.player = player
+        pygame.init()
+        self.SCREEN_WIDTH = 1600
+        self.SCREEN_HEIGHT = 900
+        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        pygame.display.set_caption("The Descent")
+        self.combat_deck = None
         if map_info != None:
             self.map, self.path, self.map_display = map_info
         else:
@@ -546,7 +952,7 @@ class Run:
         if self.player.relics:
             for relic in self.player.relics:
                 # Go through all relics
-                relic.eventBonus(event, self.run)
+                relic.eventBonus(event, self)
                 # Execute condisional effects of relics
 
     def card_reward_option_mod(self, mod):
@@ -643,7 +1049,8 @@ class Run:
             potion: The potion to be used
         '''
         i = 1
-        for relic in self.relics:
+        self.player.potions[self.player.potions.index(potion)] = None
+        for relic in self.player.relics:
             if relic.effect_type == 'Sacred Bark':
                 i = 2
                 break
@@ -652,7 +1059,6 @@ class Run:
                     effect(*details, self)
                 # Execute effects
         self.bonusEff('Used Potion')
-        self.player.potions.remove(potion)
 
     def bottle(self):
         '''Method to add bottled tag to selected cards'''
@@ -681,8 +1087,12 @@ class Run:
             enemies.append(enemy_class())
         return enemies
 
+    def create_combat_deck(self):
+        self.combat_deck = [card.create_copy() for card in self.player.deck]
+
     def generage_combat_instace(self, enemies, combatType):
-        self.combat = combat_beta.Combat(self, self.player, copy.deepcopy(self.player.deck), enemies, combatType)
+        self.create_combat_deck()
+        self.combat = combat_beta.Combat(self.player, self.combat_deck, enemies, combatType, self, self.screen)
 
     def start_combat(self, set_rewards = False):
         self.lastInstance = 'C'
@@ -769,3 +1179,23 @@ class Run:
         else:
             self.event = events.events1[event](self.player, self)
             self.start_event()
+
+
+
+
+player = Character('Warrior', 80, 1)
+run = Run(player)
+for i in range(0, 10):
+    player.potions.append(None)
+run.potion_pickup(potion_data.createPotion('Entropic Brew', potion_data.potions['Entropic Brew']))
+run.potion_pickup(potion_data.createPotion('Blessing of the Forge', potion_data.potions['Blessing of the Forge']))
+run.card_pickup(card_constructor.create_card(1025, card_data.card_info[1025]))
+run.relic_pickup(relic_data.createRelic('Ball n\' Chain', relic_data.bossRelics['Ball n\' Chain']))
+enemies = []
+enemies.append(enemy_data.AncientMech())
+enemies.append(enemy_data.MediumGreenSlime())
+enemies.append(enemy_data.LargeGreenSlime())
+for enemy in enemies:
+    enemy.block = 10
+run.generage_combat_instace(enemies, 'normal')
+run.combat.run_combat()

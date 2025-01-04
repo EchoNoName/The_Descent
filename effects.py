@@ -1,6 +1,7 @@
 import card_constructor
 import math
 import random
+import pygame
 
 def deal_attack_damage(damage, times : int, context, combat):
     '''Repsonsable for card effects that deal attack danage
@@ -34,13 +35,12 @@ def deal_attack_damage(damage, times : int, context, combat):
     if context['user'].debuffs['Weak'] > 0:
         actualDamage = int(actualDamage * 0.75)
     # Damage Calcs
+    actualDamage = max(actualDamage, 0)
     targets = []
     if isinstance(context['target'], int):
         targets = combat.enemy_targeting(context, context['target'])
     else:
         targets = context['target']
-    # Player's target is predetermained
-        # players have targets determained before executing effects
     for i in range(0, times):
         for target in targets:
             attack_damage_dealt += target.damage_taken(actualDamage)
@@ -59,6 +59,12 @@ def deal_attack_damage(damage, times : int, context, combat):
                     # If the target has deflect
                     context['user'].true_damage_taken(target.buffs['Deflect'])
                     # Attacker takes damage for every stack of deflect
+        mouse_pos = pygame.mouse.get_pos()
+        combat.update_game_state(mouse_pos)
+        combat.draw_game_state(mouse_pos)
+        combat.screen.blit(combat.combat_surface, (0, 0))
+        pygame.display.flip()
+        pygame.time.wait(100)
     return attack_damage_dealt
     # Used for certain effects
 
@@ -274,7 +280,7 @@ def purity(context, combat):
         context: combat related info
         combat: Instance of the combat class'''
     if combat.hand:
-        combat.soft_card_select(len(combat.hand))
+        combat.soft_card_select(10, combat.hand)
     # Selected as many cards as the player wants in hand
     combat.exhaust_selected()
     # Exhausts all selected card
@@ -645,6 +651,7 @@ def discover(card_type, cost, context, combat):
                 card_type == 'Card'
                 card_list = set(card_constructor.attack_card_1 + card_constructor.skill_card_1 + card_constructor.power_card_1)
 
+    card_list = list(card_list)
     random.shuffle(card_list)
     cards = [card_list[0], card_list[1], card_list[2]]
     # Choose 3 random cards from valid list
@@ -951,7 +958,7 @@ def split(slime_type, context, combat):
     '''
     hp = context['user'].hp
     # Get hp of the big slime
-    combat.enemies.remove(context['user'])
+    combat.enemies.remove_enemy(context['user'])
     # Remove the big slime
     combat.split(slime_type, hp)
     # Use method in combat to add 2 more slimes
