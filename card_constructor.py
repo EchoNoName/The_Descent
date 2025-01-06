@@ -237,6 +237,8 @@ class Card():
         else:
             scaled_energy = self.energy_sprite
         
+        if self.cost == 'U':
+            return None
         # Position in top left corner with small offset
         x_offset = 30
         if self.is_hovered or self.targeting or self.dragging:

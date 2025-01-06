@@ -504,6 +504,7 @@ class Map:
             for connection in self.path[(room.floor, room.room_num)]:
                 room.add_connection(connection)
     
+    
 
 class Room:
     def __init__(self, room_type, floor, room_num):
