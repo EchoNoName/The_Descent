@@ -310,7 +310,8 @@ class Combat:
                 else:
                     if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                         if potion.rect.collidepoint(mouse_pos):
-                            self.clicked_potion.unclick()
+                            if self.clicked_potion:
+                                self.clicked_potion.unclick()
                             self.clicked_potion = None
                             potion.click()
                             self.clicked_potion = potion
@@ -381,7 +382,7 @@ class Combat:
                         break
                 
                 # Draw cards
-                pile.draw(viewing_surface)
+                pile.draw(viewing_surface, pygame.event.get())
                 
                 # Draw confirm button
                 viewing_surface.blit(confirm_sprite, confirm_button)
@@ -673,7 +674,7 @@ class Combat:
             if self.hand.cards_in_hand() == 10:
                 self.discard_pile.add_card(card)
             else:
-                location.add_top(card)
+                location.add_card(card)
         else:
             location.add_top(card)
     
@@ -776,18 +777,20 @@ class Combat:
         confirm_button = pygame.Rect(1600 - confirm_sprite.get_width(), 520, confirm_sprite.get_width(), confirm_sprite.get_height())
         viewing = True
         while viewing:
-            for event in pygame.event.get():
+            card_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+            card_surface.fill((0, 0, 0, 0))  # Completely transparent background
+            events = pygame.event.get()
+            for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = pygame.mouse.get_pos()
                     if confirm_button.collidepoint(mouse_pos):
                         viewing = False
                         break
             
-            pile.draw(card_surface)
+            pile.draw(card_surface, events)
             card_surface.blit(confirm_sprite, confirm_button)
             background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
             background.fill((50, 50, 50))  # Semi-transparent dark gray
-            background.set_alpha(10)
             pygame.display.get_surface().blit(background, (0, 0))
             pygame.display.get_surface().blit(card_surface, (0, 0))
             pygame.display.flip()
@@ -820,8 +823,11 @@ class Combat:
             
             selecting = True
             while selecting:
+                selection_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+                selection_surface.fill((0, 0, 0, 0))  # Completely transparent background
+                events = pygame.event.get()
                 # Handle events
-                for event in pygame.event.get():
+                for event in events:
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         mouse_pos = pygame.mouse.get_pos()
                         
@@ -846,7 +852,7 @@ class Combat:
                         break
                 
                 # Draw cards
-                selection_pile.draw(selection_surface)
+                selection_pile.draw(selection_surface, events)
                 
                 # Draw highlights around selected cards
                 for card in self.selected:
@@ -859,7 +865,6 @@ class Combat:
                 # Create a transparent surface for the background
                 background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
                 background.fill((50, 50, 50))  # Semi-transparent dark gray
-                background.set_alpha(10)
                 pygame.display.get_surface().blit(background, (0, 0))
                 pygame.display.get_surface().blit(selection_surface, (0, 0))
                 pygame.display.flip()
@@ -912,8 +917,11 @@ class Combat:
         
         selecting = True
         while selecting:
+            selection_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+            selection_surface.fill((0, 0, 0, 0))  # Completely transparent background   
             # Handle events
-            for event in pygame.event.get():
+            events = pygame.event.get()
+            for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = pygame.mouse.get_pos()
                     
@@ -939,7 +947,7 @@ class Combat:
                     break
             
             # Draw cards
-            selection_pile.draw(selection_surface)
+            selection_pile.draw(selection_surface, events)
             
             # Draw highlights around selected cards
             for card in self.selected:
@@ -953,7 +961,6 @@ class Combat:
             # Create a transparent surface for the background
             background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
             background.fill((50, 50, 50))  # Semi-transparent dark gray
-            background.set_alpha(10)
             pygame.display.get_surface().blit(background, (0, 0))
             pygame.display.get_surface().blit(selection_surface, (0, 0))
             pygame.display.flip()
@@ -1614,6 +1621,8 @@ class Combat:
         # Set energy to 0
         self.turn += 1
         # Increase turn counter
+        self.player.buffs['Parry'] = 0
+        self.player.buffs['Deflect'] = 0
         if self.player.relics:
             for relic in self.player.relics:
                 relic.turnEff(self)
@@ -1684,7 +1693,19 @@ class Combat:
             self.player.debuffs['Last Chance'] = 0
         # Execute all end of turn passives
         self.passive_check_and_exe('Turn End')
-        if self.hand:
+        if not self.discard_pile.is_empty():
+            for card in self.discard_pile:
+                if card.combat_cost[1] == 'Turn':
+                    card.combat_cost = (None, None)
+        if not self.draw_pile.is_empty():
+            for card in self.draw_pile:
+                if card.combat_cost[1] == 'Turn':
+                    card.combat_cost = (None, None)
+        if not self.exhaust_pile.is_empty():
+            for card in self.exhaust_pile:
+                if card.combat_cost[1] == 'Turn':
+                    card.combat_cost = (None, None)
+        if not self.hand.is_empty():
             # If the hand isn't empty
             for card in reversed(self.hand):
                 # Go through every card
@@ -1762,7 +1783,7 @@ class Combat:
             # Add to hand instead
         if cost != 'na':
             # If the cost needs to be modified
-            self.hand.cards[-1].cost_change(cost, 'Turn')
+            self.hand.cards[-1].cost_change(cost, 'Played')
             # Change the cost until end of turn
 
     def upgrade(self, cards):
@@ -1779,7 +1800,9 @@ class Combat:
                     # If a card can be upgraded
                     upgraded_card = card_constructor.create_card(card.id + 100, card_data.card_info[card.id + 100])
                     if cards == self.hand:
+                        current_pos = self.hand[self.hand.index(card)].current_pos
                         self.hand[self.hand.index(card)] = upgraded_card
+                        self.hand[self.hand.index(upgraded_card)].current_pos = current_pos
                     elif cards == self.draw_pile:
                         self.draw_pile[self.draw_pile.index(card)] = upgraded_card
                     elif cards == self.discard_pile:
@@ -1833,6 +1856,8 @@ class Combat:
                             effect(*details, context, self)
                     # Execute the ffects
                     self.resolve_action()
+                    self.combat_surface.fill((30, 30, 30))
+                    self.combat_surface.blit(self.background_sprite, (0, 0))
                     mouse_pos = pygame.mouse.get_pos()
                     enemy.intent = None
                     self.update_game_state(mouse_pos)
@@ -2074,7 +2099,7 @@ class Pile:
             text_y = box_y + padding 
             surface.blit(text, (text_x, text_y))
 
-    def draw(self, surface):
+    def draw(self, surface, events):
         """Draw all cards in the pile in a scrollable grid formation"""
         CARDS_PER_ROW = 5
         CARD_SPACING = 50  # Pixels between cards
@@ -2096,9 +2121,9 @@ class Pile:
         start_x = (surface.get_width() - row_width) // 2
         
         # Handle scrolling with mouse wheel
-        for event in pygame.event.get(pygame.MOUSEWHEEL):
-            self.scroll_offset = max(min(self.scroll_offset + event.y * SCROLL_SPEED, 0), 
-                                    -max(0, total_height - surface.get_height()))
+        for event in events:
+            if event.type == pygame.MOUSEWHEEL:
+                self.scroll_offset = max(min(self.scroll_offset + event.y * SCROLL_SPEED, 0), -max(0, total_height - surface.get_height()))
                 
         # Draw each card in grid
         for i, card in enumerate(self.cards):
@@ -2108,8 +2133,8 @@ class Pile:
             x = start_x + (col * (card_width + CARD_SPACING))
             y = (row * (card_height + CARD_SPACING)) + CARD_SPACING + self.scroll_offset
             
-            # Only draw if card would be visible on screen
-            if 0 <= y <= surface.get_height():
+            # Only draw if any part of the card would be visible on screen
+            if y + card_height >= 0 and y <= surface.get_height():
                 card.current_pos = (x, y)
                 card.draw(surface)
                 # Update cards collision rect
@@ -2126,6 +2151,10 @@ class Hand:
     def index(self, card):
         """Return the index of a card in the pile"""
         return self.cards.index(card)
+
+    def __getitem__(self, index):
+        """Allow getting cards by index"""
+        return self.cards[index]
 
     def __setitem__(self, index, card):
         """Allow setting cards by index"""

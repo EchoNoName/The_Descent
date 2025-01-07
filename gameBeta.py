@@ -42,7 +42,7 @@ class Character:
         self.thieved = 0
         self.potions = [None, None, None]
         self.relics = []
-        self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0, 'Parry': 0, 'Deflect': 0}
+        self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0, 'Parry': 0, 'Deflect': 0, 'Intangible': 0}
         #Debuffs: Atrophy = lose dex at the end of turn
         self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Entangle': 0}
         self.bottled = []
@@ -602,6 +602,7 @@ class Character:
                     healing_amount = relic.valueModificationEff('Healing', healing_amount)
             self.hp = min(self.maxHp, self.hp + healing_amount)
             # Add fixed amount of hp up to max hp
+            self.update_hp_bar()
     
     def increase_max_hp(self, amount):
         '''Method for increasing max hp from effects
@@ -610,6 +611,7 @@ class Character:
             amount = Amount to increase by'''
         self.maxHp += amount
         self.hp += amount
+        self.update_hp_bar()
         # Increase max hp by amount, when max hp is gained the equal amount of hp is gained
 
     def gain_block_card(self, amount):
@@ -722,6 +724,8 @@ class Character:
     def hp_loss(self, amount):
         for relic in self.relics:
             amount = relic.valueModificationEff('HpLoss', amount)
+        if self.buffs['Intangible'] > 0:
+            amount = 1
         self.hp -= amount
         if amount > 0:
             if self.died == True:
@@ -741,6 +745,8 @@ class Character:
         # Applies relic effects that reduce damage taken
         for relic in self.relics:
             damage = relic.valueModificationEff('damageTaken', damage)
+        if self.buffs['Intangible'] > 0:
+            damage = 1
         self.block -= damage
         if self.block >= 0:
             return 0
@@ -761,6 +767,8 @@ class Character:
         damage = damage
         self.block -= damage
         # Deal damage to block first
+        if self.buffs['Intangible'] > 0:
+            damage = 1
         if self.block < 0:
             # If block wasn't enough
             damage = -self.block
@@ -838,7 +846,8 @@ class Run:
             self.normalPool = enemy_data.act_1_normal_pool()
             self.elitePool = enemy_data.act_1_elite_pool()
             self.boss = enemy_data.act_1_boss_pool()
-            self.eventList = self.generate_event_list
+            events = self.generate_event_list()
+            self.eventList = list(events)
             # ADDED EVENTS AND SHRINES
             # More to be added
         self.combat_pool_details = {}
@@ -1018,7 +1027,7 @@ class Run:
         
         ### args: 
             type: card type id for the eggs'''
-        self.egg_relic.add(type)
+        self.eggs.add(type)
 
     def relic_pickup(self, relic):
         self.player.relics.append(relic)
@@ -1185,12 +1194,23 @@ class Run:
 
 player = Character('Warrior', 80, 1)
 run = Run(player)
-for i in range(0, 10):
-    player.potions.append(None)
+pygame.init()
+
 run.potion_pickup(potion_data.createPotion('Entropic Brew', potion_data.potions['Entropic Brew']))
-run.potion_pickup(potion_data.createPotion('Blessing of the Forge', potion_data.potions['Blessing of the Forge']))
-run.card_pickup(card_constructor.create_card(1025, card_data.card_info[1025]))
-run.relic_pickup(relic_data.createRelic('Ball n\' Chain', relic_data.bossRelics['Ball n\' Chain']))
+run.player.deck = []
+run.card_pickup(card_constructor.create_card(1052, card_data.card_info[1052]))
+for i in range(0, 4):
+    run.card_pickup(card_constructor.create_card(4, card_data.card_info[4]))
+for i in range(0, 50):
+    rng = random.randint(1, 2)
+    if rng == 1:
+        card_id = random.randint(1000, 1074)
+    else:
+        card_id = random.randint(1100, 1174)
+    # run.card_pickup(card_constructor.create_card(card_id, card_data.card_info[card_id]))
+run.relic_pickup(relic_data.createRelic('Captain\'s Wheel', relic_data.rareRelics['Captain\'s Wheel']))
+run.relic_pickup(relic_data.createUncommon())
+run.relic_pickup(relic_data.createRare())
 enemies = []
 enemies.append(enemy_data.AncientMech())
 enemies.append(enemy_data.MediumGreenSlime())
@@ -1199,3 +1219,4 @@ for enemy in enemies:
     enemy.block = 10
 run.generage_combat_instace(enemies, 'normal')
 run.combat.run_combat()
+

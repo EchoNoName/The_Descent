@@ -60,6 +60,8 @@ def deal_attack_damage(damage, times : int, context, combat):
                     context['user'].true_damage_taken(target.buffs['Deflect'])
                     # Attacker takes damage for every stack of deflect
         mouse_pos = pygame.mouse.get_pos()
+        combat.combat_surface.fill((30, 30, 30))
+        combat.combat_surface.blit(combat.background_sprite, (0, 0))
         combat.update_game_state(mouse_pos)
         combat.draw_game_state(mouse_pos)
         combat.screen.blit(combat.combat_surface, (0, 0))

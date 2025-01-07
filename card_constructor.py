@@ -43,7 +43,7 @@ def random_card(type: str, character = None):
             return 'placeholder'
 
 class Card():
-    def __init__(self, id : int, name : str, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target, x = 1650, y = 950, bottled = False, removable = True, x_cost_effect = {}):
+    def __init__(self, id : int, name : str, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target = None, x = 1650, y = 950, bottled = False, removable = True, x_cost_effect = {}):
         self.id = id # Card ID, which is an integer
         self.name = name # Name of the card, a string
         self.rarity = rarity # rarity represented by an integer

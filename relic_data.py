@@ -18,7 +18,7 @@ class Relics: # Relic Object Class
         counter = None: If the relic is a counter type relic, this will be 0 when initialized
         counter_needed = None: The number the counter needs to reach to activate the relic's effect
         counter_type = None: The type of counter being used by the relic, Ex: resets per turn or global counter'''
-    def __init__(self, name, description, rarity, effect_type, effect_class, condition, consumable, effect_details, targets, energy_relic = False, counter = None, count_needed = None, counter_type = None):
+    def __init__(self, name, description, rarity, effect_type, effect_class, condition, consumable, effect_details, targets = None, energy_relic = False, counter = None, count_needed = None, counter_type = None):
         self.name = name # Name
         self.description = description
         self.rarity = rarity
@@ -314,7 +314,7 @@ commonRelics = {
     'Pen Nib': ('After playing 10 attacks, your next attack is played twice.', 4, [effects.apply_buff], 'combatAct', 'Attack Played', False, [[['Double Tap'], [1]]], 0, False, 0, 10, 'global'),
     'Anchor': ('At the start of combet, gain 10 block.', 4, [effects.block_gain_power], 'combatAct', 'Combat Start', False, [[10]], 0),
     'Potion Belt': ('Gain 2 potion slots.', 4, [effects.potion_slot_addition], 'pickUp', None, False, [[2]], 0),
-    '333': ('On the third turn, draw 3 cards.', 4, [effects.draw_cards], 'combatAct', 'turnEff', 3, False, [[3]], 0),
+    '333': ('On the third turn, draw 3 cards.', 4, effects.draw_cards, 'turnEff', 3, False, [3], 0),
     'Adventurer Pamphlet': ('Elites start with 75% of their Hp instead of full Hp.', 4, [effects.combat_mechanic_change], 'pickUp', None, False, [['Insect', True]], 0),
     'Piggy Bank': ('When you enter a room, gain 12 Gold. After spending Gold at a shop, this relic no longer works.', 4, effects.gold_gain, 'eventMod', 'Room', True, [12], 0),
     'Sunflower': ('Every 3 turns, gain 1 Energy.', 4, [effects.energy_manip], 'combatAct', 'Turn Start', False, [[1]], 0, False, 0, 3, 'global'),
@@ -322,6 +322,7 @@ commonRelics = {
     'Haunted Stone': ('At the start of combat, apply 1 Vulnerable to all enemies.', 4, [effects.apply_debuff], 'combatAct', 'Combat Start', False, [[['Vulnerable'], [1]]], 3),
     'Orichalcum': ('When you end your turn with no block, gain 6 block.', 4, [effects.no_block_buffer], 'combatAct', 'Turn End', False, [[6]], 0)
 }
+Relics
 UncommonRelics = {
     'Horse Wagon': ('Gain 125 Gold. Your next Event room will always be a shop.', 3, [effects.gold_gain, effects.eventChange], 'pickUp', None, False, [[125], ['shop']], 0),
     'Bottled Flames': ('Upon pickup, choose an Attack card. Start combat with that card in your hand.', 3, [effects.bottle], 'pickUp', None, False, [[0]], 0),
@@ -351,9 +352,9 @@ UncommonRelics = {
 }
 rareRelics = {
     'Brewing Stand': ('Whenever you rest, obatin a random potion.', 2, effects.generate_rewards, 'eventBonus', 'Rest', False, ['Brewing Stand'], 0),
-    'Covert Cloak': ('At the start of combat, gain 1 Intangable.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Intangable'], [1]]], 0),
+    'Covert Cloak': ('At the start of combat, gain 1 Intangible.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Intangible'], [1]]], 0),
     'Magic Mushrooms': ('At the start of combat, gain 1 Duplicate.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Duplicate'], [1]]], 0),
-    'Captain\'s Wheel': ('On the 3rd turn, gain 18 block.', 2, [effects.block_gain_power], 'combatAct', 'Combat Start', False, [[18]], 0),
+    'Captain\'s Wheel': ('On the 3rd turn, gain 18 block.', 2, effects.block_gain_power, 'turnEff', 3, False, [18], 0),
     'Rusted Plate': ('At the start of combat, gain 4 plated armour.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Plated Armour'], [4]]], 0),
     'Ginger': ('You can no longer be Weakened.', 2, effects.debuff_reduction, 'valueMod', 'Weak', False, [999], 0),
     'Garlic': ('You can no longer be Frail.', 2, effects.debuff_reduction, 'valueMod', 'Frail', False, [999], 0),
