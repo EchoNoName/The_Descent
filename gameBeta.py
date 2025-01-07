@@ -45,7 +45,6 @@ class Character:
         self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0, 'Parry': 0, 'Deflect': 0, 'Intangible': 0}
         #Debuffs: Atrophy = lose dex at the end of turn
         self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Entangle': 0}
-        self.bottled = []
         self.attack_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "attack_buff.png"))
         self.defense_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "defense_buff.png"))
         self.misc_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "misc_buff.png"))
@@ -62,7 +61,9 @@ class Character:
         self.heart_sprite = pygame.transform.scale(heart_sprite, (heart_sprite.get_width()//2, heart_sprite.get_height()//2))
         self.gold_sprite = pygame.transform.scale(gold_sprite, (gold_sprite.get_width()//11, gold_sprite.get_height()//11))
         self.empty_potion_sprite = pygame.image.load(os.path.join("assets", "icons", "empty_potion_slot .png"))
-        
+        self.deck_button_sprite = pygame.image.load(os.path.join("assets", "icons", "pile_icon.png"))
+        self.deck_button_sprite = pygame.transform.scale(self.deck_button_sprite, (self.deck_button_sprite.get_width()//10, self.deck_button_sprite.get_height()//10))
+        self.deck_button_rect = self.deck_button_sprite.get_rect()
         # Pre-load fonts
         pygame.font.init()
         self.block_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 20)
@@ -79,7 +80,6 @@ class Character:
         self.name_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 24)
         self.description_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 20)
     
-
     def hover(self):
         self.is_hover = True
     
@@ -384,6 +384,14 @@ class Character:
                 potion.draw(surface, potion_x, ui_y + 25)
             potion_x += 60
         
+        # Draw deck button
+        deck_button_x = surface.get_width() - 100 - self.deck_button_sprite.get_width()  # 100 pixels from right edge
+        deck_button_y = ui_y + 15  # Align with other UI elements
+        surface.blit(self.deck_button_sprite, (deck_button_x, deck_button_y))
+        
+        # Create collision box for deck button
+        self.deck_button_rect = pygame.Rect(deck_button_x, deck_button_y,self.deck_button_sprite.get_width(), self.deck_button_sprite.get_height())
+
         # Draw relics
         relic_x = 20  # Start 20 pixels from left edge
         relic_y = ui_y + 80  # Position below UI bar
@@ -416,6 +424,37 @@ class Character:
         # Bottom left - rotate 270 degrees clockwise
         rotated = pygame.transform.rotate(target_corner, -270)
         surface.blit(rotated, (sprite_rect.left, sprite_rect.bottom - rotated.get_height() + 10))
+
+    def view_deck(self):
+        '''Method for viewing a pile of cards
+
+        ### args:
+            pile (list): The pile of cards to view
+        '''
+        pile = combat_beta.Pile(self.deck, 'Deck')
+        card_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+        card_surface.fill((0, 0, 0, 0))  # Completely transparent background
+        confirm_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
+        confirm_button = pygame.Rect(1600 - confirm_sprite.get_width(), 520, confirm_sprite.get_width(), confirm_sprite.get_height())
+        viewing = True
+        while viewing:
+            card_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+            card_surface.fill((0, 0, 0, 0))  # Completely transparent background
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    if confirm_button.collidepoint(mouse_pos):
+                        viewing = False
+                        break
+            
+            pile.draw(card_surface, events)
+            card_surface.blit(confirm_sprite, confirm_button)
+            background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
+            background.fill((50, 50, 50))  # Semi-transparent dark gray
+            pygame.display.get_surface().blit(background, (0, 0))
+            pygame.display.get_surface().blit(card_surface, (0, 0))
+            pygame.display.flip()
 
     def combat_info(self):
         buffs = []
@@ -812,7 +851,7 @@ def main_menu():
         # To be continued
 
 class Run:
-    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, removals = 0, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True}, eggs = {}):
+    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, removals = 0, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True}, eggs = []):
         self.player = player
         pygame.init()
         self.SCREEN_WIDTH = 1600
@@ -1027,7 +1066,7 @@ class Run:
         
         ### args: 
             type: card type id for the eggs'''
-        self.eggs.add(type)
+        self.eggs.append(type)
 
     def relic_pickup(self, relic):
         self.player.relics.append(relic)
@@ -1068,6 +1107,92 @@ class Run:
                     effect(*details, self)
                 # Execute effects
         self.bonusEff('Used Potion')
+
+    def card_select(self, num, restrictions):
+        '''Method to select cards from the deck outside of combat
+        
+        ### args:
+            num: Number of cards that needs selecting
+            player: The character object that the player controlls
+            restrictions = None: What type of cards can't be selected, none by default'''
+        self.player.selected_cards = []
+        eligible_cards = []
+        for card in self.player.deck:
+            if card.type not in restrictions:
+                eligible_cards.append(card)
+        pile = combat_beta.Pile(eligible_cards, "selection")
+        if pile.is_empty():
+            return None
+            
+        if len(pile.cards) <= num:
+            self.player.selected_cards.extend(pile.cards)
+            pile.empty()
+            if num == 1:
+                return self.player.selected_cards[0].type
+            else:
+                return len(self.player.selected_cards)
+                
+        # Create selection surface and pile
+        selection_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+        selection_surface.fill((0, 0, 0, 0))  # Completely transparent background
+        
+        # Create a Pile object to handle drawing the cards in a grid
+        selection_pile = pile 
+        selection_pile.scroll_offset = 0  # Initialize scroll position
+        
+        # Create a confirm button in bottom right
+        confirm_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
+        confirm_button = pygame.Rect(1600 - confirm_sprite.get_width(), 520, confirm_sprite.get_width(), confirm_sprite.get_height())
+        
+        selecting = True
+        while selecting:
+            selection_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+            selection_surface.fill((0, 0, 0, 0))  # Completely transparent background   
+            # Handle events
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    
+                    # Check if confirm button clicked
+                    if confirm_button.collidepoint(mouse_pos):
+                        if len(self.player.selected_cards) == num:
+                            selecting = False
+                            break
+                            
+                    # Check if card clicked
+                    for card in pile:
+                        if card.rect.collidepoint(mouse_pos):
+                            if card in self.player.selected_cards:
+                                # Unselect card if already selected
+                                self.player.selected_cards.remove(card)
+                            elif len(self.player.selected_cards) < num:
+                                # Select card if under max selections
+                                self.player.selected_cards.append(card)
+                            break
+                
+                elif event.type == pygame.QUIT:
+                    selecting = False
+                    break
+            
+            # Draw cards
+            selection_pile.draw(selection_surface, events)
+            
+            # Draw highlights around selected cards
+            for card in self.player.selected_cards:
+                card.draw_highlight(selection_surface)
+                
+            # Draw confirm button
+            confirm_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
+            selection_surface.blit(confirm_sprite, confirm_button)
+            
+            # Update display
+            # Create a transparent surface for the background
+            background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
+            background.fill((50, 50, 50))  # Semi-transparent dark gray
+            pygame.display.get_surface().blit(background, (0, 0))
+            pygame.display.get_surface().blit(selection_surface, (0, 0))
+            pygame.display.flip()
 
     def bottle(self):
         '''Method to add bottled tag to selected cards'''

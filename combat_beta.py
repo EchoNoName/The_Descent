@@ -1,9 +1,7 @@
 import enemy_data
 import card_data
-import potion_data
 import card_constructor
 import effects
-import math
 import random
 import pygame
 import os
@@ -67,6 +65,7 @@ class Combat:
     def run_combat(self):
         """Main combat loop"""
         running = True
+        deck_hovering = False
         self.combat_start()
         self.clock = pygame.time.Clock()
         while running and self.combat_active:
@@ -93,12 +92,32 @@ class Combat:
                 if event.type == pygame.QUIT:
                     running = False
                     self.combat_active = False
+
+                # Draw "View Deck" text below deck button
+                if self.player.deck_button_rect.collidepoint(mouse_pos):
+                    deck_hovering = True
+                else:
+                    deck_hovering = False
                 
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self.player.deck_button_rect.collidepoint(mouse_pos):
+                    self.player.view_deck()
+
                 # Only handle card and potion events during player turn
                 if self.current_phase == 'player_turn':
                     self.handle_card_events(event, mouse_pos)
                     self.handle_potion_events(event, mouse_pos)
                     
+            if deck_hovering:
+                deck_text_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 16)
+                # Create background surface
+                deck_text = deck_text_font.render("View Deck", True, (255, 255, 255))
+                bg_surface = pygame.Surface((deck_text.get_width() + 10, deck_text.get_height() + 6))
+                bg_surface.fill((0, 0, 0))
+                text_x = self.player.deck_button_rect.centerx - deck_text.get_width() // 2
+                text_y = self.player.deck_button_rect.bottom + 35  # Changed from +10 to +30
+                # Draw background then text
+                self.combat_surface.blit(bg_surface, (text_x - 5, text_y - 3))
+                self.combat_surface.blit(deck_text, (text_x, text_y))
 
             # Update and draw game state
             self.handle_relic_events(event, mouse_pos)
@@ -2134,7 +2153,7 @@ class Pile:
             y = (row * (card_height + CARD_SPACING)) + CARD_SPACING + self.scroll_offset
             
             # Only draw if any part of the card would be visible on screen
-            if y + card_height >= 0 and y <= surface.get_height():
+            if y + card_height >= 0 and y <= surface.get_height() + 300:
                 card.current_pos = (x, y)
                 card.draw(surface)
                 # Update cards collision rect

@@ -1,6 +1,7 @@
 import random
 import pygame
 import os
+import math
 
 def createMap(asc):
     '''Generates a Map with 15 floors with unique events for each room generated, the rooms are also connected with no crossing paths, the map is a 15 x 7 grid of dots that are connected with unused dots being removes, the x locations ranges from [0, 6] while the floors have a y value ranging from [1, 15]
@@ -494,17 +495,83 @@ def createMap(asc):
     return map, path, mapDisplay
 
 class Map:
-    def __init__(self, asc):
+    def __init__(self, asc = 0, entered_rooms = []):
         self.map, self.path, self.mapDisplay = createMap(asc)
         self.rooms = []
         for floor, room in self.map.items():
             for room_num, room_type in room.items():
                 self.rooms.append(Room(room_type, floor, room_num))
         for room in self.rooms:
-            for connection in self.path[(room.floor, room.room_num)]:
-                room.add_connection(connection)
-    
-    
+            if room.floor != 16:    
+                for connection in self.path[(room.floor, room.room_num)]:
+                    room.add_connection(connection)
+        self.y = 0
+        self.entered_rooms = entered_rooms
+
+    def draw(self, screen, x, y):
+        """Draw the map with rooms and connections"""
+        # Create scrollable surface that matches screen dimensions
+        map_surface = pygame.Surface((1600, 1800), pygame.SRCALPHA)  # Double height to fit full map
+
+        # Calculate spacing between rooms
+        x_spacing = 100
+        y_spacing = 100
+        
+        # Calculate starting x position to center map horizontally
+        map_width = 6 * x_spacing  # 6 spaces between 7 rooms
+        start_x = (1600 - map_width) // 2
+        x = start_x
+
+        # Draw connections first so they appear behind rooms
+        for floor in range(1, 16):
+            for room_num in self.map[floor].keys():
+                # Get source room position
+                src_x = x + (room_num - 1) * x_spacing + 22  # Added offset to center connections
+                src_y = floor * y_spacing + 65  # Increased y offset to lower connections
+                
+                # Draw connection lines to each connected room
+                for dest_floor, dest_room in self.path[(floor, room_num)]:
+                    dest_x = x + (dest_room - 1) * x_spacing + 22  # Added offset to center connections
+                    dest_y = dest_floor * y_spacing + 65  # Increased y offset to lower connections
+                    
+                    # Calculate angle and position for connection sprite
+                    angle = -math.atan2(dest_y - src_y, dest_x - src_x)  # Negated angle to flip horizontally
+                    distance = math.sqrt((dest_x - src_x)**2 + (dest_y - src_y)**2)
+                    
+                    # Create dotted line connection
+                    dot_spacing = 15  # Space between dots
+                    dot_size = 4  # Size of each dot
+                    num_dots = int(distance / dot_spacing)
+                    
+                    # Calculate step sizes for x and y
+                    dx = (dest_x - src_x) / num_dots
+                    dy = (dest_y - src_y) / num_dots
+                    
+                    # Draw dots along the connection path
+                    for i in range(num_dots):
+                        dot_x = src_x + dx * i
+                        dot_y = src_y + dy * i
+                        pygame.draw.circle(map_surface, (102, 6, 6), (int(dot_x), int(dot_y)), dot_size)
+
+        # Draw all rooms
+        for room in self.rooms:
+            room_x = x + (room.room_num - 1) * x_spacing
+            room_y = room.floor * y_spacing + 50  # Changed to normal orientation
+            room.draw(map_surface, room_x, room_y)
+
+        # Get mouse position and handle scrolling
+        mouse_pos = pygame.mouse.get_pos()
+        scroll_margin = 50
+        scroll_speed = 5
+        
+        if mouse_pos[1] < scroll_margin:
+            self.y = min(self.y + scroll_speed, 50)
+        elif mouse_pos[1] > 900 - scroll_margin:
+            self.y = max(self.y - scroll_speed, -900)
+            
+        # Draw visible portion of map with scroll offset
+        visible_portion = pygame.Rect(0, -self.y, 1600, 900)
+        screen.blit(map_surface, (0, 0), visible_portion)
 
 class Room:
     def __init__(self, room_type, floor, room_num):
@@ -512,14 +579,16 @@ class Room:
         self.floor = floor
         self.room_num = room_num
         self.connections = []
+        self.entered = False
+        self.entered_circle = pygame.image.load('assets/icons/map/circled.png')
         room_type_to_sprite = {
-            1: 'assets/icons/combat.png',
-            2: 'assets/icons/event.png',
-            3: 'assets/icons/elite.png',
-            4: 'assets/icons/shop.png',
-            5: 'assets/icons/chest.png',
-            6: 'assets/icons/campfire.png',
-            7: 'assets/icons/boss.png'
+            1: 'assets/icons/map/combat.png',
+            2: 'assets/icons/map/event.png',
+            3: 'assets/icons/map/elite.png',
+            4: 'assets/icons/map/shop.png',
+            5: 'assets/icons/map/chest.png',
+            6: 'assets/icons/map/campfire.png',
+            7: 'assets/icons/map/boss.png'
         }
         self.sprite = pygame.image.load(room_type_to_sprite[room_type])
 
@@ -528,4 +597,24 @@ class Room:
 
     def draw(self, screen, x, y):
         screen.blit(self.sprite, (x, y))
+        if self.entered:
+            screen.blit(self.entered_circle, (x - 5, y - 5))
 
+map = Map(0)
+for room in map.rooms:
+    room.entered = True
+screen = pygame.display.set_mode((1600, 900))
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.MOUSEWHEEL:
+            # Scroll up/down based on mouse wheel
+            scroll_amount = event.y * 30  # Adjust scroll speed
+            map.y = min(max(map.y + scroll_amount, -1200), 50)  # Increased scroll range
+    
+    # Clear screen before drawing
+    screen.fill((255, 255, 255))  # Fill with dark gray background
+    map.draw(screen, 0, map.y)
+    pygame.display.flip()

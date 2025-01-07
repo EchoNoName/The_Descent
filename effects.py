@@ -796,65 +796,7 @@ def card_select(num, restrictions, run):
         num: Number of cards that needs selecting
         player: The character object that the player controlls
         restrictions = None: What type of cards can't be selected, none by default'''
-    run.player.selected_cards = []
-    if run.player.deck:
-        eligible_cards = [card for card in run.player.deck if card.type not in restrictions and card.removable == True]
-    else:
-        return []
-    if not eligible_cards:
-        # If there are no cards to select from
-        return False
-        # Doesn't select anything
-    elif len(eligible_cards) <= num:
-        # If the # of cards in pile is equal to or less then the # of cards that needs to be selected
-        run.player.selected_cards.extend(eligible_cards)
-        return eligible_cards
-        # Returns the # of cards selected or type of card selected depending on if more than 1 card was selected
-    else:
-        confirm = True
-        index_selected = []
-        # Initialize confirm selection boolean
-        while confirm:
-            # While the player hasn't confirmed yet
-            i = 0
-            if eligible_cards:
-                # If the pile to select from isn't empty
-                for card in eligible_cards:
-                    # Prints all cards in the pile with relevent detail
-                    print(f'{i}: {card}')
-                    i += 1
-            if index_selected:
-                # If there has been cards already selected
-                print('Index selected: ')
-                print(index_selected)
-                # Prints the indexes of all selected cards
-            select = input("Enter the index of the card u wish to select or unselect and cs to confirm choices")
-            # Request for player input
-            if select != 'cs':
-                # Select another card
-                select = int(select)
-                if eligible_cards[int(select)] in run.player.selected_cards:
-                    # Card is already selected
-                    run.player.selected_cards.remove(eligible_cards[select])
-                    index_selected.remove(select)
-                    # Unselected the card
-                elif len(index_selected) == num:
-                    # If they already selected the max num of cards
-                    continue
-                    # Do nothing
-                else:
-                    run.player.selected_cards.append(eligible_cards[select])
-                    index_selected.append(select)
-                    # Add the chosen card to selected
-            else:
-                if len(index_selected) < num:
-                    # If not enought cards were selected
-                    continue
-                    # Does nothing
-                else:
-                    confirm = False
-                    # Turns off loop
-                    return run.player.selected_cards
+    run.card_select(num, restrictions)
 
 def additonal_rewards(reward_type, amount, additional_rewards):
     '''Function to add additional rewards
