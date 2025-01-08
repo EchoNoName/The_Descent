@@ -53,6 +53,7 @@ card_info = {
     10: ('Pain', 4, 4, 'U', 'While in hand, lose 1 Hp when other cards are played', False, False, False, False, {'Card Played': {effects.lose_hp: (1, )}}, 0),
     11: ('Normality', 4, 4, 'U', 'You cannot play more than 3 cards this turn', False, False, False, False, {'Drawn': {effects.card_play_limit: (3, )}, 'Discarded': {effects.card_play_limit: (False, )}, 'Exhausted': {effects.card_play_limit: (False, )}, 'Card Played': {effects.card_play_limit: (3, )}}, 0),
     12: ('Icky', 4, 4, 1, 'Add a Slimed to your hand', False, True, False, False, {effects.add_card_to_pile: ('hand', 50, 1, 'na')}, 0),
+    13: ('Parasite', 4, 4, 'U', 'When this card is Removed, lose 3 Max HP. ', False, False, False, False, {'Removed': {effects.max_hp_change: (-3, )}}, 0),
     20: ('Curse of the Blade', 4, 4, 'U', 'When drawn, lose 4, At the end of the turn, lose 2 HP', False, False, True, False, {'Drawn': {effects.lose_hp: (4, )}, 'Turn End': {effects.lose_hp: (2, )}}, 0),
     21: ('Curse of the Talisman', 4, 4, 'U', None, False, False, False, False, None, 0, False),
     22: ('Necronomicurse', 4, 4, 'U', 'You cannot escape from this Curse. ', False, False, False, False, {'Exhausted': {effects.add_card_to_pile: ('hand', 22, 1, 'na')}}, 0),

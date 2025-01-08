@@ -228,6 +228,25 @@ class Card():
         scaled_sprite = pygame.transform.smoothscale(self.sprite, (self.sprite.get_width()//20, self.sprite.get_height()//20))
         surface.blit(scaled_sprite, (x, y))
 
+    def update_rect(self):
+        if self.is_hovered or self.targeting or self.dragging:
+            scaled_hover = pygame.transform.smoothscale(self.hover_sprite, 
+                (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
+            self.rect = pygame.Rect(
+                self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2,
+                self.current_pos[1],
+                scaled_hover.get_width(),
+                scaled_hover.get_height()
+            )
+        else:
+            scaled_sprite = pygame.transform.smoothscale(self.sprite,
+                (self.sprite.get_width()//2, self.sprite.get_height()//2))
+            self.rect = pygame.Rect(
+                self.current_pos[0],
+                self.current_pos[1],
+                scaled_sprite.get_width(), 
+                scaled_sprite.get_height()
+            )
         
     def draw_energy_cost(self, surface):
         """Draw the energy cost in the top left corner of the card"""

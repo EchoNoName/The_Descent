@@ -94,6 +94,9 @@ class Relics: # Relic Object Class
         # Draw white rectangle outline
         pygame.draw.rect(screen, (255, 255, 255), rect, 2)
 
+    def update_rect(self):
+        self.rect = self.sprite.get_rect()
+
     def draw_description(self, screen, x, y):
         '''Draw a text box below the relic 
         sprite showing its description'''
@@ -298,9 +301,9 @@ commonRelics = {
     'Backpack': ('Draw 2 Additional cards at the start of combat.', 4, effects.draw_cards, 'combatAct', 'Combat Start', False, [2], 0),
     'Art of War': ('If you do not play any Attacks during your turn, gain 1 additional Energy next turn.', 4, [effects.effect_for_card_type_not_played], 'combatAct', 'Turn End', False, [[[effects.apply_buff], [[0, ['Energized'], [1]]]]], 0),
     'Holy Cross': ('If you do not play any Skills during your turn, gain 1 additional Energy next turn.', 4, [effects.effect_for_card_type_not_played], 'combatAct', 'Turn End', False, [[[effects.apply_buff], [[1, ['Energized'], [1]]]]], 0),
-    'Sharpening Stone': ('Upon pickup, Upgrade 2 random Attakcs.', 4, [effects.upgrade_card], 'pickUp', None, False, [['Attack', 'Attack']], 0),
-    'Armour Polish': ('Upon pickup, Upgrade 2 random Skills.', 4, [effects.upgrade_card], 'pickUp', None, False, [['Skill', 'Skill']], 0),
-    'Anvil': ('Upon pickup, Upgrade 2 random cards.', 4, [effects.upgrade_card], 'pickUp', None, False, [['Card', 'Card']], 0),
+    'Sharpening Stone': ('Upon pickup, Upgrade 2 random Attakcs.', 4, [effects.upgrade_card], 'pickUp', None, False, [[['Attack', 'Attack']]], 0),
+    'Armour Polish': ('Upon pickup, Upgrade 2 random Skills.', 4, [effects.upgrade_card], 'pickUp', None, False, [[['Skill', 'Skill']]], 0),
+    'Anvil': ('Upon pickup, Upgrade 2 random cards.', 4, [effects.upgrade_card], 'pickUp', None, False, [[['Card', 'Card']]], 0),
     'Meal Ticket': ('When you enter a Shop, heal 10 Hp.', 4, effects.heal_player, 'eventMod', 'shop', False, [10], 0),
     'Comfy Pillow': ('When you Rest, heal 15 additional Hp.', 4, effects.heal_player, 'eventMod', 'rest', False, [15], 0),
     'Lantern': ('At the start of combat, gain 1 Energy.', 4, [effects.energy_manip], 'combatAct', 'Combat Start', False, [[1]], 0),
@@ -366,7 +369,7 @@ rareRelics = {
     'Small Shield': ('You now lose a maximun of 15 block at the start of your turn.', 2, [effects.combat_mechanic_change], 'pickUp', None, False, [['Block_Loss', 15]], 0),
     'Dead Branch': ('Whenever you Exhaust a card in your hand, add a random card to your hand.', 2, [effects.add_card_to_pile], 'combatAct', 'Exhaust', False, [['hand', 'card', 1, 'na']], 0),
     '1 Up': ('At the start of combat, gain 1 Buffer.', 2, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Buffer'], [1]]], 0),
-    'Dual Disk': ('At the start of combat, you may discard any amount of cards from your hand and draw that amount.', 2, [effects.gamble], 'combatAct', 'Combat Start', False, [[]], 0),
+    'Casino Chip': ('At the start of combat, you may discard any amount of cards from your hand and draw that amount.', 2, [effects.gamble], 'combatAct', 'Combat Start', False, [[]], 0),
     'Divider': ('When you die, consume this relic and set your Hp to 50% instead.', 2, effects.revive, 'valueMod', 'dead', True, [50], 0),
     'Paper Shredder': ('You can now remove a card at a Campfire.', 2, [effects.additional_campfire], 'pickUp', None, False, [['Shred']], 0),
     'Drill': ('You can now dig for a relic at a Campfire.', 2, [effects.additional_campfire], 'pickUp', None, False, [['Dig']], 0),

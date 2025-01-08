@@ -333,7 +333,16 @@ class Character:
         }
         return desc[debuff]
 
+    def update_relics(self):
+        mouse_pos = pygame.mouse.get_pos()
+        for relic in self.relics:
+            if relic.rect.collidepoint(mouse_pos):
+                relic.hover()
+            else:
+                relic.unhover()
+
     def draw_ui(self, surface):
+        self.update_relics()
         # Draw the UI bar background
         ui_y = 0  # Place at top of screen
         surface.blit(self.top_ui_sprite, (0, ui_y))
@@ -388,7 +397,7 @@ class Character:
         deck_button_x = surface.get_width() - 100 - self.deck_button_sprite.get_width()  # 100 pixels from right edge
         deck_button_y = ui_y + 15  # Align with other UI elements
         surface.blit(self.deck_button_sprite, (deck_button_x, deck_button_y))
-        
+
         # Create collision box for deck button
         self.deck_button_rect = pygame.Rect(deck_button_x, deck_button_y,self.deck_button_sprite.get_width(), self.deck_button_sprite.get_height())
 
@@ -994,7 +1003,6 @@ class Run:
             for relic in self.player.relics:
                 additonal_rewards = relic.additionalRewards(reward_type, additonal_rewards)
         self.reward = reward_screen.RewardScreen(self, self.player.character_class, self.rareChanceMult, self.rareChanceOffset, self.potionChance, self.cardRewardOptions, reward_type, set_reward, additonal_rewards)
-        self.reward.generate_rewards()
 
     def bonusEff(self, event):
         if self.player.relics:
@@ -1230,7 +1238,7 @@ class Run:
 
     def start_combat(self, set_rewards = False):
         self.lastInstance = 'C'
-        self.combat.combat_start()
+        self.combat.run_combat()
         self.combats_finished += 1
         combat_type_conversion = {
             'normal': 0,
@@ -1239,6 +1247,9 @@ class Run:
             'Boss': 2,
         }
         self.generate_reward_screen_instance(combat_type_conversion[self.combat.combat_type], set_rewards, {})
+        self.open_reward_screen()
+
+    def open_reward_screen(self):
         self.reward.listRewards()
 
     def start_treasure(self):
@@ -1294,6 +1305,15 @@ class Run:
                     # encounter_list.append('shrine') # Placeholder
         return encounter_list
 
+    def create_shop_instance(self):
+        self.shop = shop.Shop(self)
+    
+    def create_event_instance(self, event):
+        self.event = events.events1[event](self.player, self)
+
+    def create_treasure_instance(self):
+        self.treasure = treasure.Treasure(self) # placeHolder to be continued
+
     def unknown_location(self):
         event = self.eventList[-1]
         self.eventList.pop(-1)
@@ -1305,43 +1325,26 @@ class Run:
             self.generage_combat_instace(enemies, 'normal')
             self.start_combat()
         elif event == 'treasure':
-            self.treasure = treasure.Treasure(self) # placeHolder to be continued
+            self.create_treasure_instance()
             self.start_treasure()
         elif event == 'shop':
-            self.shop = shop.Shop(self)
+            self.create_shop_instance()
             self.start_shop()
         else:
-            self.event = events.events1[event](self.player, self)
+            self.create_event_instance(event)
             self.start_event()
 
 
 
 
 player = Character('Warrior', 80, 1)
+player.gold = 1000
+for i in range(0, 50):
+    card_id = random.randint(1000, 1074)
+    player.deck.append(card_constructor.create_card(card_id, card_data.card_info[card_id]))
 run = Run(player)
 pygame.init()
-
-run.potion_pickup(potion_data.createPotion('Entropic Brew', potion_data.potions['Entropic Brew']))
-run.player.deck = []
-run.card_pickup(card_constructor.create_card(1052, card_data.card_info[1052]))
-for i in range(0, 4):
-    run.card_pickup(card_constructor.create_card(4, card_data.card_info[4]))
-for i in range(0, 50):
-    rng = random.randint(1, 2)
-    if rng == 1:
-        card_id = random.randint(1000, 1074)
-    else:
-        card_id = random.randint(1100, 1174)
-    # run.card_pickup(card_constructor.create_card(card_id, card_data.card_info[card_id]))
-run.relic_pickup(relic_data.createRelic('Captain\'s Wheel', relic_data.rareRelics['Captain\'s Wheel']))
-run.relic_pickup(relic_data.createUncommon())
-run.relic_pickup(relic_data.createRare())
-enemies = []
-enemies.append(enemy_data.AncientMech())
-enemies.append(enemy_data.MediumGreenSlime())
-enemies.append(enemy_data.LargeGreenSlime())
-for enemy in enemies:
-    enemy.block = 10
-run.generage_combat_instace(enemies, 'normal')
-run.combat.run_combat()
-
+enemy = []
+enemy.append(enemy_data.AncientMech())
+run.generage_combat_instace(enemy, 'normal')
+run.start_combat()

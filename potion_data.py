@@ -245,6 +245,8 @@ class Potion:
             )
             surface.blit(rotated_head, head_rect)
 
+    def update_rect(self):
+        self.rect = self.sprite.get_rect()
 
 potions = {
     "Attack Potion": ("Add 1 of 3 random Attack cards to your hand, it costs 0 this turn.", 'combat', {effects.discover: ('Attack', 0)}, 0, 0),

@@ -3,6 +3,8 @@ import card_data
 import relic_data
 import potion_data
 import random
+import pygame
+import os
 
 class RewardScreen: # Class for any reward screed
     def __init__(self, run, character_class, rareChanceMult, rareChanceOffset, potionChance, cardRewardOptions, reward_type, set_reward = False, additonal_rewards = {'Gold': 0, 'Cards': 0, 'Potions': 0, 'Relic': 0}):
@@ -14,6 +16,7 @@ class RewardScreen: # Class for any reward screed
         self.reward_type = reward_type
         self.set_reward = set_reward
         self.close = False
+        self.generated = False
         self.rewards = {
             'Gold': 0,
             'Cards': [],
@@ -22,7 +25,14 @@ class RewardScreen: # Class for any reward screed
         }
         self.additional_rewards = additonal_rewards
         self.rareChanceMult = rareChanceMult
-    
+        gold_sprite = pygame.image.load(os.path.join("assets", "icons", "gold.png"))
+        self.gold_sprite = pygame.transform.scale(gold_sprite, (gold_sprite.get_width()//11, gold_sprite.get_height()//11))
+        self.deck_button_sprite = pygame.image.load(os.path.join("assets", "icons", "pile_icon.png"))
+        self.deck_button_sprite = pygame.transform.scale(self.deck_button_sprite, (self.deck_button_sprite.get_width()//10, self.deck_button_sprite.get_height()//10))
+        pygame.font.init()
+        self.font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 24)
+        self.skip_button_sprite = pygame.image.load(os.path.join("assets", "ui", "skip_button.png"))
+
     def isEmpty(self):
         '''Method for checking if there are still items left'''
         for items in self.rewards.values():
@@ -167,74 +177,179 @@ class RewardScreen: # Class for any reward screed
         self.run.potionChance = self.potionChance
 
     def listRewards(self):
+        if self.generated == False:
+            self.generate_rewards()
+            self.generated = True
+
         self.close = False
-        i = 0
-        reward_picks = {
-            'gold': 0,
-            'card': 0,
-            'potion': 0,
-            'relic': 0
-        }
-        while True:
-            reward_picks = {
-                'gold': 0,
-                'card': 0,
-                'potion': 0,
-                'relic': 0
-            }
-            i = 0
-            for type, amount in self.rewards.items():
-                if amount != False:
-                    if type == 'Gold':
-                        print(f'{i}: {amount} Gold')
-                        reward_picks['gold'] += 1
-                        i += 1
-                    elif type in {'Potions', 'Relics'}:
-                        for item in amount:
-                            print(f'{i}: {item}')
-                            i += 1
-                            if type == 'Potions':
-                                reward_picks['potion'] += 1
-                            else:
-                                reward_picks['relic'] += 1
-                    else:
-                        for option in amount:
-                            print(f'{i}: Add a Card to your deck')
-                            i += 1
-                            reward_picks['card'] += 1
-            if i == 0:
-                break
-            player_action = input('Enter a index or Skip: ')
-            if player_action == 'Skip':
-                break
-            else:
-                if player_action not in {'0', '1', '2', '3', '4', '5', '6'}:
-                    continue
-                player_action = int(player_action)
-                if player_action < reward_picks['gold']:
-                    self.run.gold_modification(self.rewards['Gold'])
-                    self.rewards['Gold'] = 0
-                    reward_picks['gold'] -= 1
-                elif player_action - reward_picks['gold'] < reward_picks['card']:
-                    player_action -= reward_picks['gold']
-                    j = 0
-                    for card in self.rewards['Cards'][player_action]:
-                        print(f'{j}: {card}')
-                        j += 1
-                    card_choice = input('Enter a index or Skip: ')
-                    if card_choice != 'Skip':
-                        self.run.card_pickup(self.rewards['Cards'][player_action][int(card_choice)])
-                        self.rewards['Cards'].pop(player_action)
-                        reward_picks['card'] -= 1
-                elif player_action - reward_picks['gold'] - reward_picks['card'] < reward_picks['potion']:
-                    player_action = player_action - reward_picks['gold'] - reward_picks['card']
-                    successful = self.run.potion_pickup(self.rewards['Potions'][player_action])
-                    if successful:
-                        self.rewards['Potions'].pop(player_action)
-                        reward_picks['potion'] -= 1
-                else:
-                    player_action = player_action - reward_picks['gold'] - reward_picks['card'] - reward_picks['potion']
-                    self.run.relic_pickup(self.rewards['Relics'][player_action])
-                    self.rewards['Relics'].pop(player_action)
-                    reward_picks['relic'] -= 1
-        self.close = True
+
+        # Create main reward box surface
+        reward_box = pygame.Surface((500, 600))
+        reward_box.fill((50, 50, 50))
+        reward_box_rect = reward_box.get_rect(center=(self.run.SCREEN_WIDTH//2, self.run.SCREEN_HEIGHT//2))
+
+        # Track reward positions
+        reward_y = 20
+        reward_height = 60
+        reward_spacing = 10
+
+        while not self.close:
+            self.run.screen.fill((0, 0, 0))
+            reward_box.fill((50, 50, 50))
+            reward_y = 20
+
+            # Draw rewards on reward_box
+            if self.rewards['Gold']:
+                gold_rect = pygame.Rect(30, reward_y, 460, reward_height)
+                pygame.draw.rect(reward_box, (70, 70, 70), gold_rect)
+                reward_box.blit(self.gold_sprite, (gold_rect.left + 10, gold_rect.centery - self.gold_sprite.get_height()//2))
+                font = pygame.font.Font(None, 36)
+                text = font.render(f"{self.rewards['Gold']}", True, (255, 255, 255))
+                reward_box.blit(text, (gold_rect.left + 70, gold_rect.centery - text.get_height()//2))
+                reward_y += reward_height + reward_spacing
+
+            for card_options in self.rewards['Cards']:
+                card_rect = pygame.Rect(30, reward_y, 460, reward_height)
+                pygame.draw.rect(reward_box, (70, 70, 70), card_rect)
+                reward_box.blit(self.deck_button_sprite, (card_rect.left + 10, card_rect.centery - self.deck_button_sprite.get_height()//2))
+                font = pygame.font.Font(None, 36)
+                text = font.render("Add a card to your deck", True, (255, 255, 255))
+                reward_box.blit(text, (card_rect.left + 70, card_rect.centery - text.get_height()//2))
+                reward_y += reward_height + reward_spacing
+
+            # Track if mouse is hovering over any item
+            mouse_pos = pygame.mouse.get_pos()
+            box_mouse_pos = (mouse_pos[0] - reward_box_rect.left, mouse_pos[1] - reward_box_rect.top)
+            hover_text = None
+
+            for potion in self.rewards['Potions']:
+                potion_rect = pygame.Rect(30, reward_y, 460, reward_height)
+                pygame.draw.rect(reward_box, (70, 70, 70), potion_rect)
+                reward_box.blit(potion.sprite, (potion_rect.left + 10, potion_rect.centery - potion.sprite.get_height()//2))
+                font = pygame.font.Font(None, 36)
+                text = font.render(potion.name, True, (255, 255, 255))
+                reward_box.blit(text, (potion_rect.left + 70, potion_rect.centery - text.get_height()//2))
+                
+                if potion_rect.collidepoint(box_mouse_pos):
+                    hover_text = potion.description
+                
+                reward_y += reward_height + reward_spacing
+
+            for relic in self.rewards['Relics']:
+                relic_rect = pygame.Rect(30, reward_y, 460, reward_height)
+                pygame.draw.rect(reward_box, (70, 70, 70), relic_rect)
+                reward_box.blit(relic.sprite, (relic_rect.left + 10, relic_rect.centery - relic.sprite.get_height()//2))
+                font = pygame.font.Font(None, 36)
+                text = font.render(relic.name, True, (255, 255, 255))
+                reward_box.blit(text, (relic_rect.left + 70, relic_rect.centery - text.get_height()//2))
+                
+                if relic_rect.collidepoint(box_mouse_pos):
+                    hover_text = relic.description
+                    
+                reward_y += reward_height + reward_spacing
+
+            # Blit reward_box to screen
+            self.run.screen.blit(reward_box, reward_box_rect)
+
+            # Draw hover text if needed
+            if hover_text:
+                # Create text surface
+                desc_font = pygame.font.Font(None, 24)
+                desc_text = desc_font.render(hover_text, True, (255, 255, 255))
+                desc_bg = pygame.Surface((desc_text.get_width() + 20, desc_text.get_height() + 20))
+                desc_bg.fill((50, 50, 50))
+                desc_bg.blit(desc_text, (10, 10))
+                
+                # Position near mouse but ensure on screen
+                desc_x = min(mouse_pos[0], self.run.SCREEN_WIDTH - desc_bg.get_width())
+                desc_y = min(mouse_pos[1] - desc_bg.get_height(), self.run.SCREEN_HEIGHT - desc_bg.get_height())
+                self.run.screen.blit(desc_bg, (desc_x, desc_y))
+
+            # Draw skip button directly on screen
+            skip_rect = self.skip_button_sprite.get_rect()
+            skip_rect.bottomright = (self.run.SCREEN_WIDTH, self.run.SCREEN_HEIGHT - 200)
+            self.run.screen.blit(self.skip_button_sprite, skip_rect)
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (pygame.key.get_mods() & pygame.KMOD_ALT)):
+                    pygame.quit()
+                    
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    mouse_pos = pygame.mouse.get_pos()
+                    
+                    # Check skip button click
+                    if skip_rect.collidepoint(mouse_pos):
+                        self.close = True
+                        break
+                        
+                    # Adjust mouse position relative to reward_box
+                    box_mouse_pos = (mouse_pos[0] - reward_box_rect.left, mouse_pos[1] - reward_box_rect.top)
+                    reward_y = 20
+
+                    if self.rewards['Gold']:
+                        gold_rect = pygame.Rect(30, reward_y, 460, reward_height)
+                        if gold_rect.collidepoint(box_mouse_pos):
+                            self.run.gold_modification(self.rewards['Gold'])
+                            self.rewards['Gold'] = 0
+                        reward_y += reward_height + reward_spacing
+
+                    for i, card_options in enumerate(self.rewards['Cards']):
+                        card_rect = pygame.Rect(30, reward_y, 460, reward_height)
+                        if card_rect.collidepoint(box_mouse_pos):
+                            # Show card selection menu
+                            card_menu = True
+                            while card_menu:
+                                self.run.screen.fill((0, 0, 0))
+                                
+                                # Draw cards
+                                card_x = self.run.SCREEN_WIDTH//4
+                                for j, card in enumerate(card_options):
+                                    card.rect.center = (card_x, self.run.SCREEN_HEIGHT//2)
+                                    self.run.screen.blit(card.sprite, card.rect)
+                                    card_x += self.run.SCREEN_WIDTH//4
+
+                                # Draw skip button
+                                skip_rect = self.skip_button_sprite.get_rect()
+                                skip_rect.bottomright = (self.run.SCREEN_WIDTH, self.run.SCREEN_HEIGHT - 200)
+                                self.run.screen.blit(self.skip_button_sprite, skip_rect)
+
+                                pygame.display.flip()
+
+                                for card_event in pygame.event.get():
+                                    if card_event.type == pygame.QUIT or (card_event.type == pygame.KEYDOWN and card_event.key == pygame.K_F4 and (pygame.key.get_mods() & pygame.KMOD_ALT)):
+                                        pygame.quit()
+                                        
+                                    if card_event.type == pygame.MOUSEBUTTONUP and card_event.button == 1:
+                                        card_mouse_pos = pygame.mouse.get_pos()
+                                        if skip_rect.collidepoint(card_mouse_pos):
+                                            card_menu = False
+                                        else:
+                                            for j, card in enumerate(card_options):
+                                                if card.rect.collidepoint(card_mouse_pos):
+                                                    self.run.card_pickup(card)
+                                                    self.rewards['Cards'].pop(i)
+                                                    card_menu = False
+
+                        reward_y += reward_height + reward_spacing
+
+                    for i, potion in enumerate(self.rewards['Potions']):
+                        potion_rect = pygame.Rect(30, reward_y, 460, reward_height)
+                        if potion_rect.collidepoint(box_mouse_pos):
+                            if self.run.potion_pickup(potion):
+                                self.rewards['Potions'].pop(i)
+                        reward_y += reward_height + reward_spacing
+
+                    for i, relic in enumerate(self.rewards['Relics']):
+                        relic_rect = pygame.Rect(30, reward_y, 460, reward_height)
+                        if relic_rect.collidepoint(box_mouse_pos):
+                            self.run.relic_pickup(relic)
+                            self.rewards['Relics'].pop(i)
+                        reward_y += reward_height + reward_spacing
+
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    self.close = True
+
+            if not any([self.rewards['Gold'], self.rewards['Cards'], self.rewards['Potions'], self.rewards['Relics']]):
+                self.close = True

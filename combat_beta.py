@@ -5,6 +5,7 @@ import effects
 import random
 import pygame
 import os
+import sys
 
 class Combat:
     def __init__(self, player, deck, enemies, combat_type, run, screen):
@@ -90,8 +91,10 @@ class Combat:
             # Event handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
-                    self.combat_active = False
+                    self.quit_game()
+                
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (event.mod & pygame.KMOD_ALT):
+                    self.quit_game()
 
                 # Draw "View Deck" text below deck button
                 if self.player.deck_button_rect.collidepoint(mouse_pos):
@@ -120,7 +123,6 @@ class Combat:
                 self.combat_surface.blit(deck_text, (text_x, text_y))
 
             # Update and draw game state
-            self.handle_relic_events(event, mouse_pos)
             self.handle_enemy_events(event, mouse_pos)
             self.handle_pile_events(event, mouse_pos)
             self.handle_character_events(event, mouse_pos)
@@ -350,15 +352,7 @@ class Combat:
                         self.targetting_potion = None
                         self.clicked_potion = None
                         break
-
-    def handle_relic_events(self, event, mouse_pos):
-        """Handle relic-related events"""
-        for relic in self.player.relics:
-            if relic.rect.collidepoint(mouse_pos):
-                relic.hover()
-            else:
-                relic.unhover()
-
+        
     def update_game_state(self, mouse_pos):
         """Update all game objects"""
         for card in self.hand.cards:
@@ -397,8 +391,7 @@ class Combat:
                             break
                     
                     elif event.type == pygame.QUIT:
-                        viewing = False
-                        break
+                        self.quit_game()
                 
                 # Draw cards
                 pile.draw(viewing_surface, pygame.event.get())
@@ -784,29 +777,47 @@ class Combat:
                 num -= 1
                 # One less card to draw
     
+    def quit_game(self):
+        '''Method for quitting the game'''
+        pygame.quit()
+        sys.exit()
+
     def view_pile(self, pile):
         '''Method for viewing a pile of cards
 
         ### args:
             pile (list): The pile of cards to view
-        '''
+        '''                
         card_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
         card_surface.fill((0, 0, 0, 0))  # Completely transparent background
         confirm_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
         confirm_button = pygame.Rect(1600 - confirm_sprite.get_width(), 520, confirm_sprite.get_width(), confirm_sprite.get_height())
         viewing = True
+
+        # If it's the draw pile and ordered_draw is False, randomize display order
+        if pile.type == 'draw' and not self.run.mechanics['Ordered_Draw_Pile']:
+            display_pile = Pile(random.sample(pile.cards, len(pile.cards)), pile.type)
+        else:
+            display_pile = pile
+
         while viewing:
             card_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
             card_surface.fill((0, 0, 0, 0))  # Completely transparent background
             events = pygame.event.get()
             for event in events:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (event.mod & pygame.KMOD_ALT):
+                    self.quit_game()
+                
+                if event.type == pygame.QUIT:
+                    self.quit_game()
+
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = pygame.mouse.get_pos()
                     if confirm_button.collidepoint(mouse_pos):
                         viewing = False
                         break
             
-            pile.draw(card_surface, events)
+            display_pile.draw(card_surface, events)
             card_surface.blit(confirm_sprite, confirm_button)
             background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
             background.fill((50, 50, 50))  # Semi-transparent dark gray
@@ -847,6 +858,9 @@ class Combat:
                 events = pygame.event.get()
                 # Handle events
                 for event in events:
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (event.mod & pygame.KMOD_ALT):
+                        self.quit_game()
+                
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         mouse_pos = pygame.mouse.get_pos()
                         
@@ -867,8 +881,7 @@ class Combat:
                                 break
 
                     elif event.type == pygame.QUIT:
-                        selecting = False
-                        break
+                        self.quit_game()
                 
                 # Draw cards
                 selection_pile.draw(selection_surface, events)
@@ -941,6 +954,10 @@ class Combat:
             # Handle events
             events = pygame.event.get()
             for event in events:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (event.mod & pygame.KMOD_ALT):
+                    selecting = False
+                    break
+                
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = pygame.mouse.get_pos()
                     
@@ -962,8 +979,7 @@ class Combat:
                             break
                 
                 elif event.type == pygame.QUIT:
-                    selecting = False
-                    break
+                    self.quit_game()
             
             # Draw cards
             selection_pile.draw(selection_surface, events)
@@ -1054,6 +1070,7 @@ class Combat:
                     # Add it to eligible cards
             if eligible_cards:
                 # If there are eligible cards
+                eligible_cards = Pile(eligible_cards, 'selection')
                 self.hard_card_select(num, eligible_cards)
                 # Select from the cards
                 for card in reversed(self.selected):

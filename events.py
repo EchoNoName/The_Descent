@@ -4,6 +4,8 @@ import card_constructor
 import potion_data
 import effects
 import random
+import pygame
+import os
 
 class ScorchedForest:
     def __init__(self, player, run):
@@ -11,6 +13,7 @@ class ScorchedForest:
         self.player = player
         self.run = run
         self.event_active = True
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'events', f'{self.name}.png'))
     
     def __str__(self):
         return self.name
@@ -59,6 +62,7 @@ class EntangledTreasure:
         self.player = player
         self.run = run
         self.event_active = True
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'events', f'{self.name}.png'))
     
     def __str__(self):
         return self.name
@@ -189,6 +193,7 @@ class TheCleric:
         self.player = player
         self.run = run
         self.event_active = True
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'events', f'{self.name}.png'))
     
     def __str__(self):
         return self.name
@@ -237,6 +242,7 @@ class GoddessStatue:
         self.player = player
         self.run = run
         self.event_active = True
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'events', f'{self.name}.png'))
     
     def __str__(self):
         return self.name
@@ -273,7 +279,8 @@ class AbandonedMonument:
         self.player = player
         self.run = run
         self.event_active = True
-    
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'events', f'{self.name}.png'))
+
     def __str__(self):
         return self.name
     
@@ -321,6 +328,7 @@ class DeadAdventurers:
         self.run = run
         self.event_active = True
         self.elite = None
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'events', f'{self.name}.png'))
     
     def __str__(self):
         return self.name
@@ -422,23 +430,24 @@ class DeadAdventurers:
 
 class ColouredMushrooms:
     def __init__(self, player, run):
-        self.name = 'Coloured Mushrooms'
+        self.name = 'Strange Mushrooms'
         self.player = player
         self.run = run
         self.event_active = True
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'events', f'{self.name}.png'))
     
     def __str__(self):
         return self.name
     
     def start_event(self):
-        print('You enter a area full of hypnotizing colored mushrooms. ')
+        print('You enter a area full of brightly colored mushrooms. ')
         print('Due to your lack of specialization in mycology you are unable to identify the specimens. ')
         print('You want to escape, but feel oddly compelled to eat a mushroom.')
         # Text related to mushroom are coloured
         self.choose_your_path()
 
     def choose_your_path(self):
-        print('[Stomp] Anger the Mushrooms. ')
+        print('[Destroy] Anger the Mushrooms. ')
         print('[Eat] Heal 25% HP. Become Cursed: Parasite. ')
         choice = int(input())
         if choice == 1:
@@ -476,6 +485,7 @@ class HallucinationFog:
         self.player = player
         self.run = run
         self.event_active = True
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'events', f'{self.name}.png'))
     
     def __str__(self):
         return self.name
@@ -520,7 +530,8 @@ class ShiningLight:
         self.player = player
         self.run = run
         self.event_active = True
-    
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'events', f'{self.name}.png'))
+
     def __str__(self):
         return self.name
     
@@ -558,6 +569,7 @@ class SlimeGoop:
         self.player = player
         self.run = run
         self.event_active = True
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'events', f'{self.name}.png'))
     
     def __str__(self):
         return self.name

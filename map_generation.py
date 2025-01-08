@@ -592,6 +592,14 @@ class Room:
         }
         self.sprite = pygame.image.load(room_type_to_sprite[room_type])
 
+    def enter(self):
+        self.entered = True
+    
+    def completed(self, run, map):
+        run.room = [self.floor, self.room_num]
+        run.roomInfo = self.room_type
+        map.entered_rooms.append([self.floor, self.room_num])
+
     def add_connection(self, connection):
         self.connections.append(connection)
 
@@ -600,21 +608,4 @@ class Room:
         if self.entered:
             screen.blit(self.entered_circle, (x - 5, y - 5))
 
-map = Map(0)
-for room in map.rooms:
-    room.entered = True
-screen = pygame.display.set_mode((1600, 900))
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.MOUSEWHEEL:
-            # Scroll up/down based on mouse wheel
-            scroll_amount = event.y * 30  # Adjust scroll speed
-            map.y = min(max(map.y + scroll_amount, -1200), 50)  # Increased scroll range
-    
-    # Clear screen before drawing
-    screen.fill((255, 255, 255))  # Fill with dark gray background
-    map.draw(screen, 0, map.y)
-    pygame.display.flip()
+
