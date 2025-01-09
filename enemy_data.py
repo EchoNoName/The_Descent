@@ -259,9 +259,16 @@ class Enemy:
                 surface.blit(sprite, (status_x, status_y))
                 
                 # Draw amount number in bottom right
+                outline_text = self.debuff_font.render(str(amount), True, (0, 0, 0))
                 amount_text = self.debuff_font.render(str(amount), True, text_colour)
                 amount_x = status_x + sprite.get_width() - amount_text.get_width()
                 amount_y = status_y + sprite.get_height() - amount_text.get_height()
+                # Draw outline slightly offset in each direction
+                surface.blit(outline_text, (amount_x - 1, amount_y - 1))
+                surface.blit(outline_text, (amount_x + 1, amount_y - 1))
+                surface.blit(outline_text, (amount_x - 1, amount_y + 1))
+                surface.blit(outline_text, (amount_x + 1, amount_y + 1))
+                # Draw main text
                 surface.blit(amount_text, (amount_x, amount_y))
                 
                 status_x += sprite.get_width() + 5  # Shift right for next icon
@@ -576,7 +583,7 @@ class Enemy:
             if self.debuffs['-' + buff_type] > 0:
                 self.debuffs['-' + buff_type] -= amount
                 if self.debuffs['-' + buff_type] < 0:
-                    self.buffs[buff_type] = -self.debuff['-' + buff_type]
+                    self.buffs[buff_type] = -self.debuffs['-' + buff_type]
                     self.debuffs['-' + buff_type] = 0
             else:
                 self.buffs[buff_type] += amount
@@ -590,16 +597,18 @@ class Enemy:
             buff_type: type of buff being lost
             amount: amount being lost
         '''
-        self.buffs[buff_type] -= amount
+        if buff_type in {'-Strength', '-Dexterity'}:
+            self.buffs[buff_type[1:]] -= amount
+            if self.buffs['Strength'] < 0:
+                self.debuffs['-Strength'] += self.buffs['Strength']
+                self.buffs['Strength'] = 0
+            if self.buffs['Dexterity'] < 0:
+                self.debuffs['-Dexterity'] += self.buffs['Dexterity']
+                self.buffs['Dexterity'] = 0
+        else:
+            self.buffs[buff_type] = max(0, self.buffs[buff_type] - amount)
         # Subtract the amount
-        if self.buffs[buff_type] < 0:
-            # if it goes below 0
-            if '-' + buff_type in self.debuffs:
-                # check if can be negative
-                self.debuffs['-' + buff_type] = -self.buffs[buff_type]
-                # Apply the negative debuff
-            self.buffs[buff_type] = 0
-            # Set amount of buffs to 0
+        
     
     def gain_debuff(self, debuff_type, amount):
         '''Method for gaining debuffs
@@ -612,7 +621,7 @@ class Enemy:
             # If artifact is present
             self.buffs['ArtiFact'] -= 1
             # Subtrack 1 from artifact and negate the debuff
-        elif debuff_type in {'-Strength', '-Dexterity'}:
+        elif debuff_type in {'Strength', '-Dexterity'}:
             # If its Str or Dex
             self.lose_buff(debuff_type[1:], amount)
             # Use the lose_buff funtion instead

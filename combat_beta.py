@@ -687,9 +687,12 @@ class Combat:
                 self.discard_pile.add_card(card)
             else:
                 location.add_card(card)
+        elif location.type == 'draw':
+            location.insert_card(card)
         else:
-            location.add_top(card)
-    
+            location.add_card(card)
+            
+
     def shuffle(self):
         '''
         Method for shuffling the discard pile into the draw pile and shuffling the order of the draw pile
@@ -2225,6 +2228,11 @@ class Hand:
         card.current_pos = (1600, 900)
         self.cards.append(card)
     
+    def insert_card(self, card):
+        """Insert a card into the hand at a specific index"""
+        index = random.randint(0, len(self.cards))
+        self.cards.insert(index, card)
+
     def remove_card(self, card):
         """Remove a card from the hand"""
         self.cards.remove(card)

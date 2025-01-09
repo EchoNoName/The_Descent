@@ -285,10 +285,17 @@ class Character:
                 # Draw debuff sprite
                 surface.blit(sprite, (status_x, status_y))
                 
-                # Draw amount number in bottom right
+                # Draw amount number in bottom right with black outline
+                outline_text = self.debuff_font.render(str(amount), True, (0, 0, 0))
                 amount_text = self.debuff_font.render(str(amount), True, text_colour)
                 amount_x = status_x + sprite.get_width() - amount_text.get_width()
                 amount_y = status_y + sprite.get_height() - amount_text.get_height()
+                # Draw outline slightly offset in each direction
+                surface.blit(outline_text, (amount_x - 1, amount_y - 1))
+                surface.blit(outline_text, (amount_x + 1, amount_y - 1))
+                surface.blit(outline_text, (amount_x - 1, amount_y + 1))
+                surface.blit(outline_text, (amount_x + 1, amount_y + 1))
+                # Draw main text
                 surface.blit(amount_text, (amount_x, amount_y))
                 
                 status_x += sprite.get_width() + 5  # Shift right for next icon
@@ -712,16 +719,16 @@ class Character:
             buff_type: type of buff being lost
             amount: amount being lost
         '''
-        self.buffs[buff_type] -= amount
-        # Subtract the amount
-        if self.buffs[buff_type] < 0:
-            # if it goes below 0
-            if '-' + buff_type in self.debuffs:
-                # check if can be negative
-                self.debuffs['-' + buff_type] = self.buffs[buff_type]
-                # Apply the negative debuff
-            self.buffs[buff_type] = 0
-            # Set amount of buffs to 0
+        if buff_type in {'-Strength', '-Dexterity'}:
+            self.buffs[buff_type[1:]] -= amount
+            if self.buffs['Strength'] < 0:
+                self.debuffs['-Strength'] += self.buffs['Strength']
+                self.buffs['Strength'] = 0
+            if self.buffs['Dexterity'] < 0:
+                self.debuffs['-Dexterity'] += self.buffs['Dexterity']
+                self.buffs['Dexterity'] = 0
+        else:
+            self.buffs[buff_type] -= amount
     
     def gain_debuff(self, debuff_type, amount):
         '''Method for gaining debuffs
@@ -1339,9 +1346,8 @@ class Run:
 
 player = Character('Warrior', 80, 1)
 player.gold = 1000
-for i in range(0, 50):
-    card_id = random.randint(1000, 1074)
-    player.deck.append(card_constructor.create_card(card_id, card_data.card_info[card_id]))
+player.deck.append(card_constructor.create_card(1046, card_data.card_info[1046]))
+player.deck.append(card_constructor.create_card(1046, card_data.card_info[1046]))
 run = Run(player)
 pygame.init()
 enemy = []

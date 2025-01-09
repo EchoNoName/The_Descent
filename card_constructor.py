@@ -83,7 +83,7 @@ class Card():
         # Position and movement attributes
         self.current_pos = pygame.Vector2(x, y)
         self.target_pos = pygame.Vector2(x, y)
-        self.snap_speed = 45  # Speed of snapping animation
+        self.snap_speed = 60  # Speed of snapping animation
         self.offset = pygame.Vector2(0, 0)  # Offset between mouse and card position during drag
         
         # Add hover state attributes
