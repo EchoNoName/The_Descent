@@ -961,7 +961,7 @@ class Combat:
                     selecting = False
                     break
                 
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                     mouse_pos = pygame.mouse.get_pos()
                     
                     # Check if confirm button clicked

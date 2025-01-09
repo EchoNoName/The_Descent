@@ -669,7 +669,7 @@ def eventChange(encounter, run):
         run: the run object'''
     run.eventList.append(encounter)
 
-def campfire_chance(action: str, run):
+def campfire_change(action: str, run):
     run.campfire_restrict(action)
 
 def sneko_eye(context, combat):

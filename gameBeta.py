@@ -15,6 +15,7 @@ import treasure
 import copy
 import pygame
 import os  
+import sys
 
 Instances = []
 
@@ -867,7 +868,7 @@ def main_menu():
         # To be continued
 
 class Run:
-    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, removals = 0, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True}, eggs = []):
+    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, removals = 0, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True, 'Fertilize': False, 'Dig': False, 'Shred': False}, eggs = []):
         self.player = player
         pygame.init()
         self.SCREEN_WIDTH = 1600
@@ -922,6 +923,10 @@ class Run:
         self.eggs = eggs
         self.instances = [self.shop, self.combat, self.event, self.treasure, self.reward]
     
+    def exit_game(self):
+        pygame.quit()
+        sys.exit()
+
     def runStart(self):
         if self.newRun == True:
             self.neowBlessing()
@@ -1353,4 +1358,4 @@ pygame.init()
 enemy = []
 enemy.append(enemy_data.AncientMech())
 run.generage_combat_instace(enemy, 'normal')
-run.start_combat()
+# run.start_combat()

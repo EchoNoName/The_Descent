@@ -60,14 +60,18 @@ class Relics: # Relic Object Class
         self.is_hovered = False
 
     def draw(self, screen, x, y):
+        # Update the rect position
         self.rect.x = x
         self.rect.y = y
+        # If the relic is hovered, draw the sprite and description
         if self.is_hovered:
             screen.blit(self.sprite, (x, y))
             self.draw_description(screen, x, y)
         else:
+            # Draw the sprite
             screen.blit(self.sprite, (x, y))
-        if self.counter != None:
+        # Draw the counter number if it exists and is not 0
+        if self.counter != None and self.counter != 0:
             # Draw counter number with black outline
             counter_text = str(self.counter)
             text_color = (255, 255, 255)  # White text
@@ -87,7 +91,7 @@ class Relics: # Relic Object Class
             screen.blit(text_surf, (text_x, text_y))
 
     def draw_rect_box(self, screen):
-        """Draw a rectangular box around the relic sprite"""
+        """Draw a rectangular box around the relic sprite, for testing purposes"""
         # Create a rect for the sprite
         rect = pygame.Rect(self.rect.x, self.rect.y, self.sprite.get_width(), self.sprite.get_height())
         
@@ -95,11 +99,11 @@ class Relics: # Relic Object Class
         pygame.draw.rect(screen, (255, 255, 255), rect, 2)
 
     def update_rect(self):
+        '''Update the rect position of the relic'''
         self.rect = self.sprite.get_rect()
 
     def draw_description(self, screen, x, y):
-        '''Draw a text box below the relic 
-        sprite showing its description'''
+        '''Draw a text box below the relic sprite showing its description'''
         # Draw name as first line
         name_surf = self.name_font.render(self.name, True, (255, 255, 255))
         
@@ -114,10 +118,11 @@ class Relics: # Relic Object Class
             desc = desc[split:].lstrip()
         lines.append(desc)
         
-        # Create text surfaces for each line
+        # Create a list text surfaces for each line
         text_surfs = [name_surf]  # Start with name surface
         max_width = name_surf.get_width()
         total_height = name_surf.get_height()
+        # For each line in the description, create a text surface and add it to the list
         for line in lines:
             surf = self.font.render(line, True, (255, 255, 255))
             text_surfs.append(surf)
@@ -125,29 +130,29 @@ class Relics: # Relic Object Class
             total_height += surf.get_height()
             
         # Calculate box dimensions
-        padding = 10
-        box_width = max_width + padding * 2
-        box_height = total_height + padding * 2
+        padding = 10 # Padding around the text
+        box_width = max_width + padding * 2 # Width of the box
+        box_height = total_height + padding * 2 # Height of the box
         
         # Position box, shift left if too far
         box_x = x
-        if box_x + box_width > 800:
+        if box_x + box_width > 800: # If the box is too far to the right, shift it to the left
             box_x = x - box_width
-        box_y = y + self.sprite.get_height() + 5
+        box_y = y + self.sprite.get_height() + 5 # Position the box below the relic sprite
         
         # Draw semi-transparent background
         box_surface = pygame.Surface(
             (box_width, box_height))
-        box_surface.fill((0, 0, 0))
-        box_surface.set_alpha(200)
-        screen.blit(box_surface, (box_x, box_y))
+        box_surface.fill((0, 0, 0)) # Fill the box with black
+        box_surface.set_alpha(200) # Set the transparency of the box
+        screen.blit(box_surface, (box_x, box_y)) # Draw the box
         
         # Draw text lines
-        text_y = box_y + padding
+        text_y = box_y + padding # Position the text at the top of the box
         for surf in text_surfs:
-            text_x = box_x + padding
-            screen.blit(surf, (text_x, text_y))
-            text_y += surf.get_height()
+            text_x = box_x + padding # Position the text at the left of the box
+            screen.blit(surf, (text_x, text_y)) # Draw the text
+            text_y += surf.get_height() # Move the text down to the next line
 
 
     def valueModificationEff(self, event, context): # Method to apply the effect
@@ -199,21 +204,26 @@ class Relics: # Relic Object Class
     def pickUp(self, run):
         '''Method for handling on pickup effects of relics'''
         if self.effect_class == 'pickUp':
+            # If the effect is a pickUp effect, apply it
             for i in range(0, len(self.effect_type)):
                 self.effect_type[i](*self.effect_details[i], run)
     
     def eventBonus(self, event, run):
+        # If the effect is a bonus to an event, apply it if the condition is met
         if self.effect_class == 'eventBonus' and self.condition == event:
             self.effect_type(*self.effect_details, run)
     
     def additionalRewards(self, event, reward):
+        # If the event meets the condition, then add the additional rewards
         if self.effect_class == 'additionalRewards' and self.condition == event:
             return self.effect_type(*self.effect_details, reward)
     
     def eventModifcation(self, action, run):
+        # If the relic is consumable, then check if it has been used
         if self.consumable == True:
             if self.used == True:
                 return None
+        # If the effect is a bonus to an event, apply it if the condition is met
         if self.effect_class == 'eventMod' and self.condition == action:
             self.effect_type(*self.effect_details, run)
     
@@ -272,8 +282,8 @@ def spawnRelic(common = 50, uncommon = 33):
     else:
         return createRare()
 
-Relics
 bossRelics = {
+    # Boss Relics Data
     'Pandora\'s Box': ('Upon pickup, Transform all Basic cards.', 1, [effects.transform_card], 'pickUp', None, False, [['Basic']], 0),
     'Astrolabe': ('Upon pickup, choose and Transfrom 3 cards, then Upgrade them.', 1, [effects.card_select, effects.transform_card, effects.upgrade_card], 'pickUp', None, False, [[3, {}], ['Selected'], ['Selected']], 0),
     'Rabbit\'s Foot': ('Elites now drop 2 relics instead of 1.', 1, effects.additonal_rewards, 'additionalRewards', 1, False, ['Relic'], 0),
@@ -285,8 +295,8 @@ bossRelics = {
     'Bag of Holding': ('Upon pickup, choose and Remove 2 cards.', 1, [effects.card_select, effects.remove_card], 'pickUp', None, False, [[2, {}], ['Selected']], 0),
     'Threat Detector': ('During Elite and Boss combats, gain 1 Energy at the start of each turn.', 1, [], None, None, False, [], 0, 'Elite'),
     'Temporal Hiccup': ('For the first 3 turns of combat, your turns are treated as the start of combat.', 1 , [effects.temporal_hiccup], 'combatAct', 'Turn Start', False, [[]], 0),
-    'Coffee Mug': ('Gain 1 Energy at thes start of each turn. You can no longer Rest at Campfires.', 1, [effects.campfire_chance], 'pickUp', None, False, [['Rest']], 0, True),
-    'Molten Hammer': ('Gain 1 Energy at thes start of each turn. You can no longer Upgrade at Campfires.', 1, [effects.campfire_chance], 'pickUp', None, False, [['Smith']], 0, True),
+    'Coffee Mug': ('Gain 1 Energy at thes start of each turn. You can no longer Rest at Campfires.', 1, [effects.campfire_change], 'pickUp', None, False, [['Rest']], 0, True),
+    'Molten Hammer': ('Gain 1 Energy at thes start of each turn. You can no longer Upgrade at Campfires.', 1, [effects.campfire_change], 'pickUp', None, False, [['Smith']], 0, True),
     'Erosive Slime': ('Gain 1 Energy at thes start of each turn. You can no longer gain Gold.', 1, effects.gold_amount_mod, 'valueMod', 'gold', False, [-9999], 0, True),
     'Ball n\' Chain': ('Gain 1 Energy at thes start of each turn. You can only play 6 cards per turn.', 1, [effects.card_play_limit], 'combatAct', 'Card Played', False, [[6]], 0, True, 0, 6, 'Turn'),
     'Philosopher\'s Stone': ('Gain 1 Energy at thes start of each turn. All enemies gain 1 Strength at the start of combat.', 1, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Strength'], [1]]], 3, True),
@@ -296,6 +306,7 @@ bossRelics = {
     'Sozu': ('Gain 1 Energy at thes start of each turn. You can no longer pickup Potions. ', 1, effects.potion_to_nothing, 'valueMod', 'potion', False, [], 0, True)
 }
 commonRelics = {
+    # Common Relics Data
     'Dumbbell': ('At the start of combat, gain 1 Strength.', 4, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Strength'], [1]]], 0),
     'Smooth Stone': ('At the start of combat, gain 1 Dexterity', 4, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Dexterity'], [1]]], 0),
     'Backpack': ('Draw 2 Additional cards at the start of combat.', 4, effects.draw_cards, 'combatAct', 'Combat Start', False, [2], 0),
@@ -325,8 +336,9 @@ commonRelics = {
     'Haunted Stone': ('At the start of combat, apply 1 Vulnerable to all enemies.', 4, [effects.apply_debuff], 'combatAct', 'Combat Start', False, [[['Vulnerable'], [1]]], 3),
     'Orichalcum': ('When you end your turn with no block, gain 6 block.', 4, [effects.no_block_buffer], 'combatAct', 'Turn End', False, [[6]], 0)
 }
-Relics
+
 UncommonRelics = {
+    # Uncommon Relics Data
     'Horse Wagon': ('Gain 125 Gold. Your next Event room will always be a shop.', 3, [effects.gold_gain, effects.eventChange], 'pickUp', None, False, [[125], ['shop']], 0),
     'Bottled Flames': ('Upon pickup, choose an Attack card. Start combat with that card in your hand.', 3, [effects.card_select, effects.bottle], 'pickUp', None, False, [[1, {1, 2, 3, 4}], [0]], 0),
     'Bottled Lightning': ('Upon pickup, choose an Skill card. Start combat with that card in your hand.', 3, [effects.card_select, effects.bottle], 'pickUp', None, False, [[1, {0, 2, 3, 4}], [1]], 0),
@@ -345,7 +357,7 @@ UncommonRelics = {
     'Sands of Time': ('At the start of your turn, deal 3 damage to all enemies.', 3, [effects.deal_damage], 'combatAct', 'Turn Start', False, [[3]], 3),
     'Leather Boots': ('Every time you play 3 Attacks in a single turn, gain 1 Dexterity.', 3, [effects.apply_buff], 'combatAct', 'Attack Played', False, [[['Dexterity'], [1]]], 0, False, 0, 3, 'Turn'),
     'Leather Gloves': ('Every time you play 3 Attacks in a single turn, gain 1 Strength.', 3, [effects.apply_buff], 'combatAct', 'Attack Played', False, [[['Strength'], [1]]], 0, False, 0, 3, 'Turn'),
-    'Potted Plant': ('You can now gain 5 Max Hp at a Campfire as a free action. ', 3, [effects.additional_campfire], 'pickUp', None, False, [['Potted Plant']], 0),
+    'Potted Plant': ('You can now gain 5 Max Hp at a Campfire as a free action. ', 3, [effects.additional_campfire], 'pickUp', None, False, [['Fertilize']], 0),
     'Horn Cleat': ('On your second turn, gain 14 block.', 3, effects.block_gain_power, 'turnEff', 2, False, [14], 0),
     'D10': ('For every 10 cards you play, draw 1 card.', 3, [effects.draw_cards], 'combatAct', 'Card Played', False, [[1]], 0, False, 0, 10, 'global'),
     'Cauldron': ('Enemy combat rewards always contain a potion.', 3, [effects.potion_chance_mod], 'pickUp', None, False, [[9999]], 0),
@@ -379,6 +391,7 @@ rareRelics = {
     'Pot': ('Every 6 turns, gain 1 Intangible.', 2, [effects.apply_buff], 'combatAct', 'Turn Start', False, [[['Intangible'], [1]]], 0, False, 0, 6, 'global')
 }
 shopRelics = {
+    # Shop Relics Data
     'Treasure Map': ('Your next Event room will always be a Treasure.', 5, [effects.change_next_event], 'pickUp', None, False, [['Treasure']], 0),
     'Damaged Duplicator': ('Upon pickup, duplicate a card in your deck.', 5, [effects.card_select, effects.duplicate_card], 'pickUp', None, False, [[1, {}], ['Selected']], 0),
     'Biomechanical Arm': ('At the start of combat, gain 1 Artifact.', 5, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Artifact'], [1]]], 0),
@@ -395,6 +408,7 @@ shopRelics = {
     'Iron Plated Cards': ('When ever you shuffle your draw pile, gain 6 block.', 5, [effects.block_gain_power], 'combatAct', 'Shuffle', [[6]], 0)
 }
 eventRelics = {
+    # Event Relics Data
     'Golden Statue': ('Gain an 15 gold at the end of combat. ', 6, effects.gold_gain, 'eventMod', 'Combat End', False, [15], 0),
     'Broken Arms': ('At the start of combat, apply 1 Weak to all enemies.', 6, [effects.apply_debuff], 'combatAct', 'Combat Start', False, [[['Weak'], [1]]], 3),
     'Christmas Present': ('Rare cards appear more often.', 6, [effects.rare_base_chance_mult], 'pickUp', None, False, [[3]], 0),

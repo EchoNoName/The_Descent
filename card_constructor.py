@@ -91,17 +91,14 @@ class Card():
         self.original_size = self.sprite.get_size()
         self.hover_scale = 1.25  # Scale factor when hovering
         self.hover_y_offset = 100  # How many pixels to move up when hovering
-        self.hover_sprite = pygame.transform.scale(
-            self.sprite,
-            (int(self.original_size[0] * self.hover_scale), 
-             int(self.original_size[1] * self.hover_scale))
-        )
+        self.inspect_scale = 1.5
+        self.inspecting = False
+        self.hover_sprite = pygame.transform.scale(self.sprite, (int(self.original_size[0] * self.hover_scale), int(self.original_size[1] * self.hover_scale)))
+        self.inspect_sprite = pygame.transform.scale(self.sprite, (int(self.original_size[0] * self.inspect_scale), int(self.original_size[1] * self.inspect_scale)))
         self.arrow_body_sprite = pygame.image.load(os.path.join("assets", "arrows", "arrow_body.png"))
         self.arrow_head_sprite = pygame.image.load(os.path.join("assets", "arrows", "arrow_head.png"))
-        self.arrow_body_sprite = pygame.transform.scale(self.arrow_body_sprite, 
-            (self.arrow_body_sprite.get_width()//4, self.arrow_body_sprite.get_height()//4))
-        self.arrow_head_sprite = pygame.transform.scale(self.arrow_head_sprite,
-            (self.arrow_head_sprite.get_width()//4, self.arrow_head_sprite.get_height()//4))
+        self.arrow_body_sprite = pygame.transform.scale(self.arrow_body_sprite, (self.arrow_body_sprite.get_width()//4, self.arrow_body_sprite.get_height()//4)) 
+        self.arrow_head_sprite = pygame.transform.scale(self.arrow_head_sprite, (self.arrow_head_sprite.get_width()//4, self.arrow_head_sprite.get_height()//4))
         pygame.font.init()
         self.energy_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 24)
         self.energy_sprite = pygame.image.load(os.path.join("assets", "ui", "energy.png"))
@@ -218,6 +215,11 @@ class Card():
             # Scale down hover sprite to half size while preserving quality
             scaled_hover = pygame.transform.smoothscale(self.hover_sprite, (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
             surface.blit(scaled_hover, (self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2, self.current_pos[1]))
+        
+        elif self.inspecting:
+            scaled_inspect = pygame.transform.smoothscale(self.inspect_sprite, (self.inspect_sprite.get_width()//2, self.inspect_sprite.get_height()//2))
+            surface.blit(scaled_inspect, self.current_pos)
+
         else:
             # Scale down normal sprite to half size while preserving quality
             scaled_sprite = pygame.transform.smoothscale(self.sprite, (self.sprite.get_width()//2, self.sprite.get_height()//2))

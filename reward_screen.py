@@ -42,8 +42,8 @@ class RewardScreen: # Class for any reward screed
         return True
 
     def generate_rewards(self):
-        if not self.set_reward:
-            if self.run.player.relics:
+        if not self.set_reward: # If the reward is not set, generate rewards
+            if self.run.player.relics: # If the player has relic relating to rewards, apply the relic effects
                 for relic in self.run.player.relics:
                     relic.rewardModification(self.reward_type, self.additional_rewards)
             # Apply relic effects
@@ -58,11 +58,14 @@ class RewardScreen: # Class for any reward screed
                 self.rewards['Cards'].append(cards)
                 # Generate random card rewards
                 rng = random.randint(1, 100)
+                # Check if the player rolls a potion
                 if rng <= self.potionChance:
+                    # If the player rolls a potion, add it to the rewards
                     potion = potion_data.randomPotion()
                     self.rewards['Potions'].append(potion)
                     self.potionChance -= 10
                 else:
+                    # If the player does not roll a potion, increase the chance of rolling a potion
                     self.potionChance += 20
             elif self.reward_type == 1: 
                 # Elite combat
@@ -124,12 +127,14 @@ class RewardScreen: # Class for any reward screed
                 # Generate relic
             else:
                 raise TypeError(f'Invalid reward type: {self.reward_type}')
-        else:
+        else: # If the reward is set, apply the set reward
             if self.set_reward == 'Bell':
+                # Bell reward
                 self.rewards['Relics'].append(relic_data.createCommon)
                 self.rewards['Relics'].append(relic_data.createUncommon)
                 self.rewards['Relics'].append(relic_data.createRare)
             elif self.set_reward == 'Booster Pack':
+                # Booster pack reward
                 for k in range(0, 5):
                     cards, self.rareChanceOffset = card_constructor.generate_card_reward('normal', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
                     for i in range(0, len(cards)):
@@ -137,10 +142,12 @@ class RewardScreen: # Class for any reward screed
                         cards[i] = card_option
                     self.rewards['Cards'].append(cards)
             elif self.set_reward == 'Cauldron':
+                # Cauldron reward
                 for i in range(0, 5):
                     potion = potion_data.randomPotion()
                     self.rewards['Potions'].append(potion)
             elif self.set_reward == 'Tiny House':
+                # Tiny house reward - House Deed relic
                 self.rewards['Gold'] = 100
                 for i in range(0, 2):
                     potion = potion_data.randomPotion()
@@ -151,33 +158,35 @@ class RewardScreen: # Class for any reward screed
                     cards[i] = card_option
                 self.rewards['Cards'].append(cards)
             elif self.set_reward == 'Brewing Stand':
+                # Brewing stand reward - Potion
                 self.rewards['Potions'].append(potion_data.randomPotion())
             else:
+                # set reward
                 self.rewards = self.set_reward
 
-        if self.additional_rewards:
-            if self.additional_rewards['Gold'] > 0:
+        if self.additional_rewards: # If there are additional rewards, apply them
+            if self.additional_rewards['Gold'] > 0: # Additional gold
                 self.rewards['Gold'] += self.rewards['Gold']
-            if self.additional_rewards['Card'] > 0:
+            if self.additional_rewards['Card'] > 0: # Additional cards
                 for k in range(0, self.additional_rewards['Card']):
                     cards, self.rareChanceOffset = card_constructor.generate_card_reward('normal', self.rareChanceOffset, self.cardRewardOptions, self.character_class)
                     for i in range(0, len(cards)):
                         card_option = card_constructor.create_card(cards[i], card_data.card_info[cards[i]])
                         cards[i] = card_option
                     self.rewards['Cards'].append(cards)
-            if self.additional_rewards['Potion'] > 0:
+            if self.additional_rewards['Potion'] > 0: # Additional potions
                 for i in range(0, self.additional_rewards['Potion']):
                     potion = potion_data.randomPotion()
                     self.rewards['Potions'].append(potion)
-            if self.additional_rewards['Relic'] > 0:
+            if self.additional_rewards['Relic'] > 0: # Additional relics
                 for i in range(0, self.additional_rewards['Potion']):
                     relic = relic_data.spawnRelic()
                     self.rewards['Relics'].append(relic)
-        self.run.rareChanceOffset = self.rareChanceOffset
-        self.run.potionChance = self.potionChance
+        self.run.rareChanceOffset = self.rareChanceOffset # Update the rare chance offset
+        self.run.potionChance = self.potionChance # Update the potion chance
 
     def listRewards(self):
-        if self.generated == False:
+        if self.generated == False: # If the rewards have not been generated, generate them
             self.generate_rewards()
             self.generated = True
 
@@ -193,10 +202,11 @@ class RewardScreen: # Class for any reward screed
         reward_height = 60
         reward_spacing = 10
 
+        # Main loop
         while not self.close:
-            self.run.screen.fill((0, 0, 0))
-            reward_box.fill((50, 50, 50))
-            reward_y = 20
+            self.run.screen.fill((0, 0, 0)) # Fill the screen with black
+            reward_box.fill((50, 50, 50)) # Fill the reward box with gray
+            reward_y = 20 # Reset the reward y position
 
             # Draw rewards on reward_box
             if self.rewards['Gold']:
@@ -221,7 +231,8 @@ class RewardScreen: # Class for any reward screed
             mouse_pos = pygame.mouse.get_pos()
             box_mouse_pos = (mouse_pos[0] - reward_box_rect.left, mouse_pos[1] - reward_box_rect.top)
             hover_text = None
-
+            
+            # Draw potions
             for potion in self.rewards['Potions']:
                 potion_rect = pygame.Rect(30, reward_y, 460, reward_height)
                 pygame.draw.rect(reward_box, (70, 70, 70), potion_rect)
@@ -235,6 +246,7 @@ class RewardScreen: # Class for any reward screed
                 
                 reward_y += reward_height + reward_spacing
 
+            # Draw relics
             for relic in self.rewards['Relics']:
                 relic_rect = pygame.Rect(30, reward_y, 460, reward_height)
                 pygame.draw.rect(reward_box, (70, 70, 70), relic_rect)
@@ -272,11 +284,12 @@ class RewardScreen: # Class for any reward screed
 
             pygame.display.flip()
 
+            # Event loop
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (pygame.key.get_mods() & pygame.KMOD_ALT)):
                     pygame.quit()
                     
-                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1: # If the mouse is clicked
                     mouse_pos = pygame.mouse.get_pos()
                     
                     # Check skip button click
