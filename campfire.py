@@ -13,10 +13,88 @@ class Campfire:
         self.confirm_button_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
         self.back_button_sprite = pygame.image.load(os.path.join("assets", "ui", "back_button.png"))
         self.skip_button_sprite = pygame.image.load(os.path.join("assets", "ui", "skip_button.png"))
-        
+        self.fertilize_button_sprite = pygame.image.load(os.path.join("assets", "icons", "campfires", "fertilize.png"))
+        self.dig_button_sprite = pygame.image.load(os.path.join("assets", "icons", "campfires", "dig.png"))
+        self.shred_button_sprite = pygame.image.load(os.path.join("assets", "icons", "campfires", "shred.png"))
+        self.rest_button_sprite = pygame.image.load(os.path.join("assets", "icons", "campfires", "rest.png"))
+        self.smith_button_sprite = pygame.image.load(os.path.join("assets", "icons", "campfires", "smith.png"))
+        self.campfire_background_sprite = pygame.image.load(os.path.join("assets", "ui", "campfire_background.png"))
+        self.options = run.campfire
         self.completed = False
 
-    
+    def run_campfire(self):
+        campfire = True
+        self.get_upgradable_cards()
+        confirm_button = pygame.Rect(1600 - self.confirm_button_sprite.get_width(), 650, self.confirm_button_sprite.get_width(), self.confirm_button_sprite.get_height())
+        skip_button = pygame.Rect(1600 - self.skip_button_sprite.get_width(), 650, self.skip_button_sprite.get_width(), self.skip_button_sprite.get_height())
+        if self.options['Rest']:
+            rest_button = pygame.Rect(400, 250, self.rest_button_sprite.get_width(), self.rest_button_sprite.get_height())
+        if self.options['Smith']:
+            smith_button = pygame.Rect(900, 250, self.smith_button_sprite.get_width(), self.smith_button_sprite.get_height())
+        if self.options['Fertilize']:
+            fertilize_button = pygame.Rect(1600 - self.fertilize_button_sprite.get_width(), 520, self.fertilize_button_sprite.get_width(), self.fertilize_button_sprite.get_height())
+        if self.options['Dig']:
+            dig_button = pygame.Rect(1600 - self.dig_button_sprite.get_width(), 520, self.dig_button_sprite.get_width(), self.dig_button_sprite.get_height())
+        if self.options['Shred']:
+            shred_button = pygame.Rect(1600 - self.shred_button_sprite.get_width(), 520, self.shred_button_sprite.get_width(), self.shred_button_sprite.get_height())
+        
+        while campfire:
+            selection_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
+
+            events = pygame.event.get()
+            mouse_pos = pygame.mouse.get_pos()
+
+            for event in events:
+                if event.type == pygame.QUIT:
+                    campfire = False
+                    self.run.exit_game()
+                    
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    if confirm_button.collidepoint(mouse_pos):
+                        campfire = False
+                        break
+                    elif skip_button.collidepoint(mouse_pos):
+                        campfire = False
+                        break
+                
+                    elif self.options['Rest'] and rest_button.collidepoint(mouse_pos):
+                        self.rest()
+                        break
+                    elif self.options['Smith'] and smith_button.collidepoint(mouse_pos):
+                        self.smith()
+                        break
+                    elif self.options['Fertilize'] and fertilize_button.collidepoint(mouse_pos):
+                        self.fertilize()
+                        break
+                    elif self.options['Dig'] and dig_button.collidepoint(mouse_pos):
+                        self.dig()
+                        break
+                    elif self.options['Shred'] and shred_button.collidepoint(mouse_pos):
+                        self.shred()
+                        break
+            
+            if self.completed:
+                selection_surface.blit(self.confirm_button_sprite, confirm_button)
+            else:
+                selection_surface.blit(self.skip_button_sprite, skip_button)
+                if self.options['Rest']:
+                    selection_surface.blit(self.rest_button_sprite, rest_button)
+                if self.options['Smith']:
+                    selection_surface.blit(self.smith_button_sprite, smith_button)
+                if self.options['Fertilize']:
+                    selection_surface.blit(self.fertilize_button_sprite, fertilize_button)
+                if self.options['Dig']:
+                    selection_surface.blit(self.dig_button_sprite, dig_button)
+                if self.options['Shred']:
+                    selection_surface.blit(self.shred_button_sprite, shred_button)
+            
+            # Use campfire background
+
+            pygame.display.get_surface().blit(self.campfire_background_sprite, (0, 0))
+            pygame.display.get_surface().blit(selection_surface, (0, 0))
+            run.player.draw_ui(pygame.display.get_surface())
+            pygame.display.flip()
+
 
     def get_upgradable_cards(self):
         for card in self.run.player.deck:
@@ -30,17 +108,13 @@ class Campfire:
     def smith(self):
         upgrade_pile = combat_beta.Pile(self.upgradable_cards, 'upgrade')
         upgrading = True            
-
-        # Create selection surface and pile
-        selection_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
-        selection_surface.fill((0, 0, 0, 0))  # Completely transparent background
         
         upgrade_pile.scroll_offset = 0
 
         # Create a confirm button in bottom right
-        confirm_button = pygame.Rect(1600 - self.confirm_button_sprite.get_width(), 520, self.confirm_button_sprite.get_width(), self.confirm_button_sprite.get_height())
+        confirm_button = pygame.Rect(1600 - self.confirm_button_sprite.get_width(), 650, self.confirm_button_sprite.get_width(), self.confirm_button_sprite.get_height())
         # Create a back button in bottom left
-        back_button = pygame.Rect(0 , 520, self.back_button_sprite.get_width(), self.back_button_sprite.get_height())
+        back_button = pygame.Rect(0 , 650, self.back_button_sprite.get_width(), self.back_button_sprite.get_height())
 
         while upgrading:
             upgrade_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
@@ -126,10 +200,8 @@ class Campfire:
                 upgrade_surface.blit(self.back_button_sprite, back_button)
                 
                 # Update display
-                # Create a transparent surface for the background
-                background = pygame.Surface(pygame.display.get_surface().get_size(), pygame.SRCALPHA)
-                background.fill((50, 50, 50))  # Semi-transparent dark gray
-                pygame.display.get_surface().blit(background, (0, 0))
+                # Use campfire background
+                pygame.display.get_surface().blit(self.campfire_background_sprite, (0, 0))
                 pygame.display.get_surface().blit(upgrade_surface, (0, 0))
                 pygame.display.flip()
 
@@ -150,16 +222,13 @@ class Campfire:
         removal_pile = combat_beta.Pile(removable_cards, 'remove')
         removing = True            
 
-        # Create selection surface and pile 
-        selection_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
-        selection_surface.fill((0, 0, 0, 0))  # Completely transparent background
         
         removal_pile.scroll_offset = 0
 
         # Create a confirm button in bottom right
-        confirm_button = pygame.Rect(1600 - self.confirm_button_sprite.get_width(), 520, self.confirm_button_sprite.get_width(), self.confirm_button_sprite.get_height())
+        confirm_button = pygame.Rect(1600 - self.confirm_button_sprite.get_width(), 650, self.confirm_button_sprite.get_width(), self.confirm_button_sprite.get_height())
         # Create a back button in bottom left
-        back_button = pygame.Rect(0 , 520, self.back_button_sprite.get_width(), self.back_button_sprite.get_height())
+        back_button = pygame.Rect(0 , 650, self.back_button_sprite.get_width(), self.back_button_sprite.get_height())
         # Create a selected card holder
         selected_card = None
 
@@ -193,6 +262,8 @@ class Campfire:
                         if card.rect.collidepoint(mouse_pos):
                             if card != selected_card:
                                 selected_card = card
+                            else:
+                                selected_card = None
                             break
                             
                 
@@ -237,7 +308,8 @@ class Campfire:
 screen = pygame.display.set_mode((1600, 900))
 player = gameBeta.Character('player', 100, 1)
 player.deck = [card_constructor.create_card(1000, card_data.card_info[1000])]
+player.hp -= 40
 run = gameBeta.Run(player)
 campfire = Campfire(run)
 campfire.get_upgradable_cards()
-campfire.shred()
+campfire.run_campfire()
