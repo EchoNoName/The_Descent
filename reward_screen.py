@@ -208,6 +208,15 @@ class RewardScreen: # Class for any reward screed
             else:
                 # set reward
                 self.rewards = self.set_reward
+                if 'Gold' not in self.rewards:
+                    self.rewards['Gold'] = 0
+                if 'Cards' not in self.rewards:
+                    self.rewards['Cards'] = []
+                if 'Potions' not in self.rewards:
+                    self.rewards['Potions'] = []
+                if 'Relics' not in self.rewards:
+                    self.rewards['Relics'] = []
+
 
         if self.additional_rewards: # If there are additional rewards, apply them
             if self.additional_rewards['Gold'] > 0: # Additional gold
@@ -395,6 +404,8 @@ class RewardScreen: # Class for any reward screed
                                 for j, card in enumerate(card_options):
                                     card.rect.center = (card_x, self.run.SCREEN_HEIGHT//2)
                                     self.run.screen.blit(card.sprite, card.rect)
+                                    card.current_pos = (card.rect.x, card.rect.y)
+                                    card.draw_energy_cost(self.run.screen)
                                     card_x += self.run.SCREEN_WIDTH//4
 
                                 # Draw skip button

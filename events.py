@@ -89,6 +89,8 @@ class ScorchedForest:
                     elif option3.collidepoint(adjusted_pos) and not result_active:
                         self.player.hp_loss(8)
                         card_reward, self.run.rareChanceOffset = card_constructor.generate_card_reward('normal', self.run.rareChanceOffset, self.run.cardRewardOptions, self.player.character_class, self.run.rareChanceMult)
+                        for i, card_id in enumerate(card_reward):
+                            card_reward[i] = card_constructor.create_card(card_id, card_data.card_info[card_id])
                         self.run.generate_reward_screen_instance(False, {'Cards': [card_reward]})
                         self.run.reward.listRewards()
                         result_dialogue = [result5, result6]

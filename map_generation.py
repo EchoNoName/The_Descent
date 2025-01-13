@@ -495,8 +495,11 @@ def createMap(asc):
     return map, path, mapDisplay
 
 class Map:
-    def __init__(self, asc = 0, entered_rooms = []):
-        self.map, self.path, self.mapDisplay = createMap(asc)
+    def __init__(self, asc = 0, map_info = None, entered_rooms = []):
+        if map_info == None:
+            self.map, self.path, self.mapDisplay = createMap(asc)
+        else:
+            self.map, self.path, self.mapDisplay = map_info
         self.rooms = []
         for floor, room in self.map.items():
             for room_num, room_type in room.items():
@@ -559,9 +562,17 @@ class Map:
 
         # Draw all rooms
         for room in self.rooms:
+            # Calculate room position
             room_x = x + (room.room_num - 1) * x_spacing
             room_y = room.floor * y_spacing + 50  # Changed to normal orientation
+            
+            # Update room's collision rect to match its position on the scrollable surface
+            # Adjust y position by scroll offset to match actual screen position
+            room.rect = pygame.Rect(room_x, room_y, room.rect.width, room.rect.height)  # Subtract scroll offset from y position
+            
+            # Draw the room
             room.draw(map_surface, room_x, room_y)
+            # draw the rect
             
         # Draw visible portion of map with scroll offset
         visible_portion = pygame.Rect(0, -self.y, 1600, 900)
@@ -590,6 +601,9 @@ class Room:
     def enter(self):
         self.entered = True
     
+    def update_rect(self, x, y):
+        self.rect.topleft = (x, y)
+
     def completed(self, run, map):
         run.room = [self.floor, self.room_num]
         run.roomInfo = self.room_type
@@ -599,8 +613,6 @@ class Room:
         self.connections.append(connection)
 
     def draw(self, screen, x, y):
-        self.rect.x = x
-        self.rect.y = y
         screen.blit(self.sprite, (x, y))
         if self.entered:
             screen.blit(self.entered_circle, (x - 5, y - 5))

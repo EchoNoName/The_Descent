@@ -812,6 +812,7 @@ def additonal_rewards(reward_type, amount, additional_rewards):
     return additional_rewards
 
 def pocket_watch(amount, context, combat):
+    context['target'] = [combat.player]
     if combat.cards_played <= 3:
         apply_buff(['Draw Card'], [amount], context, combat)
 

@@ -107,9 +107,9 @@ class Combat:
                     
             # Update and draw game state
             self.run.handle_deck_view(events, mouse_pos)
-            self.handle_enemy_events(event, mouse_pos)
-            self.handle_pile_events(event, mouse_pos)
-            self.handle_character_events(event, mouse_pos)
+            self.handle_enemy_events(mouse_pos)
+            self.handle_pile_events(events, mouse_pos)
+            self.handle_character_events(mouse_pos)
             self.update_game_state(mouse_pos)
             self.draw_game_state(mouse_pos)
             self.screen.blit(self.combat_surface, (0, 0))
@@ -141,17 +141,17 @@ class Combat:
         next_index = (current_index + 1) % len(phase_order)
         self.current_phase = phase_order[next_index]
 
-    def handle_enemy_events(self, event, mouse_pos):
+    def handle_enemy_events(self, mouse_pos):
         """Handle enemy-related events"""
-        for enemy in self.enemies.enemy_list:
-            if enemy is not None:
-                enemy.rect
-                if enemy.rect.collidepoint(mouse_pos):
-                    enemy.hover()
-                else:
-                    enemy.unhover()
+        if not self.targetting_potion and not self.dragged_card:
+            for enemy in self.enemies.enemy_list:
+                if enemy is not None:
+                    if enemy.rect.collidepoint(mouse_pos):
+                        enemy.hover()
+                    else:
+                        enemy.unhover()
 
-    def handle_pile_events(self, event, mouse_pos):
+    def handle_pile_events(self, events, mouse_pos):
         """Handle pile-related events"""
         # Handle hovering
         if self.draw_pile.rect.collidepoint(mouse_pos):
@@ -175,18 +175,19 @@ class Combat:
             self.powers.unhover()
             
         # Handle clicking
-        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-            if self.draw_pile.rect.collidepoint(mouse_pos):
-                self.view_pile(self.draw_pile)
-            elif self.discard_pile.rect.collidepoint(mouse_pos):
-                self.view_pile(self.discard_pile)
-            elif self.exhaust_pile.rect.collidepoint(mouse_pos):
-                self.view_pile(self.exhaust_pile)
-            elif self.powers.rect.collidepoint(mouse_pos):
-                self.view_pile(self.powers)
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if self.draw_pile.rect.collidepoint(mouse_pos):
+                    self.view_pile(self.draw_pile)
+                elif self.discard_pile.rect.collidepoint(mouse_pos):
+                    self.view_pile(self.discard_pile)
+                elif self.exhaust_pile.rect.collidepoint(mouse_pos):
+                    self.view_pile(self.exhaust_pile)
+                elif self.powers.rect.collidepoint(mouse_pos):
+                    self.view_pile(self.powers)
 
 
-    def handle_character_events(self, event, mouse_pos):
+    def handle_character_events(self, mouse_pos):
         """Handle character-related events"""
         if self.player.rect.collidepoint(mouse_pos):
             self.player.hover()
@@ -487,6 +488,10 @@ class Combat:
     def combat_start(self):
         '''Method for starting combat'''
         self.get_energy_cap()
+        for buff in self.player.buffs.keys():
+            self.player.buffs[buff] = 0
+        for debuff in self.player.debuffs.keys():
+            self.player.debuffs[debuff] = 0
         if self.combat_type == 'Elite':
             if self.player.relics:
                 for relic in self.player.relics:
@@ -1661,6 +1666,7 @@ class Combat:
         # Said buff resets
         self.player.debuffs['Draw Reduction'] = 0
         # Said debuff resets
+        self.player.gain_buff('Strength', self.player.buffs['Ritual'])
         self.passive_check_and_exe('Turn Start')
         # Check for powers that activate at the start of a turn
         self.get_intent()
@@ -1697,6 +1703,7 @@ class Combat:
         if self.player.debuffs['Frail'] > 0:
             self.player.debuffs['Frail'] -= 1
         # Lower some debuff counters by 1
+        self.player.debuffs['No Draw'] = 0
         if self.player.debuffs['Last Chance'] > 0:
             self.exhaust_entire_pile(self.hand)
             self.exhaust_entire_pile(self.discard_pile)
@@ -1763,6 +1770,7 @@ class Combat:
         if self.player.debuffs['Atrophy'] > 0:
             self.player.lose_buff('Dexterity', self.player.debuffs['Atrophy'])
             self.player.debuffs['Atrophy'] = 0
+        self.player.debuffs['Entangled'] = 0
         self.counter_reset()
         return 'next'
         
@@ -1987,6 +1995,10 @@ class Pile:
             self.cards.append(card)
         else:
             self.cards.insert(random.randint(0, len(self.cards) - 1), card)
+
+    def insert_card(self, card):
+        """Insert a card into the pile at a random index"""
+        self.cards.insert(random.randint(0, len(self.cards) - 1), card)
 
     def shuffle(self):
         """Shuffle the cards in the pile"""

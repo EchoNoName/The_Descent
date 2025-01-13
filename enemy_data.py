@@ -467,9 +467,6 @@ class Enemy:
         if self.debuffs['Weak'] > 0:
             self.debuffs['Weak'] -= 1
         # Lower some debuff counters by 1 for all enemies
-        if self.buffs['Ritual'] > 0:
-            self.gain_buff('Strength', self.buffs['Ritual'])
-        # Gain 1 strength for every ritual
         if self.debuffs['Poison'] > 0:
             self.hp_loss(self.debuffs['Poison'])
         # Lose 1 Hp for every poison
@@ -478,6 +475,9 @@ class Enemy:
     
     def turn_end(self):
         '''Method for actions done at the end of turn'''
+        if self.buffs['Ritual'] > 0:
+            self.gain_buff('Strength', self.buffs['Ritual'])
+        # Gain 1 strength for every ritual
         self.gain_block(self.buffs['Plated Armour'] + self.buffs['Metalicize'])
         self.hp_heal(self.buffs['Regen'])
         if self.debuffs['Poison'] > 0:

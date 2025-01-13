@@ -7,7 +7,7 @@ import potion_data
 import enemy_data
 import relic_data
 import events
-import campfire
+import rest_site
 import map_generation
 import reward_screen
 import events
@@ -323,6 +323,7 @@ class Character:
             'Next Turn Block': f'At the start of your next turn, gain {self.buffs["Next Turn Block"]} Block. ',
             'Parry': f'When you take unblocked attack damage, Apply {self.buffs["Parry"]} Vulnerable to the attacker. ',
             'Deflect': f'When you take unblocked attack damage, deal {self.buffs["Deflect"]} damage to the attacker. ',
+            'Intangible': f'All HP loss and attack damage is reduced to 1. ',
         }
         return desc[buff]
 
@@ -615,7 +616,7 @@ class Character:
             cards: the cards being removed, the selected cards by default'''
         if card == 'Selected':
             card = self.selected_cards
-        new_card = copy.deepcopy(card)
+        new_card = card_constructor.create_card(card.id, card_data.card_info[card.id])
         # Create a deep copy of the card being duplicated
         self.deck.append(new_card)
         # Add the copy to the deck
@@ -685,6 +686,7 @@ class Character:
         ### args:
             amount: amount gained'''
         amount = amount + self.buffs['Dexterity']
+        amount -= self.debuffs['-Dexterity']
         if self.debuffs['Frail'] > 0:
             amount = math.floor(amount * 0.75)
         amount = max(0, amount)
@@ -886,7 +888,7 @@ class Run:
         pygame.display.set_caption("The Descent")
         self.combat_deck = None
         if map_info != None:
-            self.map, self.path, self.map_display = map_info
+            self.map = map_generation.Map(ascsension, map_info)
         else:
             self.map = map_generation.Map(ascsension)
         self.act = act
@@ -931,8 +933,38 @@ class Run:
         self.lastInstance = None
         self.eggs = eggs
         self.instances = [self.shop, self.combat, self.event, self.treasure, self.reward]
+        self.save_data = {}
         self.clicked_potion = None
     
+    def save_date(self):
+        self.save_data['player'] = self.player
+        self.save_data['ascsension'] = self.ascsension
+        self.save_data['map'] = self.map.map
+        self.save_data['path'] = self.map.path
+        self.save_data['mapDisplay'] = self.map.mapDisplay
+        self.save_data['act'] = self.act
+        self.save_data['act_name'] = self.act_name
+        self.save_data['room'] = self.room
+        self.save_data['roomInfo'] = self.roomInfo
+        self.save_data['combats_finished'] = self.combats_finished
+        self.save_data['easyPool'] = self.easyPool
+        self.save_data['normalPool'] = self.normalPool
+        self.save_data['elitePool'] = self.elitePool
+        self.save_data['boss'] = self.boss
+        self.save_data['eventList'] = self.eventList
+        self.save_data['shrineList'] = self.shrineList
+        self.save_data['rareChanceMult'] = self.rareChanceMult
+        self.save_data['rareChanceOffset'] = self.rareChanceOffset
+        self.save_data['potionChance'] = self.potionChance
+        self.save_data['cardRewardOptions'] = self.cardRewardOptions
+        self.save_data['removals'] = self.removals
+        self.save_data['encounterChance'] = self.encounterChance
+        self.save_data['mechanics'] = self.mechanics
+        self.save_data['campfire'] = self.campfire
+        self.save_data['eggs'] = self.eggs
+       
+
+
     def exit_game(self):
         pygame.quit()
         sys.exit()
@@ -1018,8 +1050,10 @@ class Run:
 
                     # Check if clicked on an available room
                     for room in available_rooms:
-
-                        if room.rect.collidepoint(mouse_pos):
+                        # Adjust mouse position for scrolling when checking collisions
+                        scrolled_mouse_pos = (mouse_pos[0], mouse_pos[1] - scroll_y)
+                        
+                        if room.rect.collidepoint(scrolled_mouse_pos):
                             self.room = [room.floor, room.room_num]
                             room_type = room.room_type
                             
@@ -1045,7 +1079,7 @@ class Run:
                                 self.start_treasure()
                                 break
                             elif room_type == 6:
-                                self.campfire = campfire.Campfire(self)
+                                self.campfire = rest_site.Campfire(self)
                                 self.campfire.run_campfire()
                                 break
 
@@ -1068,8 +1102,6 @@ class Run:
             # Draw player UI
             self.player.draw_ui(self.screen)
             pygame.display.flip()
-        
-        
 
     def discard_potion(self, potion):
         self.player.potions[self.player.potions.index(potion)] = None
@@ -1386,7 +1418,7 @@ class Run:
 
     def start_event(self):
         self.lastInstance = 'E'
-        self.event.start_event()
+        self.event.run_event()
 
     def generate_event_list(self):
         '''Method to generate the list of random events the player will encouter'''
@@ -1461,22 +1493,16 @@ class Run:
 
 
 player = Character('Warrior', 100, 1)
-player.hp -= 50
 player.gold = 1000
 player.deck.append(card_constructor.create_card(1025, card_data.card_info[1025]))
-player.buffs['Vigour'] = 20
 player.potions[0] = potion_data.randomPotion()
 player.potions[1] = potion_data.randomPotion()
 player.potions[2] = potion_data.randomPotion()
 run = Run(player)
-enemies = []
-enemies.append(enemy_data.GreenLouse())
-enemies.append(enemy_data.RedLouse())
-enemies.append(enemy_data.SentryA())
-enemies.append(enemy_data.GiantLouse())
-enemies.append(enemy_data.GoblinGiant())
-run.generage_combat_instace(enemies, 'normal')
-run.start_combat()
 pygame.init()
 
-run.mapNav()
+treasure = treasure.Treasure(run)
+treasure.start_event()
+
+
+# run.mapNav()

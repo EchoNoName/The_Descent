@@ -241,14 +241,8 @@ class Card():
                 scaled_hover.get_height()
             )
         else:
-            scaled_sprite = pygame.transform.smoothscale(self.sprite,
-                (self.sprite.get_width()//2, self.sprite.get_height()//2))
-            self.rect = pygame.Rect(
-                self.current_pos[0],
-                self.current_pos[1],
-                scaled_sprite.get_width(), 
-                scaled_sprite.get_height()
-            )
+            scaled_sprite = pygame.transform.smoothscale(self.sprite, (self.sprite.get_width()//2, self.sprite.get_height()//2))
+            self.rect = pygame.Rect(self.current_pos[0], self.current_pos[1], scaled_sprite.get_width(), scaled_sprite.get_height())
         
     def draw_energy_cost(self, surface):
         """Draw the energy cost in the top left corner of the card"""
@@ -280,7 +274,10 @@ class Card():
         if self.combat_cost[0] != None:
             cost = self.combat_cost[0]
         else:
-            cost = self.cost
+            if cost != 'C':
+                cost = self.cost
+            else:
+                cost = 6
 
         # Draw black outline
         outline_color = (0, 0, 0)
