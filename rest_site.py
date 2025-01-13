@@ -1,6 +1,5 @@
-import combat_beta
+import combat
 import card_data
-import gameBeta
 import potion_data
 import pygame
 import os
@@ -192,7 +191,8 @@ class Campfire:
         self.completed = True
 
     def smith(self):
-        upgrade_pile = combat_beta.Pile(self.upgradable_cards, 'upgrade')
+        self.get_upgradable_cards()
+        upgrade_pile = combat.Pile(self.upgradable_cards, 'upgrade')
         upgrading = True            
         
         upgrade_pile.scroll_offset = 0
@@ -314,7 +314,7 @@ class Campfire:
     
     def shred(self):
         removable_cards = [card for card in self.run.player.deck if card.removable]
-        removal_pile = combat_beta.Pile(removable_cards, 'remove')
+        removal_pile = combat.Pile(removable_cards, 'remove')
         removing = True            
 
         

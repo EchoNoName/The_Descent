@@ -181,7 +181,7 @@ class Relics: # Relic Object Class
                 }
                 context['target'] = combat.player_targeting(context, self.targets)
                 for i in range(0, len(self.effect_type)):
-                        self.effect_type[i](*self.effect_details[i], context, combat)
+                    self.effect_type[i](*self.effect_details[i], context, combat)
         else:
             if event == self.condition and self.effect_class == 'combatAct':
                 context = {
@@ -315,8 +315,8 @@ commonRelics = {
     'Dumbbell': ('At the start of combat, gain 1 Strength.', 4, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Strength'], [1]]], 0),
     'Smooth Stone': ('At the start of combat, gain 1 Dexterity', 4, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Dexterity'], [1]]], 0),
     'Backpack': ('Draw 2 Additional cards at the start of combat.', 4, effects.draw_cards, 'combatAct', 'Combat Start', False, [2], 0),
-    'Art of War': ('If you do not play any Attacks during your turn, gain 1 additional Energy next turn.', 4, [effects.effect_for_card_type_not_played], 'combatAct', 'Turn End', False, [[[effects.apply_buff], [[0, ['Energized'], [1]]]]], 0),
-    'Holy Cross': ('If you do not play any Skills during your turn, gain 1 additional Energy next turn.', 4, [effects.effect_for_card_type_not_played], 'combatAct', 'Turn End', False, [[[effects.apply_buff], [[1, ['Energized'], [1]]]]], 0),
+    'Art of War': ('If you do not play any Attacks during your turn, gain 1 additional Energy next turn.', 4, [effects.effect_for_card_type_not_played], 'combatAct', 'Turn End', False, [[0, [effects.apply_buff], [[0, ['Energized'], [1]]]]], 0),
+    'Holy Cross': ('If you do not play any Skills during your turn, gain 1 additional Energy next turn.', 4, [effects.effect_for_card_type_not_played], 'combatAct', 'Turn End', False, [[1, [effects.apply_buff], [[1, ['Energized'], [1]]]]], 0),
     'Sharpening Stone': ('Upon pickup, Upgrade 2 random Attakcs.', 4, [effects.upgrade_card], 'pickUp', None, False, [[['Attack', 'Attack']]], 0),
     'Armour Polish': ('Upon pickup, Upgrade 2 random Skills.', 4, [effects.upgrade_card], 'pickUp', None, False, [[['Skill', 'Skill']]], 0),
     'Anvil': ('Upon pickup, Upgrade 2 random cards.', 4, [effects.upgrade_card], 'pickUp', None, False, [[['Card', 'Card']]], 0),
@@ -402,7 +402,7 @@ shopRelics = {
     'Biomechanical Arm': ('At the start of combat, gain 1 Artifact.', 5, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Artifact'], [1]]], 0),
     'The Third Eye': ('When viewing your draw pile, it is now shown in order.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [['Ordered_Draw_Pile', True]], 0),
     'Pancakes': ('Upon pickup, increase your Max Hp by 7 and heal all your Hp.', 5, [effects.max_hp_change, effects.heal_player], 'pickUp', None, False, [[7], [9999]], 0),
-    'X': ('Whenever you play an X cost card, its effects are increased by 2.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [[2]], 0),
+    'X': ('Whenever you play an X cost card, its effects are increased by 2.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [['X_Bonus', 2]], 0),
     'Costco\'s Membership Card': ('50% discount on all shop items.', 5, effects.price_discount, 'valueMod', 'Price', False, [0.5], 0),
     'Sling of Courage': ('Gain 2 Strength during Elite combats.', 5, [effects.apply_buff], 'combatAct', 'Elite Start', False, [[['Strength'], [2]]], 0),
     'Booster Pack': ('Upon pickup, gain 5 card rewards.', 5, [effects.generate_rewards], 'pickUp', None, False, [['Booster Pack']], 0),
@@ -410,7 +410,7 @@ shopRelics = {
     '2 Leaf Clover': ('Cards that Exhaust from being played don\'t 50% of the time.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [['Exhaust_Chance', 50]], 0),
     'Rainbow': ('At the start of combat, add a random card to your hand, it costs 0 that turn.', 5, [effects.add_card_to_pile], 'combatAct', 'Combat Start', False, [['hand', 'Card', 1, 'na']], 0),
     'Sandvich': ('Status cards can now be played, they are Exhausted when played.', 5, [effects.combat_mechanic_change], 'pickUp', None, False, [['Playable_Status', True]], 0),
-    'Iron Plated Cards': ('When ever you shuffle your draw pile, gain 6 block.', 5, [effects.block_gain_power], 'combatAct', 'Shuffle', [[6]], 0)
+    'Iron Plated Cards': ('When ever you shuffle your draw pile, gain 6 block.', 5, [effects.block_gain_power], 'combatAct', 'Shuffle', False, [[6]], 0)
 }
 eventRelics = {
     # Event Relics Data

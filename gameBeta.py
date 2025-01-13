@@ -1,8 +1,7 @@
 import random
 import card_data
 import card_constructor
-import effects
-import combat_beta
+import combat
 import potion_data
 import enemy_data
 import relic_data
@@ -13,38 +12,88 @@ import reward_screen
 import events
 import math
 import shop
-import treasure
-import copy
+import chest
+import json
 import pygame
 import os  
 import sys
 
-Instances = []
+class MainMenu:
+    def __init__(self):
+        self.screen = pygame.display.set_mode((800, 600))
+        self.clock = pygame.time.Clock()
+        self.player = None
+        self.run = None
+        self.save_data = {}
+        self.running = True
+    
+    def load_save_data(self):
+        with open('assets/saves/save_data.txt', 'r') as file:
+            self.save_data = json.load(file)
+        reconstructed_path = {}
+        for key, value in self.save_data['path'].items():
+            floor, room = key.split(',')
+            connections = []
+            for conn in value:
+                conn_floor, conn_room = conn.split(',')
+                connections.append((int(conn_floor), int(conn_room)))
+            reconstructed_path[int(floor), int(room)] = connections
+        self.save_data['path'] = reconstructed_path
+        print(self.save_data['path'])
+        player = Character(self.save_data['player name'], self.save_data['player maxHp'], self.save_data['player class'], False, self.save_data['player deck'], self.save_data['player potions'], self.save_data['player relics'], self.save_data['player hp'], self.save_data['player gold'])
+        self.player = player
+        map_info = self.save_data['map'], self.save_data['path'], self.save_data['mapDisplay']
+        run = Run(self.player, False, False, self.save_data['ascension'], map_info, self.save_data['act'], self.save_data['act_name'], self.save_data['room'], self.save_data['roomInfo'], self.save_data['combats_finished'], self.save_data['easyPool'], self.save_data['normalPool'], self.save_data['elitePool'], self.save_data['boss'], self.save_data['eventList'], self.save_data['rareChanceMult'], self.save_data['rareChanceOffset'], self.save_data['potionChance'], self.save_data['cardRewardOptions'], self.save_data['removals'], self.save_data['encounterChance'], self.save_data['mechanics'], self.save_data['campfire'], self.save_data['eggs'])
+        self.run = run
+        print(self.save_data)
 
 class Character:
-    def __init__(self, name, maxHp, character_class):
+    def __init__(self, name, maxHp, character_class, new_character = True, deck = [], potions = [], relics = [], current_hp = None, gold = 100):
         self.name = name
         self.maxHp = maxHp
         self.hp = maxHp
         self.character_class = character_class
         self.block = 0
         self.deck = []
-        self.x = 0
-        self.y = 0
-        if character_class == 1:
-            for i in range(5):
-                self.deck.append(card_constructor.create_card(1000, card_data.card_info[1000]))
-            for i in range(5):
-                self.deck.append(card_constructor.create_card(1002, card_data.card_info[1002]))
-            self.deck.append(card_constructor.create_card(1001, card_data.card_info[1001]))
-            sprite = pygame.image.load('assets/sprites/characters/swordsman.png')
-            self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 2.75, sprite.get_height() // 2.75))
-        self.rect = self.sprite.get_rect()
-        self.selected_cards = []
+        self.hp = maxHp
         self.gold = 100
         self.thieved = 0
         self.potions = [None, None, None]
         self.relics = []
+        self.x = 0
+        self.y = 0
+        if new_character:
+            if character_class == 1:
+                for i in range(5):
+                    self.deck.append(card_constructor.create_card(1000, card_data.card_info[1000]))
+            for i in range(5):
+                self.deck.append(card_constructor.create_card(1002, card_data.card_info[1002]))
+            self.deck.append(card_constructor.create_card(1001, card_data.card_info[1001]))
+        else:
+            self.maxHp = maxHp
+            self.hp = current_hp
+            for card in deck:
+                self.deck.append(card_constructor.create_card(card, card_data.card_info[card]))
+            for j, potion in enumerate(potions):
+                if potion is not None:
+                    self.potions[j] = potion_data.createPotion(potion, potion_data.potions[potion])
+            for relic in relics:
+                if relic in relic_data.commonRelics:
+                    self.relics.append(relic_data.createRelic(relic, relic_data.commonRelics[relic]))
+                elif relic in relic_data.rareRelics:
+                    self.relics.append(relic_data.createRelic(relic, relic_data.rareRelics[relic]))
+                elif relic in relic_data.UncommonRelics:
+                    self.relics.append(relic_data.createRelic(relic, relic_data.UncommonRelics[relic]))
+                elif relic in relic_data.shopRelics:
+                    self.relics.append(relic_data.createRelic(relic, relic_data.shopRelics[relic]))
+                elif relic in relic_data.bossRelics:
+                    self.relics.append(relic_data.createRelic(relic, relic_data.bossRelics[relic]))
+                elif relic in relic_data.eventRelics:
+                    self.relics.append(relic_data.createRelic(relic, relic_data.eventRelics[relic]))
+        sprite = pygame.image.load('assets/sprites/characters/swordsman.png')
+        self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 2.75, sprite.get_height() // 2.75))
+        self.rect = self.sprite.get_rect()
+        self.selected_cards = []
         self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0, 'Parry': 0, 'Deflect': 0, 'Intangible': 0}
         #Debuffs: Atrophy = lose dex at the end of turn
         self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Entangle': 0}
@@ -463,7 +512,7 @@ class Character:
         ### args:
             pile (list): The pile of cards to view
         '''
-        pile = combat_beta.Pile(self.deck, 'Deck')
+        pile = combat.Pile(self.deck, 'Deck')
         card_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
         card_surface.fill((0, 0, 0, 0))  # Completely transparent background
         confirm_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
@@ -862,28 +911,13 @@ classes = {
     1: ('Wandering Samerai', 80, 1)
 }
 
-def main_menu():
-    main = True
-    while main:
-        print('Selected any of the below options')
-        print('1: New Run')
-        print('2: Card Library')
-        # Other options to be added
-        input = int(input(''))
-        if input == 1:
-            return 'Run'
-        elif input == 2:
-            return 'Cards'
-        else:
-            print('Invalid Menu Option')
-        # To be continued
-
 class Run:
-    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], shrineList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, removals = 0, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True, 'Fertilize': False, 'Dig': False, 'Shred': False}, eggs = []):
+    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, removals = 0, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True, 'Fertilize': False, 'Dig': False, 'Shred': False}, eggs = []):
         self.player = player
         pygame.init()
         self.SCREEN_WIDTH = 1600
         self.SCREEN_HEIGHT = 900
+        self.starting_blessing_background_spirte = pygame.image.load(os.path.join("assets", "ui", "forest.png"))
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         pygame.display.set_caption("The Descent")
         self.combat_deck = None
@@ -893,6 +927,7 @@ class Run:
             self.map = map_generation.Map(ascsension)
         self.act = act
         self.act_name = act_name
+        self.ascsension = ascsension
         self.room = room
         self.roomInfo = roomInfo
         self.combats_finished = combats_finished
@@ -907,7 +942,7 @@ class Run:
             self.elitePool = elitePool
             self.boss = boss
             self.eventList = eventList
-            self.shrineList = shrineList
+            # self.shrineList = shrineList
         else:
             self.easyPool = enemy_data.act_1_easy_pool()
             self.normalPool = enemy_data.act_1_normal_pool()
@@ -931,28 +966,56 @@ class Run:
         self.reward = None
         self.removals = removals
         self.lastInstance = None
+        self.confirm_button_sprite = pygame.image.load(os.path.join("assets", "ui", "confirm_button.png"))
         self.eggs = eggs
-        self.instances = [self.shop, self.combat, self.event, self.treasure, self.reward]
+        self.rest_site = None
+        self.instances = [self.shop, self.combat, self.event, self.treasure, self.reward, self.rest_site]
         self.save_data = {}
+        self.active_room = None
         self.clicked_potion = None
     
     def save_date(self):
-        self.save_data['player'] = self.player
+        self.save_data['player name'] = self.player.name
+        self.save_data['player maxHp'] = self.player.maxHp
+        self.save_data['player hp'] = self.player.hp
+        self.save_data['player class'] = self.player.character_class
+        self.save_data['player deck'] = []
+        for card in self.player.deck:
+            self.save_data['player deck'].append(card.id)
+        self.save_data['player potions'] = []
+        for potion in self.player.potions:
+            if potion:
+                self.save_data['player potions'].append(potion.name)
+            else:
+                self.save_data['player potions'].append(None)
+        self.save_data['player relics'] = []
+        for relic in self.player.relics:
+            self.save_data['player relics'].append(relic.name)
+        self.save_data['player gold'] = self.player.gold
         self.save_data['ascsension'] = self.ascsension
         self.save_data['map'] = self.map.map
-        self.save_data['path'] = self.map.path
+        # Convert path dictionary with tuple keys to serializable format
+        path_data = {}
+        for (floor, room), destinations in self.map.path.items():
+            # Convert tuple key to string representation
+            key = f"{floor},{room}"
+            # Convert destination tuples to list of strings
+            dest_list = [f"{d_floor},{d_room}" for d_floor, d_room in destinations]
+            path_data[key] = dest_list
+        self.save_data['path'] = path_data
         self.save_data['mapDisplay'] = self.map.mapDisplay
         self.save_data['act'] = self.act
         self.save_data['act_name'] = self.act_name
         self.save_data['room'] = self.room
         self.save_data['roomInfo'] = self.roomInfo
         self.save_data['combats_finished'] = self.combats_finished
+        self.save_data['ascension'] = self.ascsension
         self.save_data['easyPool'] = self.easyPool
         self.save_data['normalPool'] = self.normalPool
         self.save_data['elitePool'] = self.elitePool
         self.save_data['boss'] = self.boss
         self.save_data['eventList'] = self.eventList
-        self.save_data['shrineList'] = self.shrineList
+        # self.save_data['shrineList'] = self.shrineList
         self.save_data['rareChanceMult'] = self.rareChanceMult
         self.save_data['rareChanceOffset'] = self.rareChanceOffset
         self.save_data['potionChance'] = self.potionChance
@@ -963,7 +1026,12 @@ class Run:
         self.save_data['campfire'] = self.campfire
         self.save_data['eggs'] = self.eggs
        
-
+    def save_and_return_to_main_menu(self):
+        # Creat a text file with the save data in assets/saves/
+        print(self.save_data)
+        with open(os.path.join("assets", "saves", "save_data.txt"), "w") as file:
+            json.dump(self.save_data, file)
+        return 'Main Menu'
 
     def exit_game(self):
         pygame.quit()
@@ -973,31 +1041,105 @@ class Run:
         if self.newRun == True:
             self.neowBlessing()
         else:
-            return # placeholder
+            self.mapNav()
 
     def neowBlessing(self):
         self.eventList = self.generate_event_list()
-        for ds in reversed(self.map_display):
-            print(ds)
-        print('    0 1 2 3 4 5 6')
-        entrances = self.map[1]
-        room_type = {
-            1: 'Normal Combat',
-            2: 'Occurance',
-            3: 'Elite Combat',
-            4: 'Shop',
-            5: 'Treasure',
-            6: 'Campfire'
-        }
-        for room, encounter_type in entrances.items():
-            print(f'Floor 1, Room {room}: {room_type[encounter_type]}')
-        room = int(input('Type the room number you wish to enter'))
-        self.room = [1, room]
-        room_entered = self.map[1][room]
-        if room_entered == 1:
-            enemies = self.get_enemies()
-            self.generage_combat_instace(enemies, 'normal')
-            self.start_combat()
+        blessing_active = True
+        font = pygame.font.Font(None, 36)
+        self.room = [0, 0]
+        # Create option text surfaces
+        option1_text = font.render("Gain 100 Gold", True, (255, 255, 255))
+        option2_text = font.render("Transform 1 Card", True, (255, 255, 255))
+        option3_text = font.render("Lose all gold, gain a random rare card", True, (255, 255, 255))
+        option4_text = font.render("Replace starting relic with random boss relic", True, (255, 255, 255))
+        
+        # Create option rects
+        option1_rect = pygame.Rect(600, 200, 400, 50)
+        option2_rect = pygame.Rect(600, 300, 400, 50)
+        option3_rect = pygame.Rect(600, 400, 400, 50)
+        option4_rect = pygame.Rect(600, 500, 400, 50)
+        
+        # Create confirm button rect
+        confirm_rect = self.confirm_button_sprite.get_rect()
+        confirm_rect.bottomright = (1500, 800)
+        
+        selected_option = None
+        
+        while blessing_active:
+            self.screen.blit(self.starting_blessing_background_spirte, (0, 0))
+            
+            # Draw options only if not selected
+            if selected_option is None:
+                # Wider option boxes
+                option1_rect = pygame.Rect(400, 200, 800, 50)
+                option2_rect = pygame.Rect(400, 300, 800, 50)
+                option3_rect = pygame.Rect(400, 400, 800, 50)
+                option4_rect = pygame.Rect(400, 500, 800, 50)
+                
+                pygame.draw.rect(self.screen, (100, 100, 100), option1_rect)
+                pygame.draw.rect(self.screen, (100, 100, 100), option2_rect)
+                pygame.draw.rect(self.screen, (100, 100, 100), option3_rect)
+                pygame.draw.rect(self.screen, (100, 100, 100), option4_rect)
+                
+                self.screen.blit(option1_text, (option1_rect.x + 10, option1_rect.y + 10))
+                self.screen.blit(option2_text, (option2_rect.x + 10, option2_rect.y + 10))
+                self.screen.blit(option3_text, (option3_rect.x + 10, option3_rect.y + 10))
+                self.screen.blit(option4_text, (option4_rect.x + 10, option4_rect.y + 10))
+            
+            # Draw player UI
+            self.player.draw_ui(self.screen)
+            
+            # Only show confirm button if option selected
+            if selected_option is not None:
+                self.screen.blit(self.confirm_button_sprite, confirm_rect)
+            
+            events = pygame.event.get()
+            mouse_pos = pygame.mouse.get_pos()
+            
+            # Handle UI events
+            self.potion_events(mouse_pos, events)
+            self.handle_deck_view(events, mouse_pos)
+            
+            for event in events:
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                    
+                if event.type == pygame.MOUSEBUTTONUP:
+                    if selected_option is None:  # Only check options if none selected
+                        if option1_rect.collidepoint(mouse_pos):
+                            self.player.gold += 100
+                            selected_option = 1
+                        elif option2_rect.collidepoint(mouse_pos):
+                            # Transform random card in deck
+                            self.card_select(1, {})
+                            self.player.transform_card()
+                            selected_option = 2
+                        elif option3_rect.collidepoint(mouse_pos):
+                            self.player.gold = 0
+                            # Add random rare card to deck
+                            while True:
+                                rare_card = card_constructor.random_card('card', self.player)
+                                rare_card = card_constructor.create_card(rare_card, card_data.card_info[rare_card])
+                                if rare_card.rarity == 3:
+                                    self.player.deck.append(rare_card)
+                                    break
+                            selected_option = 3
+                        elif option4_rect.collidepoint(mouse_pos):
+                            # Replace starting relic with random boss relic
+                            if len(self.player.relics) > 0:
+                                self.player.relics.pop(0)
+                                boss_relic_name = random.choice(list(relic_data.bossRelics.keys()))
+                                boss_relic = relic_data.createRelic(boss_relic_name, relic_data.bossRelics[boss_relic_name])
+                                self.relic_pickup(boss_relic)
+                            selected_option = 4
+                        
+                    if confirm_rect.collidepoint(mouse_pos) and selected_option is not None:
+                        blessing_active = False
+            
+            pygame.display.flip()
+            
         self.mapNav()
 
     def handle_deck_view(self, events, mouse_pos):
@@ -1018,6 +1160,7 @@ class Run:
         scroll_y = 0
         scroll_speed = 20
         max_scroll = -900  # Half of map height (1800/2) as defined in Map.draw()
+        self.save_date()
 
         while map_active:
             events = pygame.event.get()
@@ -1075,12 +1218,13 @@ class Run:
                                 self.start_shop()
                                 break
                             elif room_type == 5:
-                                self.treasure = treasure.Treasure(self)
+                                self.treasure = chest.Treasure(self)
                                 self.start_treasure()
                                 break
                             elif room_type == 6:
-                                self.campfire = rest_site.Campfire(self)
-                                self.campfire.run_campfire()
+                                rest = rest_site.Campfire(self)
+                                self.rest_site = rest
+                                self.rest_site.run_campfire()
                                 break
 
             # Clear screen and draw map
@@ -1278,7 +1422,7 @@ class Run:
         for card in self.player.deck:
             if card.type not in restrictions:
                 eligible_cards.append(card)
-        pile = combat_beta.Pile(eligible_cards, "selection")
+        pile = combat.Pile(eligible_cards, "selection")
         if pile.is_empty():
             return None
             
@@ -1384,7 +1528,7 @@ class Run:
 
     def generage_combat_instace(self, enemies, combatType):
         self.create_combat_deck()
-        self.combat = combat_beta.Combat(self.player, self.combat_deck, enemies, combatType, self, self.screen)
+        self.combat = combat.Combat(self.player, self.combat_deck, enemies, combatType, self, self.screen)
 
     def start_combat(self, set_rewards = False):
         self.lastInstance = 'C'
@@ -1467,7 +1611,8 @@ class Run:
         self.event = events.events1[event](self.player, self)
 
     def create_treasure_instance(self):
-        self.treasure = treasure.Treasure(self) # placeHolder to be continued
+        chest_event = chest.Treasure(self)
+        self.treasure = chest_event
 
     def unknown_location(self):
         event = self.eventList[-1]
@@ -1493,16 +1638,8 @@ class Run:
 
 
 player = Character('Warrior', 100, 1)
-player.gold = 1000
-player.deck.append(card_constructor.create_card(1025, card_data.card_info[1025]))
-player.potions[0] = potion_data.randomPotion()
-player.potions[1] = potion_data.randomPotion()
-player.potions[2] = potion_data.randomPotion()
 run = Run(player)
+run.relic_pickup(relic_data.createRelic('Iron Plated Cards', relic_data.shopRelics['Iron Plated Cards']))
 pygame.init()
 
-treasure = treasure.Treasure(run)
-treasure.start_event()
-
-
-# run.mapNav()
+run.neowBlessing()

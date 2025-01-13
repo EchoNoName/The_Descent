@@ -121,6 +121,7 @@ def createMap(asc):
                 floor += 1
                 room = room + connection
                 # Change the room to the newly generated and connected room
+        
         return path, map
     
     path, map = compPathGen()
@@ -500,18 +501,28 @@ class Map:
             self.map, self.path, self.mapDisplay = createMap(asc)
         else:
             self.map, self.path, self.mapDisplay = map_info
+            map_copy = {}
+            for i in range(1, 16):
+                map_copy[i] = {}
+                if str(i) in self.map:  # Check if floor exists as string key
+                    for key, value in self.map[str(i)].items():
+                        map_copy[i][int(key)] = int(value)
+            self.map = map_copy
+            print(self.map)
         self.rooms = []
         for floor, room in self.map.items():
             for room_num, room_type in room.items():
-                self.rooms.append(Room(room_type, floor, room_num))
+                self.rooms.append(Room(int(room_type), int(floor), int(room_num)))
         for room in self.rooms:
             if room.floor != 16:    
                 for connection in self.path[(room.floor, room.room_num)]:
                     room.add_connection(connection)
         # Connect floor 0,0 to all rooms in floor 1
         self.path[(0, 0)] = []
+        if '1' in self.map:
+            self.map[1] = self.map['1']
         for room_num in self.map[1].keys():
-            self.path[(0, 0)].append([1, room_num])
+            self.path[(0, 0)].append([1, int(room_num)])
         self.y = 0
         self.entered_rooms = entered_rooms
 

@@ -1307,7 +1307,7 @@ class Combat:
                             self.player.gold += enemy.buffs['Stolen']
                     self.enemies.remove_enemy(enemy)
                     # Remove them from the enemy list
-                self.passive_check_and_exe('Lethal')
+                    self.passive_check_and_exe('Lethal')
         if self.hand.is_empty():
             self.passive_check_and_exe('Empty Hand')
         if self.enemies.is_empty():
