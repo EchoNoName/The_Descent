@@ -150,7 +150,7 @@ def rob(context, combat):
     ### args:
         context: Info related to the user and combat
         combat: combat session currently'''
-    gold_stolen = max(combat.player.gold, context['user'].buffs['Thievery'])
+    gold_stolen = min(combat.player.gold, context['user'].buffs['Thievery'])
     combat.player.gold -= gold_stolen
     combat.player.thieved += gold_stolen
     context['user'].buffs['Stolen'] += gold_stolen

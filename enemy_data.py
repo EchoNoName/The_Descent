@@ -8,7 +8,6 @@ class Enemy:
     def __init__(self):
         self.x = 0  # Initial x position
         self.y = 0  # Initial y position
-        self.rect = None  # Will store the collision box
         self.buffs = {'Strength': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Next Turn Block': 0, 'Split': 0, 'Anger': 0, 'Enraged': 0, 'Thievery': 0, 'Stolen': 0, 'Infestation': 0, 'Curl Up': 0}
         self.debuffs = {'-Strength': 0, 'Vulnerable': 0, 'Weak': 0, 'Chained': 0, 'Poison': 0, 'Asleep': 0}
         self.block_overlay_sprite = pygame.image.load(os.path.join("assets", "ui", "hp_bar", "block_overlay.png"))
@@ -332,7 +331,7 @@ class Enemy:
                 # Start at base x position (x)
                 # Add smaller offset from left edge (50px instead of 100px)
                 # For each column, add box_width + smaller spacing to position boxes horizontally
-                box_x = x - self.sprite.get_width() - (box_width + 10) * column  # Reduced left offset and column spacing
+                box_x = x - self.sprite.get_width() - (box_width + 10) * column # Reduced left offset and column spacing
                 # Calculate y position based on row number
                 if row == 0:
                     box_y = y
@@ -656,6 +655,7 @@ class JawWorm(Enemy):
         self.sprite = 'jaw_worm.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite)
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() // 2), int(self.sprite.get_height() // 2)))
         
         # Create collision rect matching sprite size
         self.rect = self.sprite.get_rect()  # Creates rect same size as sprite
@@ -739,10 +739,7 @@ class SmallGreenSlime(Enemy):
         self.sprite = 'green_slime.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
-        self.sprite = pygame.transform.scale(
-            self.sprite, 
-            (int(self.sprite.get_width() * 0.175), int(self.sprite.get_height() * 0.175))
-        )
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.175), int(self.sprite.get_height() * 0.175)))
         self.rect = self.sprite.get_rect()
         self.size = 'small'
         self.max_hp = max_hp
@@ -984,6 +981,7 @@ class SmallBlueSlime(Enemy):
         self.sprite = 'blue_slime.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.175), int(self.sprite.get_height() * 0.175)))
         self.rect = self.sprite.get_rect()
         self.size = 'small'
         self.max_hp = max_hp
@@ -1010,6 +1008,7 @@ class MediumBlueSlime(Enemy):
         self.sprite = 'blue_slime.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.3), int(self.sprite.get_height() * 0.3)))
         self.rect = self.sprite.get_rect()
         self.size = 'medium'
         self.max_hp = max_hp
@@ -1078,6 +1077,7 @@ class LargeBlueSlime(Enemy):
         self.sprite = 'blue_slime.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.6), int(self.sprite.get_height() * 0.6)))
         self.rect = self.sprite.get_rect()
         self.size = 'large'
         self.max_hp = max_hp
@@ -1164,6 +1164,7 @@ class SneakyGoblin(Enemy):
         self.sprite = 'sneaky_goblin.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.3), int(self.sprite.get_height() * 0.3)))
         self.rect = self.sprite.get_rect()
         self.size = 'small'
         self.max_hp = random.randint(10, 14)
@@ -1188,6 +1189,11 @@ class FatGoblin(Enemy):
     def __init__(self) -> None:
         super().__init__()
         self.name = 'Fat Goblin'
+        self.sprite = 'fat_goblin.png'
+        self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
+        self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.3), int(self.sprite.get_height() * 0.3)))
+        self.rect = self.sprite.get_rect()
         self.size = 'small'
         self.max_hp = random.randint(13, 17)
         self.hp = self.max_hp
@@ -1214,6 +1220,7 @@ class WizardGoblin(Enemy):
         self.sprite = 'wizard_goblin.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.3), int(self.sprite.get_height() * 0.3)))
         self.rect = self.sprite.get_rect()
         self.size = 'small'
         self.max_hp = random.randint(23, 25)
@@ -1248,6 +1255,7 @@ class MadGoblin(Enemy):
         self.sprite = 'mad_goblin.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.3), int(self.sprite.get_height() * 0.3)))
         self.rect = self.sprite.get_rect()
         self.size = 'small'
         self.max_hp = random.randint(20, 24)
@@ -1303,6 +1311,7 @@ class ShieldGoblin(Enemy):
         self.sprite = 'shield_goblin.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.3), int(self.sprite.get_height() * 0.3)))
         self.rect = self.sprite.get_rect()
         self.size = 'small'
         self.max_hp = random.randint(12, 15)
@@ -1334,6 +1343,7 @@ class Looter(Enemy):
         self.sprite = 'looter.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.4), int(self.sprite.get_height() * 0.4)))
         self.rect = self.sprite.get_rect()
         self.size = 'medium'
         self.max_hp = random.randint(44, 48)
@@ -1381,6 +1391,7 @@ class InfestedCorpes(Enemy):
         self.sprite = 'infested_corpes.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.4), int(self.sprite.get_height() * 0.4)))
         self.rect = self.sprite.get_rect()
         self.size = 'medium'
         self.max_hp = random.randint(22, 28)
@@ -1461,6 +1472,7 @@ class Cultist(Enemy):
         self.sprite = 'cultist.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.3), int(self.sprite.get_height() * 0.3)))
         self.rect = self.sprite.get_rect()
         self.size = 'medium'
         self.max_hp = random.randint(48, 54)
@@ -1496,6 +1508,7 @@ class RedArachnid(Enemy):
         self.sprite = 'red_spider.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.7), int(self.sprite.get_height() * 0.7)))
         self.rect = self.sprite.get_rect()
         self.size = 'medium'
         self.max_hp = random.randint(46, 52)
@@ -1541,7 +1554,7 @@ class RedArachnid(Enemy):
             else: 
                 if self.actions_done:
                     if len(self.actions_done) >= 1:
-                        if 'Scrape' == self.actions_done[-1] and 'Scrape' == self.actions_done[-2]:
+                        if 'Scrape' == self.actions_done[-1]:
                             continue
                         else:
                             action = 'Scrape'
@@ -1564,6 +1577,7 @@ class BlueArachnid(Enemy):
         self.sprite = 'blue_spider.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.7), int(self.sprite.get_height() * 0.7)))
         self.rect = self.sprite.get_rect()
         self.size = 'medium'
         self.max_hp = random.randint(46, 50)
@@ -1639,6 +1653,7 @@ class GreenLouse(Enemy):
         self.sprite = 'green_louse.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.3), int(self.sprite.get_height() * 0.3)))
         self.rect = self.sprite.get_rect()
         self.size = 'small'
         self.max_hp = random.randint(10, 15)
@@ -1737,6 +1752,7 @@ class RedLouse(Enemy):
         self.sprite = 'red_louse.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.3), int(self.sprite.get_height() * 0.3)))
         self.rect = self.sprite.get_rect()
         self.size = 'small'
         self.max_hp = random.randint(11, 17)
@@ -1835,6 +1851,7 @@ class SentryA(Enemy):
         self.sprite = 'sentry.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.5), int(self.sprite.get_height() * 0.5)))
         self.rect = self.sprite.get_rect()
         self.size = 'medium'
         self.max_hp = random.randint(38, 42)
@@ -1876,6 +1893,7 @@ class SentryB(Enemy):
         self.sprite = 'sentry.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.5), int(self.sprite.get_height() * 0.5)))
         self.rect = self.sprite.get_rect()
         self.size = 'medium'
         self.max_hp = random.randint(38, 42)
@@ -2029,6 +2047,7 @@ class GoblinGiant(Enemy):
         self.sprite = 'goblin_giant.png'
         self.sprite = os.path.join("assets", "sprites", "enemies", self.sprite)
         self.sprite = pygame.image.load(self.sprite) # The sprite of a card
+        self.sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * 0.8), int(self.sprite.get_height() * 0.8)))
         self.rect = self.sprite.get_rect()
         self.size = 'large'
         self.max_hp = random.randint(82, 86)

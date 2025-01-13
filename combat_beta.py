@@ -6,6 +6,7 @@ import random
 import pygame
 import os
 import sys
+import reward_screen
 
 class Combat:
     def __init__(self, player, deck, enemies, combat_type, run, screen):
@@ -66,7 +67,6 @@ class Combat:
     def run_combat(self):
         """Main combat loop"""
         running = True
-        deck_hovering = False
         self.combat_start()
         self.clock = pygame.time.Clock()
         while running and self.combat_active:
@@ -87,20 +87,15 @@ class Combat:
                     self.advance_phase()
                 elif phase_result == 'end_combat':
                     break
-
+            
+            events = pygame.event.get()
             # Event handling
-            for event in pygame.event.get():
+            for event in events:
                 if event.type == pygame.QUIT:
                     self.quit_game()
                 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (event.mod & pygame.KMOD_ALT):
                     self.quit_game()
-
-                # Draw "View Deck" text below deck button
-                if self.player.deck_button_rect.collidepoint(mouse_pos):
-                    deck_hovering = True
-                else:
-                    deck_hovering = False
                 
                 if event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self.player.deck_button_rect.collidepoint(mouse_pos):
                     self.player.view_deck()
@@ -110,19 +105,8 @@ class Combat:
                     self.handle_card_events(event, mouse_pos)
                     self.handle_potion_events(event, mouse_pos)
                     
-            if deck_hovering:
-                deck_text_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 16)
-                # Create background surface
-                deck_text = deck_text_font.render("View Deck", True, (255, 255, 255))
-                bg_surface = pygame.Surface((deck_text.get_width() + 10, deck_text.get_height() + 6))
-                bg_surface.fill((0, 0, 0))
-                text_x = self.player.deck_button_rect.centerx - deck_text.get_width() // 2
-                text_y = self.player.deck_button_rect.bottom + 35  # Changed from +10 to +30
-                # Draw background then text
-                self.combat_surface.blit(bg_surface, (text_x - 5, text_y - 3))
-                self.combat_surface.blit(deck_text, (text_x, text_y))
-
             # Update and draw game state
+            self.run.handle_deck_view(events, mouse_pos)
             self.handle_enemy_events(event, mouse_pos)
             self.handle_pile_events(event, mouse_pos)
             self.handle_character_events(event, mouse_pos)
@@ -131,13 +115,14 @@ class Combat:
             self.screen.blit(self.combat_surface, (0, 0))
             pygame.display.flip()
 
-        return self.combat_result()
+        pygame.time.wait(1000)
+        return self.combat_result(), self.combat_surface
 
     def combat_result(self):
         """Determine the result of the combat"""
         if self.player.hp <= 0:
             return 'defeat'
-        elif self.enemies.enemy_list == []:
+        elif self.enemies.is_empty():
             return 'victory'
         else:
             return 'escape'
@@ -159,10 +144,12 @@ class Combat:
     def handle_enemy_events(self, event, mouse_pos):
         """Handle enemy-related events"""
         for enemy in self.enemies.enemy_list:
-            if enemy and enemy.rect.collidepoint(mouse_pos):
-                enemy.hover()
-            elif enemy:
-                enemy.unhover()
+            if enemy is not None:
+                enemy.rect
+                if enemy.rect.collidepoint(mouse_pos):
+                    enemy.hover()
+                else:
+                    enemy.unhover()
 
     def handle_pile_events(self, event, mouse_pos):
         """Handle pile-related events"""
@@ -274,77 +261,47 @@ class Combat:
 
     def handle_potion_events(self, event, mouse_pos):
         """Handle potion-related events"""
-        for potion in self.player.potions:
-            if potion:
-                was_hovered = potion.is_hovered
-                if potion.rect.collidepoint(mouse_pos):
-                    potion.hover()
-                    # Handle clicking
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        if event.button == 1:  # Left click
-                            if self.clicked_potion:
-                                self.clicked_potion.unclick()
-                            potion.click()
-                            self.clicked_potion = potion
-                else:
-                    potion.unhover()
-                if potion.is_hovered != was_hovered:
-                    if potion.is_hovered:
-                        print(f"Now hovering over: {potion.name}")
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+            if self.targetting_potion:
+                self.targetting_potion.stop_targeting()
+                self.targetting_potion = None
+            if self.clicked_potion:
+                self.clicked_potion.unclick()
+                self.clicked_potion = None           
+
+        elif self.clicked_potion and not self.targetting_potion:
+            self.clicked_potion.unhover()
+            box_width = 100
+            box_height = 40
+            box_x = self.clicked_potion.rect.x + (self.clicked_potion.sprite.get_width() - box_width) // 2
+            box_y = self.clicked_potion.rect.y + self.clicked_potion.sprite.get_height() + 10
+            use_rect = pygame.Rect(box_x, box_y, box_width, box_height)
+            discard_rect = pygame.Rect(box_x, box_y + 45, 100, 40) 
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if use_rect.collidepoint(mouse_pos):
+                    if self.clicked_potion.time_of_use in ['combat', 'all']:
+                        if self.clicked_potion.target == 1:
+                            self.clicked_potion.start_targeting()
+                            self.clicked_potion.unclick()
+                            self.targetting_potion = self.clicked_potion
+                            self.dragged_card = None  # Clear any dragged card
+                        else:
+                            self.use_potion(self.clicked_potion)
+                            self.clicked_potion.unclick()
+                            self.clicked_potion = None
                     else:
-                        print(f"No longer hovering over: {potion.name}")
-                if potion.clicked:
-                    box_width = 100
-                    box_height = 40
-                    box_x = potion.rect.x + (potion.sprite.get_width() - box_width) // 2
-                    box_y = potion.rect.y + potion.sprite.get_height() + 10
-                    use_rect = pygame.Rect(box_x, box_y, box_width, box_height)
-                    # Draw outline of use and cancel button collision boxes in red
-                    cancel_rect = pygame.Rect(box_x, box_y + 45, 100, 40) 
-                    if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                        if self.targetting_potion:
-                            for enemy in self.enemies.enemy_list:
-                                if enemy and enemy.rect.collidepoint(mouse_pos):
-                                    self.use_potion(potion, [enemy])
-                                    self.targetting_potion = None
-                                    self.clicked_potion = None
-                                    break
-                        if use_rect.collidepoint(mouse_pos):
-                            # Only allow use if time_of_use is combat or all
-                            print("Use button clicked")
-                            if potion.time_of_use in ['combat', 'all']:
-                                print(f"Using potion: {potion.name}")
-                                if potion.target == 1:
-                                    print("Potion requires targeting")
-                                    potion.start_targeting()
-                                    self.targetting_potion = potion
-                                    self.dragged_card = None  # Clear any dragged card
-                                else:
-                                    self.use_potion(potion)
-                            else:
-                                print(f"Cannot use {potion.name} at this time")
-                            potion.unclick()
-                        elif cancel_rect.collidepoint(mouse_pos):
-                            print("Cancel button clicked")
-                            potion.unclick()
-                            self.clicked_potion = None
-                else:
-                    if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                        if potion.rect.collidepoint(mouse_pos):
-                            if self.clicked_potion:
-                                self.clicked_potion.unclick()
-                            self.clicked_potion = None
-                            potion.click()
-                            self.clicked_potion = potion
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
-                    potion.unclick()
-                    if self.targetting_potion:
-                        self.targetting_potion.stop_targeting()
-                        self.targetting_potion = None
-                    if self.clicked_potion:
                         self.clicked_potion.unclick()
                         self.clicked_potion = None
-        if self.targetting_potion:
+                elif discard_rect.collidepoint(mouse_pos):
+                    self.run.discard_potion(self.clicked_potion)
+                    self.clicked_potion.unclick()
+                    self.clicked_potion = None
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
+                self.clicked_potion.unclick()
+                self.clicked_potion = None
+
+        elif self.targetting_potion:
+            self.targetting_potion.unhover()
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 for enemy in self.enemies.enemy_list:
                     if enemy and enemy.rect.collidepoint(mouse_pos):
@@ -352,6 +309,18 @@ class Combat:
                         self.targetting_potion = None
                         self.clicked_potion = None
                         break
+
+        else:
+            for potion in self.player.potions:
+                if potion:
+                    if potion.rect.collidepoint(mouse_pos):
+                        potion.hover()
+                        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                            potion.click()
+                            self.clicked_potion = potion
+                            potion.unhover()
+                    else:
+                        potion.unhover()
         
     def update_game_state(self, mouse_pos):
         """Update all game objects"""
@@ -1328,6 +1297,9 @@ class Combat:
             if enemy != None:
                 if enemy.died(self) == True:
                     # If they're dead
+                    if enemy.buffs['Thievery'] > 0:
+                        if enemy.buffs['Stolen'] > 0:
+                            self.player.gold += enemy.buffs['Stolen']
                     self.enemies.remove_enemy(enemy)
                     # Remove them from the enemy list
                 self.passive_check_and_exe('Lethal')
@@ -2331,6 +2303,12 @@ class Enemies:
             if enemy is not None:
                 i += 1
         return i
+
+    def is_empty(self):
+        if self.enemy_list == [None, None, None, None, None]:
+            return True
+        else:
+            return False
 
     def draw(self, surface, intent):
         screen_width = surface.get_width()

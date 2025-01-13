@@ -505,6 +505,10 @@ class Map:
             if room.floor != 16:    
                 for connection in self.path[(room.floor, room.room_num)]:
                     room.add_connection(connection)
+        # Connect floor 0,0 to all rooms in floor 1
+        self.path[(0, 0)] = []
+        for room_num in self.map[1].keys():
+            self.path[(0, 0)].append([1, room_num])
         self.y = 0
         self.entered_rooms = entered_rooms
 
@@ -558,16 +562,6 @@ class Map:
             room_x = x + (room.room_num - 1) * x_spacing
             room_y = room.floor * y_spacing + 50  # Changed to normal orientation
             room.draw(map_surface, room_x, room_y)
-
-        # Get mouse position and handle scrolling
-        mouse_pos = pygame.mouse.get_pos()
-        scroll_margin = 50
-        scroll_speed = 5
-        
-        if mouse_pos[1] < scroll_margin:
-            self.y = min(self.y + scroll_speed, 50)
-        elif mouse_pos[1] > 900 - scroll_margin:
-            self.y = max(self.y - scroll_speed, -900)
             
         # Draw visible portion of map with scroll offset
         visible_portion = pygame.Rect(0, -self.y, 1600, 900)
@@ -591,6 +585,7 @@ class Room:
             7: 'assets/icons/map/boss.png'
         }
         self.sprite = pygame.image.load(room_type_to_sprite[room_type])
+        self.rect = self.sprite.get_rect()
 
     def enter(self):
         self.entered = True
@@ -604,6 +599,8 @@ class Room:
         self.connections.append(connection)
 
     def draw(self, screen, x, y):
+        self.rect.x = x
+        self.rect.y = y
         screen.blit(self.sprite, (x, y))
         if self.entered:
             screen.blit(self.entered_circle, (x - 5, y - 5))

@@ -77,7 +77,13 @@ class RewardScreen: # Class for any reward screed
                     cards[i] = card_option
                 self.rewards['Cards'].append(cards)
                 # Generate random card rewards
-                relic = relic_data.spawnRelic()
+                relic = None
+                while True:
+                    relic = relic_data.spawnRelic()
+                    for owned_relic in self.run.player.relics:
+                        if owned_relic.name == relic.name:
+                            continue
+                    break
                 self.rewards['Relics'].append(relic)
                 # Generate relic
                 rng = random.randint(1, 100)
@@ -108,21 +114,39 @@ class RewardScreen: # Class for any reward screed
                 # Small chest
                 self.rewards['Gold'] = random.randint(23, 27)
                 # Gold amount
-                relic = relic_data.spawnRelic(75, 25)
+                relic = None
+                while True:
+                    relic = relic_data.spawnRelic(75, 25)
+                    for owned_relic in self.run.player.relics:
+                        if owned_relic.name == relic.name:
+                            continue
+                    break
                 self.rewards['Relics'].append(relic)
                 # Generate relic
             elif self.reward_type == 4: 
                 # Medium chest
                 self.rewards['Gold'] = random.randint(45, 55)
                 # Gold amount
-                relic = relic_data.spawnRelic(35, 50)
+                relic = None
+                while True:
+                    relic = relic_data.spawnRelic(35, 50)
+                    for owned_relic in self.run.player.relics:
+                        if owned_relic.name == relic.name:
+                            continue
+                    break
                 self.rewards['Relics'].append(relic)
                 # Generate relic
             elif self.reward_type == 5: 
                 # Large chest
                 self.rewards['Gold'] = random.randint(68, 82)
                 # Gold amount
-                relic = relic_data.spawnRelic(0, 75)
+                relic = None
+                while True:
+                    relic = relic_data.spawnRelic(0, 75)
+                    for owned_relic in self.run.player.relics:
+                        if owned_relic.name == relic.name:
+                            continue
+                    break
                 self.rewards['Relics'].append(relic)
                 # Generate relic
             else:
@@ -130,9 +154,30 @@ class RewardScreen: # Class for any reward screed
         else: # If the reward is set, apply the set reward
             if self.set_reward == 'Bell':
                 # Bell reward
-                self.rewards['Relics'].append(relic_data.createCommon)
-                self.rewards['Relics'].append(relic_data.createUncommon)
-                self.rewards['Relics'].append(relic_data.createRare)
+                common_relic = None
+                uncommon_relic = None
+                rare_relic = None
+                while True:
+                    common_relic = relic_data.createCommon()
+                    for relic in self.run.player.relics:
+                        if relic.name == common_relic.name:
+                            continue
+                    break
+                while True:
+                    uncommon_relic = relic_data.createUncommon()
+                    for relic in self.run.player.relics:
+                        if relic.name == uncommon_relic.name:
+                            continue
+                    break
+                while True:
+                    rare_relic = relic_data.createRare()
+                    for relic in self.run.player.relics:
+                        if relic.name == rare_relic.name:
+                            continue
+                    break
+                self.rewards['Relics'].append(common_relic)
+                self.rewards['Relics'].append(uncommon_relic)
+                self.rewards['Relics'].append(rare_relic)
             elif self.set_reward == 'Booster Pack':
                 # Booster pack reward
                 for k in range(0, 5):
@@ -179,13 +224,19 @@ class RewardScreen: # Class for any reward screed
                     potion = potion_data.randomPotion()
                     self.rewards['Potions'].append(potion)
             if self.additional_rewards['Relic'] > 0: # Additional relics
-                for i in range(0, self.additional_rewards['Potion']):
-                    relic = relic_data.spawnRelic()
+                for i in range(0, self.additional_rewards['Relic']):
+                    relic = None
+                    while True:
+                        relic = relic_data.spawnRelic()
+                        for owned_relic in self.run.player.relics:
+                            if owned_relic.name == relic.name:
+                                continue
+                        break
                     self.rewards['Relics'].append(relic)
         self.run.rareChanceOffset = self.rareChanceOffset # Update the rare chance offset
         self.run.potionChance = self.potionChance # Update the potion chance
 
-    def listRewards(self):
+    def listRewards(self, screen = None):
         if self.generated == False: # If the rewards have not been generated, generate them
             self.generate_rewards()
             self.generated = True
@@ -202,11 +253,27 @@ class RewardScreen: # Class for any reward screed
         reward_height = 60
         reward_spacing = 10
 
+        known_screen = True
+        if screen is None:
+            screen = pygame.Surface((1600, 900))
+            known_screen = False
+
+
         # Main loop
         while not self.close:
-            self.run.screen.fill((0, 0, 0)) # Fill the screen with black
             reward_box.fill((50, 50, 50)) # Fill the reward box with gray
             reward_y = 20 # Reset the reward y position
+
+            if known_screen:
+                self.run.screen.blit(screen, (0, 0))
+            else:
+                screen.fill((0, 0, 0, 25))
+                self.run.screen.blit(screen, (0, 0))
+
+            mouse_pos = pygame.mouse.get_pos()
+            events = pygame.event.get()
+            self.run.potion_events(mouse_pos, events)
+            self.run.handle_deck_view(events, mouse_pos)
 
             # Draw rewards on reward_box
             if self.rewards['Gold']:
@@ -281,11 +348,11 @@ class RewardScreen: # Class for any reward screed
             skip_rect = self.skip_button_sprite.get_rect()
             skip_rect.bottomright = (self.run.SCREEN_WIDTH, self.run.SCREEN_HEIGHT - 200)
             self.run.screen.blit(self.skip_button_sprite, skip_rect)
-
+            self.run.player.draw_ui(self.run.screen)
             pygame.display.flip()
 
             # Event loop
-            for event in pygame.event.get():
+            for event in events :
                 if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (pygame.key.get_mods() & pygame.KMOD_ALT)):
                     pygame.quit()
                     
@@ -314,7 +381,14 @@ class RewardScreen: # Class for any reward screed
                             # Show card selection menu
                             card_menu = True
                             while card_menu:
-                                self.run.screen.fill((0, 0, 0))
+                                # Create a transparent surface for the background
+                                background = pygame.Surface(self.run.screen.get_size(), pygame.SRCALPHA)
+                                background.fill((0, 0, 0, 25))
+                                self.run.screen.blit(background, (0, 0))
+                                events = pygame.event.get()
+                                mouse_pos = pygame.mouse.get_pos()
+                                self.run.potion_events(mouse_pos, events)
+                                self.run.handle_deck_view(events, mouse_pos)
                                 
                                 # Draw cards
                                 card_x = self.run.SCREEN_WIDTH//4

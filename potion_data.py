@@ -88,7 +88,7 @@ class Potion:
             # Text
             font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 16)
             use_text = font.render("Use", True, (255, 255, 255))
-            cancel_text = font.render("Cancel", True, (255, 255, 255))
+            cancel_text = font.render("Discard", True, (255, 255, 255))
             
             # Center text in boxes
             use_x = box_x + (box_width - use_text.get_width()) // 2

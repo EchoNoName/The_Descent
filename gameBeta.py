@@ -6,6 +6,8 @@ import combat_beta
 import potion_data
 import enemy_data
 import relic_data
+import events
+import campfire
 import map_generation
 import reward_screen
 import events
@@ -65,6 +67,7 @@ class Character:
         self.deck_button_sprite = pygame.image.load(os.path.join("assets", "icons", "pile_icon.png"))
         self.deck_button_sprite = pygame.transform.scale(self.deck_button_sprite, (self.deck_button_sprite.get_width()//10, self.deck_button_sprite.get_height()//10))
         self.deck_button_rect = self.deck_button_sprite.get_rect()
+        self.deck_button_hover = False
         # Pre-load fonts
         pygame.font.init()
         self.block_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 20)
@@ -415,6 +418,17 @@ class Character:
         for relic in self.relics:
             relic.draw(surface, relic_x, relic_y)
             relic_x += 60  # Shift right 60 pixels for next relic
+        
+        if self.deck_button_hover:
+            deck_text_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 16)
+            # Create background surface
+            deck_text = deck_text_font.render("View Deck", True, (255, 255, 255))
+            bg_surface = pygame.Surface((deck_text.get_width() + 10, deck_text.get_height() + 6))
+            bg_surface.fill((0, 0, 0))
+            text_x = self.deck_button_rect.centerx - deck_text.get_width() // 2
+            text_y = self.deck_button_rect.bottom + 35  # Changed from +10 to +30
+            surface.blit(bg_surface, (text_x - 5, text_y - 3))
+            surface.blit(deck_text, (text_x, text_y))
 
     def draw_collision_box(self, surface):
         # Load and transform target corner sprite
@@ -509,12 +523,10 @@ class Character:
                         upgrade = random.choice(self.deck)
                         # Randomly pick one
                         if upgrade.id + 100 in card_data.card_info:
-                            card_id = upgrade.id + 100
-                            card_information = list(card_data.card_info[card_id])
-                            card_information.extend([upgrade.bottled, upgrade.removable])
-                            upgrade = card_constructor.create_card(card_id, card_information)
-                            validUpgrades -= 1
-                            # If it can be upgraded, upgrade it and end the loop
+                            upgraded_card = card_constructor.create_card(upgrade.id + 100, card_data.card_info[upgrade.id + 100])
+                            upgraded_card.bottled = upgrade.bottled
+                            self.deck.remove(upgrade)
+                            self.deck.append(upgraded_card)
                             break
                 elif card == 'Attack':
                     # Random Attack
@@ -529,12 +541,10 @@ class Character:
                         if upgrade.type == 0:
                             # Picks a random card and checks if its the right type
                             if upgrade.id + 100 in card_data.card_info:
-                                card_id = upgrade.id + 100
-                                card_information = list(card_data.card_info[card_id])
-                                card_information.extend([upgrade.bottled, upgrade.removable])
-                                upgrade = card_constructor.create_card(card_id, card_information)
-                                validUpgrades -= 1
-                                # If it can be upgraded, upgrade it and end the loop
+                                upgraded_card = card_constructor.create_card(upgrade.id + 100, card_data.card_info[upgrade.id + 100])
+                                upgraded_card.bottled = upgrade.bottled
+                                self.deck.remove(upgrade)
+                                self.deck.append(upgraded_card)
                                 break
                 elif card == 'Skill':
                     # Random Skill
@@ -548,21 +558,20 @@ class Character:
                         upgrade = random.choice(self.deck)
                         if upgrade.type == 1:
                             if upgrade.id + 100 in card_data.card_info:
-                                card_id = upgrade.id + 100
-                                card_information = list(card_data.card_info[card_id])
-                                card_information.extend([upgrade.bottled, upgrade.removable])
-                                upgrade = card_constructor.create_card(card_id, card_information)
+                                upgraded_card = card_constructor.create_card(upgrade.id + 100, card_data.card_info[upgrade.id + 100])
+                                upgraded_card.bottled = upgrade.bottled
+                                self.deck.remove(upgrade)
+                                self.deck.append(upgraded_card)
                                 break
                     # If there is a upgrade, random;y pick cards until a valid card is upgraded
                 else:
                     raise TypeError(f'Unknown Card Type: {card}')
             else:
                 if card.id + 100 in card_data.card_info:
-                    card_id = card.id + 100
-                    card_information = list(card_data.card_info[card_id])
-                    card_information.extend([card.bottled, card.removable])
-                    card = card_constructor.create_card(card_id, card_information)
-                    # If the card is referanced as an obj, upgrade it
+                    upgraded_card = card_constructor.create_card(card.id + 100, card_data.card_info[card.id + 100])
+                    upgraded_card.bottled = card.bottled
+                    self.deck.remove(card)
+                    self.deck.append(upgraded_card)
                 else:
                     raise KeyError(f'Card has no upgrade: {card.name}')
                     # Invalid upgrade
@@ -879,7 +888,7 @@ class Run:
         if map_info != None:
             self.map, self.path, self.map_display = map_info
         else:
-            self.map, self.path, self.map_display = map_generation.createMap(ascsension)
+            self.map = map_generation.Map(ascsension)
         self.act = act
         self.act_name = act_name
         self.room = room
@@ -922,6 +931,7 @@ class Run:
         self.lastInstance = None
         self.eggs = eggs
         self.instances = [self.shop, self.combat, self.event, self.treasure, self.reward]
+        self.clicked_potion = None
     
     def exit_game(self):
         pygame.quit()
@@ -958,52 +968,113 @@ class Run:
             self.start_combat()
         self.mapNav()
 
-    def mapNav(self):
-        room_type = {
-            1: 'Normal Combat',
-            2: 'Occurance',
-            3: 'Elite Combat',
-            4: 'Shop',
-            5: 'Treasure',
-            6: 'Campfire'
-        }
-        for ds in reversed(self.map_display):
-            print(ds)
-        print('    0 1 2 3 4 5 6')
-        for room in self.path[(self.room[0], self.room[1])]:
-            print(f'Floor {room[0]}, Room {room[1]}: {room_type[self.map[room[0]][room[1]]]}')
-        room = input('Type the room number you wish to enter or Back')
-        if room == 'Back':
-            if self.lastInstance not in {'E', 'C'}:
-                if self.lastInstance == 'S':
-                    self.shop.interact()
-                else:
-                    self.treasure.interact()
-            else:
-                print('Invalid')
-                self.mapNav()
+    def handle_deck_view(self, events, mouse_pos):
+
+        if self.player.deck_button_rect.collidepoint(mouse_pos):
+            self.player.deck_button_hover = True
         else:
-            room = int(room)
-            self.room = [self.room[0] + 1, room]
-            room_entered = self.map[self.room[0]][room]
-            if room_entered == 1:
-                enemies = self.get_enemies()
-                self.generage_combat_instace(enemies, 'normal')
-                self.start_combat()
-            elif room_entered == 2:
-                self.unknown_location()
-            elif room_entered == 3:
-                enemies = self.get_enemies('elite')
-                self.generage_combat_instace(enemies, 'Elite')
-                self.start_combat()
-            elif room_entered == 4:
-                self.shop = shop.Shop(self)
-                self.start_shop()
-            elif room_entered == 5:
-                self.treasure = treasure.Treasure(self)
-                self.start_treasure()
-            self.mapNav()
-    
+            self.player.deck_button_hover = False
+
+        for event in events:
+            if self.player.deck_button_rect.collidepoint(mouse_pos) and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                self.player.deck_button_hover = False
+                self.player.view_deck()
+
+    def mapNav(self):
+        """Display the map and handle room navigation"""
+        map_active = True
+        scroll_y = 0
+        scroll_speed = 20
+        max_scroll = -900  # Half of map height (1800/2) as defined in Map.draw()
+
+        while map_active:
+            events = pygame.event.get()
+            mouse_pos = pygame.mouse.get_pos()
+            self.handle_deck_view(events, mouse_pos)
+            self.potion_events(mouse_pos, events)
+
+            for event in events:
+                if event.type == pygame.QUIT:
+                    self.exit_game()
+                elif event.type == pygame.MOUSEWHEEL:
+                    scroll_y = min(0, max(max_scroll, scroll_y + event.y * scroll_speed))
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    # Adjust mouse position for scroll
+                    
+                    # Check available paths from current room
+                    available_rooms = []
+                    connections = self.map.path[(self.room[0], self.room[1])]
+                    for room in self.map.rooms:
+                        for connection in connections:
+                            if room.floor == connection[0] and room.room_num == connection[1]:
+                                available_rooms.append(room)
+
+                    
+                    # Calculate room positions using same logic as map drawing
+                    x_spacing = 100
+                    y_spacing = 100
+                    map_width = 6 * x_spacing
+                    start_x = (1600 - map_width) // 2
+
+                    # Check if clicked on an available room
+                    for room in available_rooms:
+
+                        if room.rect.collidepoint(mouse_pos):
+                            self.room = [room.floor, room.room_num]
+                            room_type = room.room_type
+                            
+                            if room_type == 1:
+                                enemies = self.get_enemies()
+                                self.generage_combat_instace(enemies, 'normal')
+                                self.start_combat()
+                                break
+                            elif room_type == 2:
+                                self.unknown_location()
+                                break
+                            elif room_type == 3:
+                                enemies = self.get_enemies('elite')
+                                self.generage_combat_instace(enemies, 'Elite')
+                                self.start_combat()
+                                break
+                            elif room_type == 4:
+                                self.shop = shop.Shop(self)
+                                self.start_shop()
+                                break
+                            elif room_type == 5:
+                                self.treasure = treasure.Treasure(self)
+                                self.start_treasure()
+                                break
+                            elif room_type == 6:
+                                self.campfire = campfire.Campfire(self)
+                                self.campfire.run_campfire()
+                                break
+
+            # Clear screen and draw map
+            self.screen.fill((255, 255, 255))
+            self.map.y = scroll_y
+            self.map.draw(self.screen, 0, scroll_y)
+            
+            # Highlight available rooms
+            x_spacing = 100
+            y_spacing = 100
+            map_width = 6 * x_spacing
+            start_x = (1600 - map_width) // 2
+            
+            for next_floor, next_room in self.map.path[(self.room[0], self.room[1])]:
+                room_x = start_x + (next_room - 1) * x_spacing
+                room_y = next_floor * y_spacing + scroll_y + 50
+                pygame.draw.circle(self.screen, (255, 255, 0), (room_x + 22, room_y + 22), 25, 2)  # Yellow circle around available rooms
+
+            # Draw player UI
+            self.player.draw_ui(self.screen)
+            pygame.display.flip()
+        
+        
+
+    def discard_potion(self, potion):
+        self.player.potions[self.player.potions.index(potion)] = None
+        self.clicked_potion = None
+
     def generate_reward_screen_instance(self, reward_type, set_reward = False, additonal_rewards = {}):
         '''Method to generate a reward screen instance
         
@@ -1015,6 +1086,40 @@ class Run:
             for relic in self.player.relics:
                 additonal_rewards = relic.additionalRewards(reward_type, additonal_rewards)
         self.reward = reward_screen.RewardScreen(self, self.player.character_class, self.rareChanceMult, self.rareChanceOffset, self.potionChance, self.cardRewardOptions, reward_type, set_reward, additonal_rewards)
+
+    def potion_events(self, mouse_pos, events):
+        if self.clicked_potion:
+            box_width = 100
+            box_height = 40
+            box_x = self.clicked_potion.rect.x + (self.clicked_potion.sprite.get_width() - box_width) // 2
+            box_y = self.clicked_potion.rect.y + self.clicked_potion.sprite.get_height() + 10
+            use_rect = pygame.Rect(box_x, box_y, box_width, box_height)
+            discard_rect = pygame.Rect(box_x, box_y + 45, 100, 40) 
+            for event in events:
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    if use_rect.collidepoint(mouse_pos):
+                        if self.clicked_potion.time_of_use == 'all':
+                            self.use_potion(self.clicked_potion)
+                        else:
+                            self.clicked_potion.unclick()
+                            self.clicked_potion = None
+                    elif discard_rect.collidepoint(mouse_pos):
+                        self.discard_potion(self.clicked_potion)
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
+                    self.clicked_potion.unclick()
+                    self.clicked_potion = None
+        else:
+            for potion in self.player.potions:
+                if potion:
+                    if potion.rect.collidepoint(mouse_pos):
+                        potion.hover()
+                        for event in events:
+                            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                                potion.click()
+                                self.clicked_potion = potion
+                                potion.unhover()
+                    else:
+                        potion.unhover()
 
     def bonusEff(self, event):
         if self.player.relics:
@@ -1118,6 +1223,7 @@ class Run:
         '''
         i = 1
         self.player.potions[self.player.potions.index(potion)] = None
+        self.clicked_potion = None
         for relic in self.player.relics:
             if relic.effect_type == 'Sacred Bark':
                 i = 2
@@ -1171,7 +1277,7 @@ class Run:
             # Handle events
             events = pygame.event.get()
             for event in events:
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                     mouse_pos = pygame.mouse.get_pos()
                     
                     # Check if confirm button clicked
@@ -1250,19 +1356,24 @@ class Run:
 
     def start_combat(self, set_rewards = False):
         self.lastInstance = 'C'
-        self.combat.run_combat()
-        self.combats_finished += 1
-        combat_type_conversion = {
-            'normal': 0,
-            'Normal': 0,
-            'Elite': 1,
-            'Boss': 2,
-        }
-        self.generate_reward_screen_instance(combat_type_conversion[self.combat.combat_type], set_rewards, {})
-        self.open_reward_screen()
+        result, screen = self.combat.run_combat()
+        if result == 'victory':
+            self.combats_finished += 1
+            combat_type_conversion = {
+                'normal': 0,
+                'Normal': 0,
+                'Elite': 1,
+                'Boss': 2,
+            }
+            self.generate_reward_screen_instance(combat_type_conversion[self.combat.combat_type], set_rewards, {})
+            self.open_reward_screen(screen)
+        elif result == 'defeat':
+            print('Defeat')
+        elif result == 'escape':
+            print('Escape')
 
-    def open_reward_screen(self):
-        self.reward.listRewards()
+    def open_reward_screen(self, screen):
+        self.reward.listRewards(screen)
 
     def start_treasure(self):
         self.lastInstance = 'T'
@@ -1349,13 +1460,23 @@ class Run:
 
 
 
-player = Character('Warrior', 80, 1)
+player = Character('Warrior', 100, 1)
+player.hp -= 50
 player.gold = 1000
-player.deck.append(card_constructor.create_card(1046, card_data.card_info[1046]))
-player.deck.append(card_constructor.create_card(1046, card_data.card_info[1046]))
+player.deck.append(card_constructor.create_card(1025, card_data.card_info[1025]))
+player.buffs['Vigour'] = 20
+player.potions[0] = potion_data.randomPotion()
+player.potions[1] = potion_data.randomPotion()
+player.potions[2] = potion_data.randomPotion()
 run = Run(player)
+enemies = []
+enemies.append(enemy_data.GreenLouse())
+enemies.append(enemy_data.RedLouse())
+enemies.append(enemy_data.SentryA())
+enemies.append(enemy_data.GiantLouse())
+enemies.append(enemy_data.GoblinGiant())
+run.generage_combat_instace(enemies, 'normal')
+run.start_combat()
 pygame.init()
-enemy = []
-enemy.append(enemy_data.AncientMech())
-run.generage_combat_instace(enemy, 'normal')
-# run.start_combat()
+
+run.mapNav()

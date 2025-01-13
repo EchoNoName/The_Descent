@@ -88,22 +88,40 @@ class Shop:
                 self.wares[7] = [potion_data.randomPotion(), random.randint(48, 105)]
                 self.wares[8] = [potion_data.randomPotion(), random.randint(48, 105)]
                 self.wares[9] = [potion_data.randomPotion(), random.randint(48, 105)]
-                relic1 = relic_data.spawnRelic()
+                relic1 = None
+                while True:
+                    relic1 = relic_data.spawnRelic()
+                    for owned_relic in self.run.player.relics:
+                        if owned_relic.name == relic1.name:
+                            continue
+                    break
                 if relic1.rarity == 4:
                     self.wares[10] = [relic1, random.randint(143, 157)]
                 elif relic1.rarity == 3:
                     self.wares[10] = [relic1, random.randint(238, 262)]
                 elif relic1.rarity == 2:
                     self.wares[10] = [relic1, random.randint(285, 315)]
-                relic2 = relic_data.spawnRelic()
-                if relic1.rarity == 4:
+                relic2 = None
+                while True:
+                    relic2 = relic_data.spawnRelic()
+                    for owned_relic in self.run.player.relics:
+                        if owned_relic.name == relic2.name:
+                            continue
+                    break
+                if relic2.rarity == 4:
                     self.wares[11] = [relic2, random.randint(143, 157)]
                 elif relic1.rarity == 3:
                     self.wares[11] = [relic2, random.randint(238, 262)]
                 elif relic1.rarity == 2:
                     self.wares[11] = [relic2, random.randint(285, 315)]
-                shopRelic = random.choice(list(relic_data.shopRelics.keys()))
-                shopRelic = relic_data.createRelic(shopRelic, relic_data.shopRelics[shopRelic])
+                shopRelic = None
+                while True:
+                    shopRelic = random.choice(list(relic_data.shopRelics.keys()))
+                    shopRelic = relic_data.createRelic(shopRelic, relic_data.shopRelics[shopRelic])
+                    for owned_relic in self.run.player.relics:
+                        if owned_relic.name == shopRelic.name:
+                            continue
+                    break
                 self.wares[12] = [shopRelic, random.randint(143, 157)]
                 removalCost = 75 + self.run.removals * 25
                 for relic in self.run.player.relics:

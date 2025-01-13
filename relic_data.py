@@ -305,6 +305,11 @@ bossRelics = {
     'Eye of Átē': ('Gain 1 Energy at thes start of each turn. You can no longer see enemy intent. (not recommended for unexperienced players)', 1, [effects.combat_mechanic_change], 'pickUp', None, False, [['Intent', False]], 0, True),
     'Sozu': ('Gain 1 Energy at thes start of each turn. You can no longer pickup Potions. ', 1, effects.potion_to_nothing, 'valueMod', 'potion', False, [], 0, True)
 }
+
+starterRelics = {
+    'Purple Blood': ('At end of combat, heal 6 HP.', 'starter', effects.heal_player, 'eventMod', 'Combat End', False, [6], 0),
+}
+
 commonRelics = {
     # Common Relics Data
     'Dumbbell': ('At the start of combat, gain 1 Strength.', 4, [effects.apply_buff], 'combatAct', 'Combat Start', False, [[['Strength'], [1]]], 0),
