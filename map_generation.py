@@ -496,11 +496,12 @@ def createMap(asc):
     return map, path, mapDisplay
 
 class Map:
-    def __init__(self, asc = 0, map_info = None, entered_rooms = []):
+    def __init__(self, asc = 0, map_info = None):
         if map_info == None:
             self.map, self.path, self.mapDisplay = createMap(asc)
+            self.entered_rooms = []
         else:
-            self.map, self.path, self.mapDisplay = map_info
+            self.map, self.path, self.mapDisplay, self.entered_rooms = map_info
             map_copy = {}
             for i in range(1, 16):
                 map_copy[i] = {}
@@ -508,7 +509,6 @@ class Map:
                     for key, value in self.map[str(i)].items():
                         map_copy[i][int(key)] = int(value)
             self.map = map_copy
-            print(self.map)
         self.rooms = []
         for floor, room in self.map.items():
             for room_num, room_type in room.items():
@@ -524,7 +524,10 @@ class Map:
         for room_num in self.map[1].keys():
             self.path[(0, 0)].append([1, int(room_num)])
         self.y = 0
-        self.entered_rooms = entered_rooms
+        for id in self.entered_rooms:
+            for room in self.rooms:
+                if room.floor == id[0] and room.room_num == id[1]:
+                    room.entered = True
 
     def draw(self, screen, x, y):
         """Draw the map with rooms and connections"""

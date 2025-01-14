@@ -43,6 +43,7 @@ class Campfire:
         fertilize_hover = False
         dig_hover = False
         shred_hover = False
+        exit = None
 
         while campfire:
             selection_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
@@ -51,6 +52,10 @@ class Campfire:
             mouse_pos = pygame.mouse.get_pos()
             self.run.potion_events(mouse_pos, events)
             self.run.handle_deck_view(events, mouse_pos)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                campfire = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -180,6 +185,9 @@ class Campfire:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+
 
     def get_upgradable_cards(self):
         for card in self.run.player.deck:
@@ -188,6 +196,7 @@ class Campfire:
 
     def rest(self):
         self.run.player.heal(int(self.run.player.maxHp * 0.3))
+        self.run.bonusEff('Rest')
         self.completed = True
 
     def smith(self):
@@ -201,6 +210,7 @@ class Campfire:
         confirm_button = pygame.Rect(1600 - self.confirm_button_sprite.get_width(), 650, self.confirm_button_sprite.get_width(), self.confirm_button_sprite.get_height())
         # Create a back button in bottom left
         back_button = pygame.Rect(0 , 650, self.back_button_sprite.get_width(), self.back_button_sprite.get_height())
+        exit = None
 
         while upgrading:
             upgrade_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
@@ -209,7 +219,12 @@ class Campfire:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
 
+            self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                upgrading = False
+                break
 
             for event in events:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (event.mod & pygame.KMOD_ALT):
@@ -236,7 +251,13 @@ class Campfire:
                                 
                                 events = pygame.event.get()
                                 mouse_pos = pygame.mouse.get_pos()
+                                self.run.handle_deck_view(events, mouse_pos)
                                 self.run.potion_events(mouse_pos, events)
+                                exit = self.run.handle_save_and_exit_input(events)
+                                if exit == 'Main Menu':
+                                    inspecting = False
+                                    upgrading = False
+                                    break
                                 
 
                                 for event in events:
@@ -299,6 +320,9 @@ class Campfire:
                 pygame.display.get_surface().blit(self.campfire_background_sprite, (0, 0))
                 pygame.display.get_surface().blit(upgrade_surface, (0, 0))
                 pygame.display.flip()
+        
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
 
     def fertilize(self):
         self.run.player.increase_max_hp(5)
@@ -326,7 +350,7 @@ class Campfire:
         back_button = pygame.Rect(0 , 650, self.back_button_sprite.get_width(), self.back_button_sprite.get_height())
         # Create a selected card holder
         selected_card = None
-
+        exit = None
         while removing:
             removal_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
             removal_surface.fill((0, 0, 0, 0))  # Completely transparent background   
@@ -334,6 +358,11 @@ class Campfire:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.run.potion_events(mouse_pos, events)
+            self.run.handle_deck_view(events, mouse_pos)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                removing = False
+                break
 
             for event in events:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (event.mod & pygame.KMOD_ALT):
@@ -383,6 +412,9 @@ class Campfire:
                 pygame.display.get_surface().blit(self.campfire_background_sprite, (0, 0))
                 pygame.display.get_surface().blit(removal_surface, (0, 0))
                 pygame.display.flip()
+
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
 
     def upgrade_card(self, card):
         upgraded_card = card_constructor.create_card(card.id + 100, card_data.card_info[card.id + 100])

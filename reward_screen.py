@@ -44,8 +44,9 @@ class RewardScreen: # Class for any reward screed
     def generate_rewards(self):
         if not self.set_reward: # If the reward is not set, generate rewards
             if self.run.player.relics: # If the player has relic relating to rewards, apply the relic effects
+                self.additional_rewards = {'Gold': 0, 'Card': 0, 'Potion': 0, 'Relic': 0}
                 for relic in self.run.player.relics:
-                    relic.rewardModification(self.reward_type, self.additional_rewards)
+                    relic.additionalRewards(self.reward_type, self.additional_rewards)
             # Apply relic effects
             if self.reward_type == 0: 
                 # Normal combat
@@ -216,8 +217,7 @@ class RewardScreen: # Class for any reward screed
                     self.rewards['Potions'] = []
                 if 'Relics' not in self.rewards:
                     self.rewards['Relics'] = []
-
-
+            
         if self.additional_rewards: # If there are additional rewards, apply them
             if self.additional_rewards['Gold'] > 0: # Additional gold
                 self.rewards['Gold'] += self.rewards['Gold']
@@ -267,6 +267,7 @@ class RewardScreen: # Class for any reward screed
             screen = pygame.Surface((1600, 900))
             known_screen = False
 
+        exit = None
 
         # Main loop
         while not self.close:
@@ -283,6 +284,10 @@ class RewardScreen: # Class for any reward screed
             events = pygame.event.get()
             self.run.potion_events(mouse_pos, events)
             self.run.handle_deck_view(events, mouse_pos)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                self.close = True
+                break
 
             # Draw rewards on reward_box
             if self.rewards['Gold']:
@@ -451,3 +456,6 @@ class RewardScreen: # Class for any reward screed
 
             if not any([self.rewards['Gold'], self.rewards['Cards'], self.rewards['Potions'], self.rewards['Relics']]):
                 self.close = True
+        
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()

@@ -171,7 +171,6 @@ class Potion:
     def draw_targeting_arrow(self, surface, mouse_pos):
         """Draw an arrow from the card to the mouse position using separate head and body sprites"""
         if self.targeting:
-            print('Drawing arrow')
             # Calculate start position (center of card)
             self.current_pos = self.rect.center
             start_pos = (

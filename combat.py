@@ -67,6 +67,7 @@ class Combat:
     def run_combat(self):
         """Main combat loop"""
         running = True
+        exit = None
         self.combat_start()
         self.clock = pygame.time.Clock()
         while running and self.combat_active:
@@ -107,6 +108,11 @@ class Combat:
                     
             # Update and draw game state
             self.run.handle_deck_view(events, mouse_pos)
+            self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                running = False
+                break
             self.handle_enemy_events(mouse_pos)
             self.handle_pile_events(events, mouse_pos)
             self.handle_character_events(mouse_pos)
@@ -115,8 +121,11 @@ class Combat:
             self.screen.blit(self.combat_surface, (0, 0))
             pygame.display.flip()
 
-        pygame.time.wait(1000)
-        return self.combat_result(), self.combat_surface
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+        else:
+            pygame.time.wait(1000)
+            return self.combat_result(), self.combat_surface
 
     def combat_result(self):
         """Determine the result of the combat"""
@@ -414,7 +423,6 @@ class Combat:
         # Draw potion targeting effects
         if self.targetting_potion:
             self.targetting_potion.start_targeting()
-            print(self.targetting_potion.name)
             self.targetting_potion.draw_targeting_arrow(self.combat_surface, mouse_pos)
             for enemy in self.enemies.enemy_list:
                 if enemy:
@@ -1392,8 +1400,6 @@ class Combat:
             self.player.thieved = 0
             self.escaped = True
             self.combat_active = False
-        else:
-            print('You cannot escape from boss combats!')
         # Escape from non boss combats
 
     def mulligan(self):
@@ -1619,9 +1625,6 @@ class Combat:
         elif potion.time_of_use == 'all':
             self.run.use_potion(potion)
             # Use potion using player method
-        else:
-            print(f'Invalid time of use: {potion.time_of_use}')
-            # Invalid time of use
         self.resolve_action()
 
     def player_turn_start(self):
@@ -1666,7 +1669,6 @@ class Combat:
         # Said buff resets
         self.player.debuffs['Draw Reduction'] = 0
         # Said debuff resets
-        self.player.gain_buff('Strength', self.player.buffs['Ritual'])
         self.passive_check_and_exe('Turn Start')
         # Check for powers that activate at the start of a turn
         self.get_intent()
@@ -1703,6 +1705,8 @@ class Combat:
         if self.player.debuffs['Frail'] > 0:
             self.player.debuffs['Frail'] -= 1
         # Lower some debuff counters by 1
+        if self.player.buffs['Ritual'] > 0:
+            self.player.gain_buff('Strength', self.player.buffs['Ritual'])
         self.player.debuffs['No Draw'] = 0
         if self.player.debuffs['Last Chance'] > 0:
             self.exhaust_entire_pile(self.hand)

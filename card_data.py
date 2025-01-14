@@ -86,7 +86,7 @@ card_info = {
     1022: ("Crushing blow", 1, 0, 2, 'Deal 12 damage. Apply 2 Weak', False, False, False, False, {effects.deal_attack_damage: (12, 1), effects.apply_debuff: (['Weak'], [2])}, 1),
     1023: ("Body charge", 1, 0, 1, 'Deal damage equal to your block', False, False, False, False, {effects.deal_attack_damage: ('block', 1)}, 1),
     1024: ("Desperato", 1, 1, 1, 'Gain 8 Vigour, lose 1 Strength', False, False, False, False, {effects.apply_buff: (['Vigour'], [8]), effects.apply_debuff: (['-Strength'], [1])}, 0),
-    1025: ("Flurry of beams", 2, 0, "X", 'Deal 5 damage to all enemies X times', False, False, False, False, {effects.deal_attack_damage: (50, 'X')}, 3),
+    1025: ("Flurry of beams", 2, 0, "X", 'Deal 5 damage to all enemies X times', False, False, False, False, {effects.deal_attack_damage: (8, 'X')}, 3),
     1026: ("Cursed Blade", 2, 0, 1, 'Lose 3 HP. Deal 20 damage. Shuffle a Curse of the Blade into the draw pile', False, False, False, False, {effects.hp_cost: (3, ), effects.deal_attack_damage: (20, 1), effects.add_card_to_pile: ('draw', 20, 1, 'na')}, 1),
     1027: ("Glooming blade", 2, 0, 'c', 'Deal 20 damage. Cost 1 less Energy for every Curse in the draw pile, discard pile, exhaust pile and hand', False, False, False, False, {effects.deal_attack_damage: (20, 1)}, 1),
     1028: ("Multi-Slash", 2, 0, 1, 'Deal 2 damage 4 times', False, False, False, False, {effects.deal_attack_damage: (2, 4)}, 1),

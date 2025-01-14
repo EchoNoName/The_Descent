@@ -59,12 +59,18 @@ class ScorchedForest:
         continue_button = pygame.Rect(650, 630, 800, 40)
 
         event_active = True
+        exit = None
+
         while event_active:
             # Handle events
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                event_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -149,10 +155,13 @@ class ScorchedForest:
             self.run.screen.blit(event_box, (50, 100))
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
-        self.end_event()
+        
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+        else:
+            self.end_event()
 
     def end_event(self):
-        print('Event ended')
         self.event_active = False
         self.run.mapNav()
 
@@ -210,11 +219,16 @@ class EntangledTreasure:
         continue_button = pygame.Rect(650, 630, 800, 40)
 
         event_active = True
+        exit = None
         while event_active:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                event_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -309,7 +323,10 @@ class EntangledTreasure:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
-        self.end_event()
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+        else:
+            self.end_event()
 
     def end_event(self):
         self.event_active = False
@@ -360,6 +377,7 @@ class TheCleric:
         option2 = pygame.Rect(650, 580, 800, 40)
         option3 = pygame.Rect(650, 630, 800, 40)
         continue_button = pygame.Rect(650, 630, 800, 40)
+        exit = None
 
         event_active = True
         while event_active:
@@ -367,6 +385,10 @@ class TheCleric:
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                event_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -438,7 +460,10 @@ class TheCleric:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
-        self.end_event()
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+        else:
+            self.end_event()
 
     def end_event(self):
         self.event_active = False
@@ -490,6 +515,7 @@ class GoddessStatue:
         option1 = pygame.Rect(650, 580, 800, 40)
         option2 = pygame.Rect(650, 630, 800, 40)
         continue_button = pygame.Rect(650, 630, 800, 40)
+        exit = None
 
         event_active = True
         while event_active:
@@ -497,6 +523,10 @@ class GoddessStatue:
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                event_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -560,7 +590,10 @@ class GoddessStatue:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
-        self.end_event()
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+        else:
+            self.end_event()
 
     def end_event(self):
         self.event_active = False
@@ -626,16 +659,21 @@ class AbandonedMonument:
         continue_button = pygame.Rect(650, 630, 800, 40)
 
         event_active = True
+        exit = None
         while event_active:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                event_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    exit()
+                    self.run.exit_game()
                 if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                     adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
 
@@ -728,7 +766,10 @@ class AbandonedMonument:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
-        self.end_event()
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+        else:
+            self.end_event()
 
     def end_event(self):
         self.event_active = False
@@ -796,11 +837,16 @@ class DeadAdventurers:
         continue_button = pygame.Rect(650, 630, 800, 40)
 
         event_active = True
+        exit = None
         while event_active:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                event_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -880,10 +926,13 @@ class DeadAdventurers:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
-        if not combat_triggered:
-            self.end_event()
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
         else:
-            self.run_combat()
+            if not combat_triggered:
+                self.end_event()
+            else:
+                self.run_combat()
 
     def run_combat(self):
         self.run.generage_combat_instace(self.elite, 'Elite')
@@ -942,11 +991,16 @@ class ColouredMushrooms:
         continue_button = pygame.Rect(650, 630, 800, 40)
 
         event_active = True
+        exit = None
         while event_active:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                event_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -1027,12 +1081,15 @@ class ColouredMushrooms:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
-        if not combat_triggered:
-            self.end_event()
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
         else:
-            self.run.generage_combat_instace([enemy_data.InfestedCorpes(), enemy_data.InfestedCorpes(), enemy_data.InfestedCorpes()], 'normal')
-            self.run.start_combat(self.combat_rewards)
-            self.end_event()
+            if not combat_triggered:
+                self.end_event()
+            else:
+                self.run.generage_combat_instace([enemy_data.InfestedCorpes(), enemy_data.InfestedCorpes(), enemy_data.InfestedCorpes()], 'normal')
+                self.run.start_combat(self.combat_rewards)
+                self.end_event()
 
     def end_event(self):
         self.event_active = False
@@ -1089,12 +1146,17 @@ class HallucinationFog:
         option3 = pygame.Rect(650, 630, 800, 40)
         continue_button = pygame.Rect(650, 630, 800, 40)
 
+        exit = None
         event_active = True
         while event_active:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                event_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -1167,10 +1229,12 @@ class HallucinationFog:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
-        self.end_event()
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+        else:
+            self.end_event()
     
     def end_event(self):
-        print(self.player.deck)
         self.event_active = False
         self.run.mapNav()
 
@@ -1216,12 +1280,17 @@ class ShiningLight:
         option2 = pygame.Rect(650, 630, 800, 40)
         continue_button = pygame.Rect(650, 630, 800, 40)
 
+        exit = None
         event_active = True
         while event_active:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                event_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -1282,7 +1351,10 @@ class ShiningLight:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
-        self.end_event()
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+        else:
+            self.end_event()
     
     def end_event(self):
         self.event_active = False
@@ -1326,13 +1398,18 @@ class SlimeGoop:
         option1 = pygame.Rect(650, 580, 800, 40)
         option2 = pygame.Rect(650, 630, 800, 40)
         continue_button = pygame.Rect(650, 630, 800, 40)
-
+        exit = None
         event_active = True
+
         while event_active:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                event_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -1394,7 +1471,10 @@ class SlimeGoop:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
-        self.end_event()
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+        else:
+            self.run.mapNav()
 
     
     def end_event(self):

@@ -32,11 +32,14 @@ class Treasure:
         self.chest_rect.x = chest_x
         self.chest_rect.y = chest_y
 
+        exit = None
+
         while running:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.run.potion_events(mouse_pos, events)
             self.run.handle_deck_view(events, mouse_pos)
+            exit = self.run.handle_save_and_exit_input(events)
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -47,6 +50,7 @@ class Treasure:
                     if self.chest_rect.collidepoint(mouse_pos):
                         if not self.opened:
                             self.opened = True
+                            self.run.eventMod('Open Chest')
                             self.run.generate_reward_screen_instance(self.type, False, {})
                             self.run.reward.listRewards()
                             if self.run.reward.isEmpty():
@@ -59,7 +63,6 @@ class Treasure:
                         running = False
                     elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                         running = False
-                        self.run.mapNav()
 
             # Draw
             self.run.screen.blit(self.background_sprite, (0, 0))
@@ -72,4 +75,7 @@ class Treasure:
             self.run.player.draw_ui(self.run.screen)
             pygame.display.flip()
 
-        self.run.mapNav()
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+        else:
+            self.run.mapNav()

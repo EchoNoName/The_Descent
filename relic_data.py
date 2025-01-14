@@ -215,8 +215,9 @@ class Relics: # Relic Object Class
     
     def additionalRewards(self, event, reward):
         # If the event meets the condition, then add the additional rewards
-        if self.effect_class == 'additionalRewards' and self.condition == event:
-            return self.effect_type(*self.effect_details, reward)
+        if self.effect_class == 'additionalRewards': 
+            if self.condition in event:
+                return self.effect_type(*self.effect_details, reward)
     
     def eventModifcation(self, action, run):
         # If the relic is consumable, then check if it has been used
@@ -226,12 +227,6 @@ class Relics: # Relic Object Class
         # If the effect is a bonus to an event, apply it if the condition is met
         if self.effect_class == 'eventMod' and self.condition == action:
             self.effect_type(*self.effect_details, run)
-    
-    def rewardModification(self, reward_type, additional_rewards):
-        if self.effect_class == 'rewardMod':
-            if reward_type in self.condition:
-                return self.effect_type(*self.effect_details, additional_rewards)
-        return additional_rewards
 
     def turnEff(self, combat):
         '''Handles relic effects that does an action in combat on specific turns
@@ -285,8 +280,8 @@ def spawnRelic(common = 50, uncommon = 33):
 bossRelics = {
     # Boss Relics Data
     'Pandora\'s Box': ('Upon pickup, Transform all Basic cards.', 1, [effects.transform_card], 'pickUp', None, False, [['Basic']], 0),
-    'Astrolabe': ('Upon pickup, choose and Transfrom 3 cards, then Upgrade them.', 1, [effects.card_select, effects.transform_card, effects.upgrade_card], 'pickUp', None, False, [[3, {}], ['Selected'], ['Selected']], 0),
-    'Rabbit\'s Foot': ('Elites now drop 2 relics instead of 1.', 1, effects.additonal_rewards, 'additionalRewards', 1, False, ['Relic'], 0),
+    'Astrolabe': ('Upon pickup, choose and Transfrom 3 cards, then Upgrade them.', 1, [effects.card_select, effects.transform_and_upgrade], 'pickUp', None, False, [[3, {}], ['Selected']], 0),
+    'Rabbit\'s Foot': ('Elites now drop 2 relics instead of 1.', 1, effects.additonal_rewards, 'additionalRewards', {1}, False, ['Relic'], 0),
     'Alchemical Workbench': ('Potion effects are doubled.', 1, 'Sacred Bark', 'Special', None, False, 'Potion', 0), 
     'Stasis Chamber': ('You no longer discard your hand at the end of your turn.', 1, [effects.combat_mechanic_change], 'pickUp', None, False, [['Turn_End_Discard', False]], 0),
     'Cursed Talisman': ('Upon pickup, obtain 1 common relic, 1 uncommon relic, 1 rare relic and a Unique Curse.', 1, [effects.add_card_to_deck, effects.generate_rewards], 'pickUp', None, False, [[21], ['Bell']], 0),
@@ -379,7 +374,7 @@ rareRelics = {
     'Ginger': ('You can no longer be Weakened.', 2, effects.debuff_reduction, 'valueMod', 'Weak', False, [999], 0),
     'Garlic': ('You can no longer be Frail.', 2, effects.debuff_reduction, 'valueMod', 'Frail', False, [999], 0),
     'Apple': ('Upon pickup, increase your Max Hp by 14.', 2, [effects.max_hp_change], 'pickUp', None, False, [[14]], 0),
-    'Card Sleeves': ('Combats now drop 2 card rewards.', 2, effects.additonal_rewards, 'eventBonus', {0, 1, 2}, False, [['Card'], 1]),
+    'Card Sleeves': ('Combats now drop 2 card rewards.', 2, effects.additonal_rewards, 'additionalRewards', {0, 1, 2}, False, [['Card'], 1]),
     'Gold Bar': ('Upon pickup, gain 300 Gold.', 2, [effects.gold_gain], 'pickUp', None, False, [[300]], 0),
     'Holographic Watch': ('Whenever you play 3 or less cards in your turn, draw 3 additional cards the next turn.', 2, [effects.pocket_watch], 'combatAct', 'Turn End', False, [[3]]),
     'Cheater\'s Coat': ('Whenever you have no cards during your turn, draw 1 card.', 2, [effects.draw_cards], 'combatAct', 'Empty Hand', False, [[1]], 0),

@@ -137,6 +137,7 @@ class Shop:
 
     def interact(self):
         self.close = False
+        exit = None
         screen = pygame.display.get_surface()
         shop_surface = pygame.Surface((1600, 900))
         shop_rect = shop_surface.get_rect(center=(screen.get_width()//2, screen.get_height()//2))
@@ -309,8 +310,16 @@ class Shop:
             # pygame.draw.rect(screen, (0, 255, 0), self.removal_rect, 2)  # Green outline for removal service
 
             pygame.display.flip()
+            events = pygame.event.get()
+            mouse_pos = pygame.mouse.get_pos()
+            self.run.handle_deck_view(events, mouse_pos)
+            self.run.potion_events(mouse_pos, events)
+            exit = self.run.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                self.close = True
+                break
 
-            for event in pygame.event.get():
+            for event in events:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     
@@ -328,6 +337,7 @@ class Shop:
                                 if ware[0].rect.collidepoint(mouse_pos):
                                     if ware[1] <= self.run.player.gold:
                                         self.run.gold_modification(-ware[1])
+                                        self.break_piggy_bank()
                                         item = ware[0]
                                         ware[0] = None
                                         if isinstance(item, card_constructor.Card):
@@ -346,5 +356,17 @@ class Shop:
                         if self.run.player.deck and self.run.player.gold >= self.wares[13][1]:
                             effects.card_select(1, {}, self.run)
                             self.run.player.remove_card()
+                            self.run.removals += 1
                             self.run.gold_modification(-self.wares[13][1])
                             self.wares[13] = [None, None]
+                            self.break_piggy_bank()
+        
+        if exit == 'Main Menu':
+            self.run.main_menu.main_menu()
+
+    def break_piggy_bank(self):
+        if self.run.player.relics:
+            for relic in self.run.player.relics:
+                if relic.name == 'Piggy Bank':
+                    self.run.player.relics.remove(relic)
+                    break

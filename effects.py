@@ -798,6 +798,9 @@ def card_select(num, restrictions, run):
         restrictions = None: What type of cards can't be selected, none by default'''
     run.card_select(num, restrictions)
 
+def transform_and_upgrade(cards, run):
+    run.transform_and_upgrade(cards)
+
 def additonal_rewards(reward_type, amount, additional_rewards):
     '''Function to add additional rewards
     

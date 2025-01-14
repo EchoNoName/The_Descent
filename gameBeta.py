@@ -20,13 +20,73 @@ import sys
 
 class MainMenu:
     def __init__(self):
-        self.screen = pygame.display.set_mode((800, 600))
+        pygame.init()
+        self.screen = pygame.display.set_mode((1600, 900))
         self.clock = pygame.time.Clock()
         self.player = None
         self.run = None
         self.save_data = {}
         self.running = True
+        pygame.font.init()
+        self.main_menu_sprite = pygame.image.load(os.path.join("assets", "menu", "main_menu.png"))
+        self.menu_option_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 30)
+        self.title_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 70)
+        self.menu_options = ['New Game', 'Load Game', 'Exit']
+        self.menu_option_selected = 0
     
+    def main_menu(self): 
+        running = True
+        while running:
+            self.screen.fill((0, 0, 0))
+            self.screen.blit(self.main_menu_sprite, (0, 0))
+            
+            # Draw title
+            # Draw title with black outline
+            title_outline = self.title_font.render("The Descent", True, (0, 0, 0))
+            title_text = self.title_font.render("The Descent", True, (255, 255, 255))
+            title_rect = title_text.get_rect(center=(800, 200))
+            # Draw outline by offsetting in 4 directions
+            self.screen.blit(title_outline, (title_rect.x - 2, title_rect.y))
+            self.screen.blit(title_outline, (title_rect.x + 2, title_rect.y))
+            self.screen.blit(title_outline, (title_rect.x, title_rect.y - 2))
+            self.screen.blit(title_outline, (title_rect.x, title_rect.y + 2))
+            self.screen.blit(title_text, title_rect)
+            
+            # Draw menu options with black outline
+            for i, option in enumerate(self.menu_options):
+                outline = self.menu_option_font.render(option, True, (0, 0, 0))
+                text = self.menu_option_font.render(option, True, (255, 255, 255))
+                text_rect = text.get_rect(center=(800, 400 + i * 80))
+                # Draw outline by offsetting in 4 directions
+                self.screen.blit(outline, (text_rect.x - 2, text_rect.y))
+                self.screen.blit(outline, (text_rect.x + 2, text_rect.y))
+                self.screen.blit(outline, (text_rect.x, text_rect.y - 2))
+                self.screen.blit(outline, (text_rect.x, text_rect.y + 2))
+                self.screen.blit(text, text_rect)
+                
+            pygame.display.flip()
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    mouse_pos = pygame.mouse.get_pos()
+                    # Check each menu option
+                    for i, option in enumerate(self.menu_options):
+                        text_rect = self.menu_option_font.render(option, True, (255,255,255)).get_rect(center=(800, 400 + i * 80))
+                        if text_rect.collidepoint(mouse_pos):
+                            if i == 0:  # New Game
+                                self.new_game()
+                            elif i == 1:  # Load Game
+                                self.load_save_data()
+                            elif i == 2:  # Exit
+                                self.exit()
+    
+    def new_game(self):
+        self.player = Character('Wandering Samerai', 80, 1)
+        self.run = Run(self, self.screen, self.player)
+        self.run.runStart()
+
     def load_save_data(self):
         with open('assets/saves/save_data.txt', 'r') as file:
             self.save_data = json.load(file)
@@ -39,13 +99,16 @@ class MainMenu:
                 connections.append((int(conn_floor), int(conn_room)))
             reconstructed_path[int(floor), int(room)] = connections
         self.save_data['path'] = reconstructed_path
-        print(self.save_data['path'])
         player = Character(self.save_data['player name'], self.save_data['player maxHp'], self.save_data['player class'], False, self.save_data['player deck'], self.save_data['player potions'], self.save_data['player relics'], self.save_data['player hp'], self.save_data['player gold'])
         self.player = player
-        map_info = self.save_data['map'], self.save_data['path'], self.save_data['mapDisplay']
-        run = Run(self.player, False, False, self.save_data['ascension'], map_info, self.save_data['act'], self.save_data['act_name'], self.save_data['room'], self.save_data['roomInfo'], self.save_data['combats_finished'], self.save_data['easyPool'], self.save_data['normalPool'], self.save_data['elitePool'], self.save_data['boss'], self.save_data['eventList'], self.save_data['rareChanceMult'], self.save_data['rareChanceOffset'], self.save_data['potionChance'], self.save_data['cardRewardOptions'], self.save_data['removals'], self.save_data['encounterChance'], self.save_data['mechanics'], self.save_data['campfire'], self.save_data['eggs'])
+        map_info = self.save_data['map'], self.save_data['path'], self.save_data['mapDisplay'], self.save_data['entered_rooms']
+        run = Run(self, self.screen, self.player, False, False, self.save_data['ascension'], map_info, self.save_data['act'], self.save_data['act_name'], self.save_data['room'], self.save_data['roomInfo'], self.save_data['combats_finished'], self.save_data['easyPool'], self.save_data['normalPool'], self.save_data['elitePool'], self.save_data['boss'], self.save_data['eventList'], self.save_data['rareChanceMult'], self.save_data['rareChanceOffset'], self.save_data['potionChance'], self.save_data['cardRewardOptions'], self.save_data['removals'], self.save_data['encounterChance'], self.save_data['mechanics'], self.save_data['campfire'], self.save_data['eggs'])
         self.run = run
-        print(self.save_data)
+        self.run.runStart()
+    
+    def exit(self):
+        pygame.quit()
+        sys.exit()
 
 class Character:
     def __init__(self, name, maxHp, character_class, new_character = True, deck = [], potions = [], relics = [], current_hp = None, gold = 100):
@@ -69,8 +132,10 @@ class Character:
             for i in range(5):
                 self.deck.append(card_constructor.create_card(1002, card_data.card_info[1002]))
             self.deck.append(card_constructor.create_card(1001, card_data.card_info[1001]))
+            self.relics.append(relic_data.createRelic('Purple Blood', relic_data.starterRelics['Purple Blood']))
         else:
             self.maxHp = maxHp
+            self.gold = gold
             self.hp = current_hp
             for card in deck:
                 self.deck.append(card_constructor.create_card(card, card_data.card_info[card]))
@@ -648,6 +713,22 @@ class Character:
                 else:
                     return TypeError(f'Unknown card transform: {card}')
     
+    def transform_and_upgrade(self, cards = 'Selected'):
+        new_cards = []
+        if cards == 'Selected':
+            cards = self.selected_cards
+        for card in cards:
+            if self.character_class == 1:
+                transform_id = random.choice(card_constructor.attack_card_1 + card_constructor.skill_card_1 + card_constructor.power_card_1)
+                card_new = card_constructor.create_card(transform_id, card_data.card_info[transform_id])
+                self.deck.remove(card)
+                self.deck.append(card_new)
+                new_cards.append(card_new)
+                # Tranfrom into a card of the character class
+        for card in new_cards:
+            self.upgrade_card(card)
+
+
     def remove_card(self, cards = 'Selected'):
         '''Method for removing cards from the deck
         
@@ -912,13 +993,14 @@ classes = {
 }
 
 class Run:
-    def __init__(self, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, removals = 0, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True, 'Fertilize': False, 'Dig': False, 'Shred': False}, eggs = []):
+    def __init__(self, main_menu: MainMenu, screen, player: Character, newRun = True, turtorial = True, ascsension = 0, map_info = None, act = 1, act_name = 'The Forest', room = [0, 0], roomInfo = None, combats_finished = 0, easyPool = [], normalPool = [], elitePool = [], boss = [], eventList = [], rareChanceMult = 1, rareChanceOffset = -5, potionChance = 40, cardRewardOptions = 3, removals = 0, encounterChance = {'Combat': 10, 'Treasure': 2, 'Shop': 3}, mechanics = {'Intent': True, 'Ordered_Draw_Pile': False, 'Turn_End_Discard': True, 'Playable_Curse': False, 'Playable_Status': False, 'Exhaust_Chance': 100, 'Cards_per_Turn': False, 'Random_Combat': True, 'Insect': False, 'Block_Loss': False, 'X_Bonus': 0, 'Necro': False}, campfire = {'Rest': True, 'Smith': True, 'Fertilize': False, 'Dig': False, 'Shred': False}, eggs = []):
         self.player = player
+        self.main_menu = main_menu
         pygame.init()
+        self.starting_blessing_background_spirte = pygame.image.load(os.path.join("assets", "ui", "forest.png"))
+        self.screen = screen
         self.SCREEN_WIDTH = 1600
         self.SCREEN_HEIGHT = 900
-        self.starting_blessing_background_spirte = pygame.image.load(os.path.join("assets", "ui", "forest.png"))
-        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         pygame.display.set_caption("The Descent")
         self.combat_deck = None
         if map_info != None:
@@ -936,6 +1018,7 @@ class Run:
         self.encounterChance = encounterChance
         self.mechanics = mechanics
         self.campfire = campfire
+        self.entered_rooms = []
         if not self.newRun:
             self.easyPool = easyPool
             self.normalPool = normalPool
@@ -1004,6 +1087,7 @@ class Run:
             path_data[key] = dest_list
         self.save_data['path'] = path_data
         self.save_data['mapDisplay'] = self.map.mapDisplay
+        self.save_data['entered_rooms'] = self.entered_rooms
         self.save_data['act'] = self.act
         self.save_data['act_name'] = self.act_name
         self.save_data['room'] = self.room
@@ -1025,10 +1109,53 @@ class Run:
         self.save_data['mechanics'] = self.mechanics
         self.save_data['campfire'] = self.campfire
         self.save_data['eggs'] = self.eggs
-       
+    
+    def handle_save_and_exit_input(self, events):
+        # If the player clicks on the 75 x 75 pixel area in the top right corner of the screen, open the save and exit menu
+        if pygame.Rect(1525, 0, 75, 75).collidepoint(pygame.mouse.get_pos()):
+            for event in events:    
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    pause_menu = True
+                    while pause_menu:
+                        self.screen.fill((0, 0, 0))
+                        
+                        # Create font
+                        font = pygame.font.Font(None, 36)
+                        
+                        # Draw menu text
+                        menu_text = font.render("Do you wish to save and quit?", True, (255, 255, 255))
+                        menu_rect = menu_text.get_rect(center=(800, 400))
+                        self.screen.blit(menu_text, menu_rect)
+                        
+                        # Draw yes/no buttons
+                        yes_text = font.render("Yes", True, (255, 255, 255))
+                        no_text = font.render("No", True, (255, 255, 255))
+                        
+                        yes_rect = pygame.Rect(650, 500, 100, 50)
+                        no_rect = pygame.Rect(850, 500, 100, 50)
+                        
+                        pygame.draw.rect(self.screen, (100, 100, 100), yes_rect)
+                        pygame.draw.rect(self.screen, (100, 100, 100), no_rect)
+                        
+                        yes_text_rect = yes_text.get_rect(center=yes_rect.center)
+                        no_text_rect = no_text.get_rect(center=no_rect.center)
+                        
+                        self.screen.blit(yes_text, yes_text_rect)
+                        self.screen.blit(no_text, no_text_rect)
+                        
+                        pygame.display.flip()
+                        
+                        for event in pygame.event.get():
+                            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                                mouse_pos = pygame.mouse.get_pos()
+                                if yes_rect.collidepoint(mouse_pos):
+                                    pause_menu = False
+                                    return self.save_and_return_to_main_menu()
+                                elif no_rect.collidepoint(mouse_pos):
+                                    pause_menu = False
+            
     def save_and_return_to_main_menu(self):
         # Creat a text file with the save data in assets/saves/
-        print(self.save_data)
         with open(os.path.join("assets", "saves", "save_data.txt"), "w") as file:
             json.dump(self.save_data, file)
         return 'Main Menu'
@@ -1066,6 +1193,8 @@ class Run:
         
         selected_option = None
         
+        exit = None
+
         while blessing_active:
             self.screen.blit(self.starting_blessing_background_spirte, (0, 0))
             
@@ -1100,6 +1229,10 @@ class Run:
             # Handle UI events
             self.potion_events(mouse_pos, events)
             self.handle_deck_view(events, mouse_pos)
+            exit = self.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                blessing_active = False
+                break
             
             for event in events:
                 if event.type == pygame.QUIT:
@@ -1140,7 +1273,10 @@ class Run:
             
             pygame.display.flip()
             
-        self.mapNav()
+        if exit == 'Main Menu':
+            self.main_menu.main_menu()
+        else:
+            self.mapNav()
 
     def handle_deck_view(self, events, mouse_pos):
 
@@ -1156,17 +1292,27 @@ class Run:
 
     def mapNav(self):
         """Display the map and handle room navigation"""
+        exit = None
         map_active = True
         scroll_y = 0
         scroll_speed = 20
         max_scroll = -900  # Half of map height (1800/2) as defined in Map.draw()
         self.save_date()
 
+        room_entered = None
+
+        if self.room != [0, 0]:
+            self.entered_rooms.append(self.room)
+
         while map_active:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
             self.handle_deck_view(events, mouse_pos)
             self.potion_events(mouse_pos, events)
+            exit = self.handle_save_and_exit_input(events)
+            if exit == 'Main Menu':
+                map_active = False
+                break
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -1199,32 +1345,45 @@ class Run:
                         if room.rect.collidepoint(scrolled_mouse_pos):
                             self.room = [room.floor, room.room_num]
                             room_type = room.room_type
+                            room.entered = True
                             
                             if room_type == 1:
                                 enemies = self.get_enemies()
                                 self.generage_combat_instace(enemies, 'normal')
-                                self.start_combat()
+                                room_entered = 1
+                                map_active = False
                                 break
                             elif room_type == 2:
-                                self.unknown_location()
+                                room_entered = 2
+                                map_active = False
                                 break
                             elif room_type == 3:
                                 enemies = self.get_enemies('elite')
                                 self.generage_combat_instace(enemies, 'Elite')
-                                self.start_combat()
+                                room_entered = 3
+                                map_active = False
                                 break
                             elif room_type == 4:
                                 self.shop = shop.Shop(self)
-                                self.start_shop()
+                                room_entered = 4
+                                map_active = False
                                 break
                             elif room_type == 5:
                                 self.treasure = chest.Treasure(self)
-                                self.start_treasure()
+                                room_entered = 5
+                                map_active = False
                                 break
                             elif room_type == 6:
                                 rest = rest_site.Campfire(self)
                                 self.rest_site = rest
-                                self.rest_site.run_campfire()
+                                room_entered = 6
+                                map_active = False
+                                break
+                            elif room_type == 7:
+                                enemy = [enemy_data.AncientMech()]
+                                self.generage_combat_instace(enemy, 'Boss')
+                                room_entered = 7
+                                map_active = False
                                 break
 
             # Clear screen and draw map
@@ -1246,6 +1405,27 @@ class Run:
             # Draw player UI
             self.player.draw_ui(self.screen)
             pygame.display.flip()
+
+        if exit == 'Main Menu':
+            self.main_menu.main_menu()
+
+        self.eventMod('Room')
+        if room_entered == 1:
+            self.start_combat()
+        elif room_entered == 2:
+            self.unknown_location()
+        elif room_entered == 3:
+            self.start_combat()
+        elif room_entered == 4:
+            self.start_shop()
+        elif room_entered == 5:
+            self.start_treasure()
+        elif room_entered == 6:
+            self.eventMod('Campfire')
+            self.start_campfire()
+        elif room_entered == 7:
+            self.eventMod('Boss Start')
+            self.start_combat()
 
     def discard_potion(self, potion):
         self.player.potions[self.player.potions.index(potion)] = None
@@ -1303,6 +1483,11 @@ class Run:
                 # Go through all relics
                 relic.eventBonus(event, self)
                 # Execute condisional effects of relics
+
+    def eventMod(self, event):
+        if self.player.relics:
+            for relic in self.player.relics:
+                relic.eventModifcation(event, self)
 
     def card_reward_option_mod(self, mod):
         '''Method to increase or decrease the amount of cards avalible at card rewards'''
@@ -1380,7 +1565,6 @@ class Run:
             self.player.potions[self.player.potions.index(None)] = potion
             return True
         else:
-            print('Potion Slots Full!')
             return False
 
     def gain_rand_potion(self):
@@ -1543,10 +1727,59 @@ class Run:
             }
             self.generate_reward_screen_instance(combat_type_conversion[self.combat.combat_type], set_rewards, {})
             self.open_reward_screen(screen)
+            self.eventMod('Combat End')
+            self.mapNav()
         elif result == 'defeat':
-            print('Defeat')
+            self.defeat()
         elif result == 'escape':
-            print('Escape')
+            self.combats_finished += 1
+            self.mapNav()
+
+    def defeat(self):
+        running = True
+        self.clear_save_file()
+        while running:
+            events = pygame.event.get()
+            mouse_pos = pygame.mouse.get_pos()
+            
+            # Create semi-transparent background
+            overlay = pygame.Surface((1600, 900))
+            overlay.fill((0, 0, 0))
+            overlay.set_alpha(128)
+            self.screen.blit(overlay, (0, 0))
+            
+            # Create fonts
+            defeat_font = pygame.font.Font(None, 128)
+            menu_font = pygame.font.Font(None, 36)
+            
+            # Create text surfaces
+            defeat_text = defeat_font.render("Defeat", True, (255, 255, 255))
+            menu_text = menu_font.render("Return to Main Menu", True, (255, 255, 255))
+            
+            # Get text rectangles
+            defeat_rect = defeat_text.get_rect(center=(800, 400))
+            menu_rect = menu_text.get_rect(center=(800, 500))
+            
+            # Draw text
+            self.screen.blit(defeat_text, defeat_rect)
+            self.screen.blit(menu_text, menu_rect)
+            
+            # Check for clicks on menu text
+            for event in events:
+                if event.type == pygame.QUIT:
+                    running = False
+                    self.exit_game()
+                    break
+
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    if menu_rect.collidepoint(mouse_pos):
+                        self.main_menu.main_menu()
+            
+            pygame.display.flip()
+
+    def clear_save_file(self):
+        with open(self.save_data['path'], 'w') as file:
+            json.dump({}, file)
 
     def open_reward_screen(self, screen):
         self.reward.listRewards(screen)
@@ -1554,15 +1787,24 @@ class Run:
     def start_treasure(self):
         self.lastInstance = 'T'
         self.treasure.start_event()
+        self.mapNav()
     
     def start_shop(self):
         self.lastInstance = 'S'
+        self.eventMod('shop')
         self.shop.generate_wares()
         self.shop.interact()
+        self.mapNav()
 
     def start_event(self):
         self.lastInstance = 'E'
         self.event.run_event()
+        self.mapNav()
+
+    def start_campfire(self):
+        self.lastInstance = 'R'
+        self.campfire.run_campfire()
+        self.mapNav()
 
     def generate_event_list(self):
         '''Method to generate the list of random events the player will encouter'''
@@ -1634,12 +1876,5 @@ class Run:
             self.create_event_instance(event)
             self.start_event()
 
-
-
-
-player = Character('Warrior', 100, 1)
-run = Run(player)
-run.relic_pickup(relic_data.createRelic('Iron Plated Cards', relic_data.shopRelics['Iron Plated Cards']))
-pygame.init()
-
-run.neowBlessing()
+game = MainMenu()
+game.main_menu()
