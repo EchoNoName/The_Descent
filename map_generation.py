@@ -510,6 +510,7 @@ class Map:
                         map_copy[i][int(key)] = int(value)
             self.map = map_copy
         self.rooms = []
+        self.map[16] = {4: 7}
         for floor, room in self.map.items():
             for room_num, room_type in room.items():
                 self.rooms.append(Room(int(room_type), int(floor), int(room_num)))
@@ -528,6 +529,7 @@ class Map:
             for room in self.rooms:
                 if room.floor == id[0] and room.room_num == id[1]:
                     room.entered = True
+        
 
     def draw(self, screen, x, y):
         """Draw the map with rooms and connections"""

@@ -35,6 +35,11 @@ class MainMenu:
         self.menu_option_selected = 0
     
     def main_menu(self): 
+        existing_save = False
+        with open('assets/saves/save_data.txt', 'r') as file:
+            save_content = file.read()
+            if save_content and save_content.strip() != '{}':
+                existing_save = True
         running = True
         while running:
             self.screen.fill((0, 0, 0))
@@ -54,6 +59,8 @@ class MainMenu:
             
             # Draw menu options with black outline
             for i, option in enumerate(self.menu_options):
+                if option == 'Load Game' and not existing_save:
+                    continue
                 outline = self.menu_option_font.render(option, True, (0, 0, 0))
                 text = self.menu_option_font.render(option, True, (255, 255, 255))
                 text_rect = text.get_rect(center=(800, 400 + i * 80))
@@ -77,7 +84,7 @@ class MainMenu:
                         if text_rect.collidepoint(mouse_pos):
                             if i == 0:  # New Game
                                 self.new_game()
-                            elif i == 1:  # Load Game
+                            elif i == 1 and existing_save:  # Load Game
                                 self.load_save_data()
                             elif i == 2:  # Exit
                                 self.exit()
@@ -1005,6 +1012,7 @@ class Run:
         self.combat_deck = None
         if map_info != None:
             self.map = map_generation.Map(ascsension, map_info)
+            self.entered_rooms = map_info[3]
         else:
             self.map = map_generation.Map(ascsension)
         self.act = act
@@ -1297,12 +1305,12 @@ class Run:
         scroll_y = 0
         scroll_speed = 20
         max_scroll = -900  # Half of map height (1800/2) as defined in Map.draw()
-        self.save_date()
-
-        room_entered = None
-
         if self.room != [0, 0]:
             self.entered_rooms.append(self.room)
+        self.save_date()
+        self.upload_save_data()
+
+        room_entered = None
 
         while map_active:
             events = pygame.event.get()
@@ -1313,6 +1321,25 @@ class Run:
             if exit == 'Main Menu':
                 map_active = False
                 break
+            
+
+            # Clear screen and draw map# Clear screen and draw map
+            self.screen.fill((255, 255, 255))
+            self.map.y = scroll_y
+            self.map.draw(self.screen, 0, scroll_y)
+            
+            # Draw player UI
+            self.player.draw_ui(self.screen)
+            # Highlight available rooms
+            x_spacing = 100
+            y_spacing = 100
+            map_width = 6 * x_spacing
+            start_x = (1600 - map_width) // 2
+            
+            for next_floor, next_room in self.map.path[(self.room[0], self.room[1])]:
+                room_x = start_x + (next_room - 1) * x_spacing
+                room_y = next_floor * y_spacing + scroll_y + 50
+                pygame.draw.circle(self.screen, (255, 255, 0), (room_x + 22, room_y + 22), 25, 2)  # Yellow circle around available rooms
 
             for event in events:
                 if event.type == pygame.QUIT:
@@ -1386,24 +1413,6 @@ class Run:
                                 map_active = False
                                 break
 
-            # Clear screen and draw map
-            self.screen.fill((255, 255, 255))
-            self.map.y = scroll_y
-            self.map.draw(self.screen, 0, scroll_y)
-            
-            # Highlight available rooms
-            x_spacing = 100
-            y_spacing = 100
-            map_width = 6 * x_spacing
-            start_x = (1600 - map_width) // 2
-            
-            for next_floor, next_room in self.map.path[(self.room[0], self.room[1])]:
-                room_x = start_x + (next_room - 1) * x_spacing
-                room_y = next_floor * y_spacing + scroll_y + 50
-                pygame.draw.circle(self.screen, (255, 255, 0), (room_x + 22, room_y + 22), 25, 2)  # Yellow circle around available rooms
-
-            # Draw player UI
-            self.player.draw_ui(self.screen)
             pygame.display.flip()
 
         if exit == 'Main Menu':
@@ -1426,6 +1435,10 @@ class Run:
         elif room_entered == 7:
             self.eventMod('Boss Start')
             self.start_combat()
+
+    def upload_save_data(self):
+        with open('assets/saves/save_data.txt', 'w') as file:
+            json.dump(self.save_data, file)
 
     def discard_potion(self, potion):
         self.player.potions[self.player.potions.index(potion)] = None
@@ -1778,7 +1791,7 @@ class Run:
             pygame.display.flip()
 
     def clear_save_file(self):
-        with open(self.save_data['path'], 'w') as file:
+        with open('assets/saves/save_data.txt', 'w') as file:
             json.dump({}, file)
 
     def open_reward_screen(self, screen):
@@ -1803,7 +1816,7 @@ class Run:
 
     def start_campfire(self):
         self.lastInstance = 'R'
-        self.campfire.run_campfire()
+        self.rest_site.run_campfire()
         self.mapNav()
 
     def generate_event_list(self):

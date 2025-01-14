@@ -418,8 +418,6 @@ class RewardScreen: # Class for any reward screed
                                 skip_rect.bottomright = (self.run.SCREEN_WIDTH, self.run.SCREEN_HEIGHT - 200)
                                 self.run.screen.blit(self.skip_button_sprite, skip_rect)
 
-                                pygame.display.flip()
-
                                 for card_event in pygame.event.get():
                                     if card_event.type == pygame.QUIT or (card_event.type == pygame.KEYDOWN and card_event.key == pygame.K_F4 and (pygame.key.get_mods() & pygame.KMOD_ALT)):
                                         pygame.quit()
@@ -434,6 +432,11 @@ class RewardScreen: # Class for any reward screed
                                                     self.run.card_pickup(card)
                                                     self.rewards['Cards'].pop(i)
                                                     card_menu = False
+                                                    break
+                                                
+                                pygame.display.flip()
+
+                                
 
                         reward_y += reward_height + reward_spacing
 

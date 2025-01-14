@@ -1939,7 +1939,7 @@ class GiantLouse(Enemy):
         self.size = 'large'
         self.max_hp = random.randint(109, 111)
         self.hp = self.max_hp
-        self.block = 0
+        self.block = 8
         self.special_done = False
         self.counter = 0
         self.actions = {

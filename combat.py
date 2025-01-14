@@ -615,11 +615,15 @@ class Combat:
             # returns that player
         elif target_code == 2:
             # if its 2
-            return [self.enemies[random.randint(0, len(self.enemies) - 1)]]
+            return [self.enemies.random_enemy()]
             # Returns a random enemy
         elif target_code == 3:
             # if its 3
-            return self.enemies
+            enemies = []
+            for enemy in self.enemies.enemy_list:
+                if enemy != None:
+                    enemies.append(enemy)
+            return enemies
             # Returns all the enemies
         else:
             raise ValueError(f"Unknown target code: {target_code}")
