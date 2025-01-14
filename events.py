@@ -239,8 +239,8 @@ class EntangledTreasure:
 
                     if option1.collidepoint(adjusted_pos) and not self.completed:
                         self.player.hp_loss(current_hp_loss)
-                        if self.player.hp <= 0:  # Check for death
-                            self.run.death_screen()
+                        if self.player.died:  # Check for death
+                            self.run.defeat()
                         else:
                             rng = random.randint(1, 100)
                             if rng <= current_chance:
@@ -537,6 +537,10 @@ class GoddessStatue:
 
                     if option1.collidepoint(adjusted_pos) and not result_active:
                         self.player.hp_loss(7)
+                        if self.player.died():
+                            self.run.defeat()
+                            event_active = False
+                            break
                         effects.card_select(1, {}, self.run)
                         self.player.remove_card(self.player.selected_cards)
                         result_dialogue = [result1, result2, result3, result4]
@@ -699,6 +703,10 @@ class AbandonedMonument:
                             self.completed = True
                         elif option3.collidepoint(adjusted_pos):
                             self.player.hp_loss(int(self.player.maxHp * 0.25))
+                            if self.player.died():
+                                self.run.defeat()
+                                event_active = False
+                                break
                             result_dialogue = [result9, result10]
                             result_active = True
                             self.completed = True
@@ -1302,6 +1310,10 @@ class ShiningLight:
                     if not self.completed:
                         if option1.collidepoint(adjusted_pos):
                             self.player.hp_loss(int(self.player.maxHp * 0.2))
+                            if self.player.died():
+                                self.run.defeat()
+                                event_active = False
+                                break
                             self.player.upgrade_card(['Card', 'Card'])
                             result_dialogue = [result1, result2, result3, result4, result5]
                             self.completed = True
@@ -1423,6 +1435,10 @@ class SlimeGoop:
                             gold_amount = random.randint(45, 85)
                             self.run.gold_modification(gold_amount)
                             self.player.hp_loss(11)
+                            if self.player.died():
+                                self.run.defeat()
+                                event_active = False
+                                break
                             result_dialogue = [result1, result2]
                             self.completed = True
                         elif option2.collidepoint(adjusted_pos):

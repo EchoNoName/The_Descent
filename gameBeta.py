@@ -1303,7 +1303,7 @@ class Run:
         exit = None
         map_active = True
         scroll_y = 0
-        scroll_speed = 20
+        scroll_speed = 50
         max_scroll = -900  # Half of map height (1800/2) as defined in Map.draw()
         if self.room != [0, 0]:
             self.entered_rooms.append(self.room)
@@ -1328,8 +1328,7 @@ class Run:
             self.map.y = scroll_y
             self.map.draw(self.screen, 0, scroll_y)
             
-            # Draw player UI
-            self.player.draw_ui(self.screen)
+            
             # Highlight available rooms
             x_spacing = 100
             y_spacing = 100
@@ -1340,6 +1339,9 @@ class Run:
                 room_x = start_x + (next_room - 1) * x_spacing
                 room_y = next_floor * y_spacing + scroll_y + 50
                 pygame.draw.circle(self.screen, (255, 255, 0), (room_x + 22, room_y + 22), 25, 2)  # Yellow circle around available rooms
+
+            # Draw player UI
+            self.player.draw_ui(self.screen)
 
             for event in events:
                 if event.type == pygame.QUIT:
