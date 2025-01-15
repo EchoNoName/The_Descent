@@ -1163,9 +1163,6 @@ class Run:
                                     pause_menu = False
             
     def save_and_return_to_main_menu(self):
-        # Creat a text file with the save data in assets/saves/
-        with open(os.path.join("assets", "saves", "save_data.txt"), "w") as file:
-            json.dump(self.save_data, file)
         return 'Main Menu'
 
     def exit_game(self):
@@ -1309,6 +1306,8 @@ class Run:
             self.entered_rooms.append(self.room)
         self.save_date()
         self.upload_save_data()
+        print('Saved')
+        print(self.save_data['easyPool'])
 
         room_entered = None
 
@@ -1437,7 +1436,7 @@ class Run:
         elif room_entered == 7:
             self.eventMod('Boss Start')
             self.start_combat()
-
+        
     def upload_save_data(self):
         with open('assets/saves/save_data.txt', 'w') as file:
             json.dump(self.save_data, file)
