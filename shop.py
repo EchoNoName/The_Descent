@@ -343,7 +343,11 @@ class Shop:
                                         if isinstance(item, card_constructor.Card):
                                             self.run.card_pickup(item)
                                         elif isinstance(item, potion_data.Potion):
-                                            self.run.potion_pickup(item)
+                                            if None in self.run.player.potions:
+                                                self.run.potion_pickup(item)
+                                            else:
+                                                self.run.gold += -ware[1]
+                                                ware[0] = item
                                         elif isinstance(item, relic_data.Relics):
                                             self.run.relic_pickup(item)
                                             if item.name == 'Costco\'s Membership Card':
