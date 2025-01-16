@@ -1306,8 +1306,8 @@ class Run:
             self.entered_rooms.append(self.room)
         self.save_date()
         self.upload_save_data()
-        print('Saved')
-        print(self.save_data['easyPool'])
+        if self.room == [16, 4]:
+            return self.victory()
 
         room_entered = None
 
@@ -1748,6 +1748,48 @@ class Run:
         elif result == 'escape':
             self.combats_finished += 1
             self.mapNav()
+
+    def victory(self):
+        running = True
+        self.clear_save_file()
+        while running:
+            events = pygame.event.get()
+            mouse_pos = pygame.mouse.get_pos()
+            
+            # Create semi-transparent background
+            overlay = pygame.Surface((1600, 900))
+            overlay.fill((0, 0, 0))
+            overlay.set_alpha(128)
+            self.screen.blit(overlay, (0, 0))
+            
+            # Create fonts
+            defeat_font = pygame.font.Font(None, 128)
+            menu_font = pygame.font.Font(None, 36)
+            
+            # Create text surfaces
+            defeat_text = defeat_font.render("Victory!", True, (255, 255, 255))
+            menu_text = menu_font.render("Return to Main Menu", True, (255, 255, 255))
+            
+            # Get text rectangles
+            defeat_rect = defeat_text.get_rect(center=(800, 400))
+            menu_rect = menu_text.get_rect(center=(800, 500))
+            
+            # Draw text
+            self.screen.blit(defeat_text, defeat_rect)
+            self.screen.blit(menu_text, menu_rect)
+            
+            # Check for clicks on menu text
+            for event in events:
+                if event.type == pygame.QUIT:
+                    running = False
+                    self.exit_game()
+                    break
+
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    if menu_rect.collidepoint(mouse_pos):
+                        self.main_menu.main_menu()
+            
+            pygame.display.flip()
 
     def defeat(self):
         running = True

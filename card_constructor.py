@@ -157,10 +157,7 @@ class Card():
         if self.dragging:
             # When dragging, follow mouse position
             mouse_pos = pygame.mouse.get_pos()
-            self.current_pos = pygame.Vector2(
-                mouse_pos[0] + self.drag_offset[0],
-                mouse_pos[1] + self.drag_offset[1]
-            )
+            self.current_pos = pygame.Vector2(mouse_pos[0] + self.drag_offset[0], mouse_pos[1] + self.drag_offset[1])
         else:
             # Normal movement toward target position
             direction = self.target_pos - self.current_pos
@@ -174,24 +171,12 @@ class Card():
         # Update collision rect position
         if self.is_hovered or self.targeting or self.dragging:  # Changed condition here
             # Use larger collision box for hover sprite
-            scaled_hover = pygame.transform.smoothscale(self.hover_sprite,
-                (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
-            self.rect = pygame.Rect(
-                self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2,
-                self.current_pos[1],
-                scaled_hover.get_width(),
-                scaled_hover.get_height()
-            )
+            scaled_hover = pygame.transform.smoothscale(self.hover_sprite, (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
+            self.rect = pygame.Rect(self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2, self.current_pos[1], scaled_hover.get_width(), scaled_hover.get_height())
         else:
             # Use normal sprite collision box
-            scaled_sprite = pygame.transform.smoothscale(self.sprite,
-                (self.sprite.get_width()//2, self.sprite.get_height()//2))
-            self.rect = pygame.Rect(
-                self.current_pos[0],
-                self.current_pos[1], 
-                scaled_sprite.get_width(),
-                scaled_sprite.get_height()
-            )
+            scaled_sprite = pygame.transform.smoothscale(self.sprite, (self.sprite.get_width()//2, self.sprite.get_height()//2))
+            self.rect = pygame.Rect(self.current_pos[0], self.current_pos[1], scaled_sprite.get_width(), scaled_sprite.get_height())
 
     def check_hover(self, mouse_pos):
         # Check if mouse is over card
@@ -232,14 +217,8 @@ class Card():
 
     def update_rect(self):
         if self.is_hovered or self.targeting or self.dragging:
-            scaled_hover = pygame.transform.smoothscale(self.hover_sprite, 
-                (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
-            self.rect = pygame.Rect(
-                self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2,
-                self.current_pos[1],
-                scaled_hover.get_width(),
-                scaled_hover.get_height()
-            )
+            scaled_hover = pygame.transform.smoothscale(self.hover_sprite, (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
+            self.rect = pygame.Rect(self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2, self.current_pos[1], scaled_hover.get_width(), scaled_hover.get_height())
         else:
             scaled_sprite = pygame.transform.smoothscale(self.sprite, (self.sprite.get_width()//2, self.sprite.get_height()//2))
             self.rect = pygame.Rect(self.current_pos[0], self.current_pos[1], scaled_sprite.get_width(), scaled_sprite.get_height())
@@ -323,7 +302,6 @@ class Card():
             
             # Get the arrow head dimensions
             head_width = self.arrow_head_sprite.get_width()
-            head_height = self.arrow_head_sprite.get_height()
             
             # Calculate the position where the arrow head should end (at mouse cursor)
             # Then work backwards to find where the body should end
@@ -332,7 +310,6 @@ class Card():
             # Calculate the actual end point for the body (where head begins)
             body_end_x = mouse_pos[0] - math.cos(math.radians(angle)) * head_offset
             body_end_y = mouse_pos[1] - math.sin(math.radians(angle)) * head_offset
-            body_end_pos = (body_end_x, body_end_y)
             
             # Calculate distance between start and body end
             distance = math.sqrt((body_end_x - start_pos[0])**2 + (body_end_y - start_pos[1])**2)
@@ -349,28 +326,18 @@ class Card():
             # Draw body segments
             for i in range(num_segments):
                 # Calculate position for this segment
-                segment_pos = (
-                    start_pos[0] + math.cos(math.radians(angle)) * (i * spacing),
-                    start_pos[1] + math.sin(math.radians(angle)) * (i * spacing)
-                )
+                segment_pos = (start_pos[0] + math.cos(math.radians(angle)) * (i * spacing), start_pos[1] + math.sin(math.radians(angle)) * (i * spacing))
                 segment_rect = rotated_body.get_rect()
                 segment_rect.center = segment_pos
                 surface.blit(rotated_body, segment_rect)
             
             # Draw final shortened body segment to reach arrow head
-            final_segment_pos = (
-                start_pos[0] + math.cos(math.radians(angle)) * (num_segments * spacing),
-                start_pos[1] + math.sin(math.radians(angle)) * (num_segments * spacing)
-            )
+            final_segment_pos = (start_pos[0] + math.cos(math.radians(angle)) * (num_segments * spacing), start_pos[1] + math.sin(math.radians(angle)) * (num_segments * spacing))
             remaining_distance = distance - (num_segments * spacing)
             if remaining_distance > 0:
                 # Scale the final segment to fit the remaining distance
                 scale_factor = remaining_distance / segment_width
-                final_segment = pygame.transform.scale(
-                    self.arrow_body_sprite,
-                    (int(self.arrow_body_sprite.get_width() * scale_factor), 
-                    self.arrow_body_sprite.get_height())
-                )
+                final_segment = pygame.transform.scale(self.arrow_body_sprite, (int(self.arrow_body_sprite.get_width() * scale_factor), self.arrow_body_sprite.get_height()))
                 final_rotated = pygame.transform.rotate(final_segment, -angle)
                 final_rect = final_rotated.get_rect()
                 final_rect.center = final_segment_pos
@@ -379,10 +346,7 @@ class Card():
             # Draw arrow head at mouse position
             head_rect = rotated_head.get_rect()
             # Position the head so its tip is at the mouse cursor
-            head_rect.center = (
-                mouse_pos[0] - math.cos(math.radians(angle)) * head_offset,
-                mouse_pos[1] - math.sin(math.radians(angle)) * head_offset
-            )
+            head_rect.center = (mouse_pos[0] - math.cos(math.radians(angle)) * head_offset, mouse_pos[1] - math.sin(math.radians(angle)) * head_offset)
             surface.blit(rotated_head, head_rect)
 
     def draw_highlight(self, surface):
@@ -392,10 +356,7 @@ class Card():
     def start_dragging(self, mouse_pos):
         """Start dragging the card"""
         self.dragging = True
-        self.drag_offset = (
-            self.current_pos[0] - mouse_pos[0],
-            self.current_pos[1] - mouse_pos[1]
-        )
+        self.drag_offset = (self.current_pos[0] - mouse_pos[0], self.current_pos[1] - mouse_pos[1])
 
     def stop_dragging(self):
         """Stop dragging the card"""
