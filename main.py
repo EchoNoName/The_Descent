@@ -623,6 +623,8 @@ class Character:
             card_surface.fill((0, 0, 0, 0))  # Completely transparent background
             events = pygame.event.get()
             for event in events:
+                if event.type == pygame.QUIT:
+                    self.quit_game()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = pygame.mouse.get_pos()
                     if confirm_button.collidepoint(mouse_pos):
