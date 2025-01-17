@@ -289,7 +289,7 @@ class Combat:
             discard_rect = pygame.Rect(box_x, box_y + 45, 100, 40) 
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 if use_rect.collidepoint(mouse_pos):
-                    if self.clicked_potion.time_of_use in ['combat', 'all']:
+                    if self.clicked_potion.time_of_use in ['combat']:
                         if self.clicked_potion.target == 1:
                             self.clicked_potion.start_targeting()
                             self.clicked_potion.unclick()
