@@ -30,115 +30,115 @@ class Combat:
         self.can_play_card = True # If the player can play cards
         self.combat_active = True # Whether the player is in this combat
         self.powers = Pile([], "powers") # The powers the player has gained
-        self.card_type_played = {}
-        self.enemy_turn = False
-        self.escaped = False
-        self.necroed = True
-        self.clock = pygame.time.Clock()
+        self.card_type_played = {} # The type of cards played
+        self.enemy_turn = False # Whether the enemy is taking their turn
+        self.escaped = False # Whether the player has escaped
+        self.necroed = True # Whether the player has necroed
+        self.clock = pygame.time.Clock() # The clock
         self.current_phase = 'player_turn_start'
         self.turn_phases = {
-            'player_turn_start': self.player_turn_start,
-            'player_turn': self.player_turn,
-            'player_turn_end': self.player_turn_end,
-            'enemy_turn_start': self.enemy_turn_start,
-            'enemy_actions': self.enemy_action,
-            'enemy_turn_end': self.enemy_turn_end
+            'player_turn_start': self.player_turn_start, # The start of the player's turn
+            'player_turn': self.player_turn, # The player's turn
+            'player_turn_end': self.player_turn_end, # The end of the player's turn
+            'enemy_turn_start': self.enemy_turn_start, # The start of the enemy's turn
+            'enemy_actions': self.enemy_action, # The enemy's actions
+            'enemy_turn_end': self.enemy_turn_end # The end of the enemy's turn
         }
-        self.dragged_card = None
-        self.targetting_potion = None
-        self.clicked_potion = None
-        pygame.init()
-        self.SCREEN_WIDTH = 1600
-        self.SCREEN_HEIGHT = 900
-        self.screen = screen
-        self.combat_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
-        self.end_turn_button = pygame.image.load("assets/ui/end_turn.png")
+        self.dragged_card = None # The card being dragged
+        self.targetting_potion = None # The targetting potion
+        self.clicked_potion = None # The clicked potion
+        pygame.init() # Initialize pygame
+        self.SCREEN_WIDTH = 1600 # The width of the screen
+        self.SCREEN_HEIGHT = 900 # The height of the screen
+        self.screen = screen # The screen
+        self.combat_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA) # The combat surface
+        self.end_turn_button = pygame.image.load("assets/ui/end_turn.png") # The end turn button
         # Scale down end turn button
-        self.background_sprite = pygame.image.load(os.path.join("assets", "ui", "forest.png"))
-        scaled_size = (int(self.end_turn_button.get_width() * 0.8), int(self.end_turn_button.get_height() * 0.8))
-        self.end_turn_button = pygame.transform.scale(self.end_turn_button, scaled_size)
-        self.energy_sprite = pygame.image.load(os.path.join("assets", "ui", "energy.png"))
-        scaled_size = (int(self.energy_sprite.get_width() // 6.5), int(self.energy_sprite.get_height() // 6.5))
-        self.energy_sprite = pygame.transform.scale(self.energy_sprite, scaled_size)
-        self.energy_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 48)
+        self.background_sprite = pygame.image.load(os.path.join("assets", "ui", "forest.png")) # The background sprite
+        scaled_size = (int(self.end_turn_button.get_width() * 0.8), int(self.end_turn_button.get_height() * 0.8)) # The scaled size of the end turn button
+        self.end_turn_button = pygame.transform.scale(self.end_turn_button, scaled_size) # The scaled end turn button
+        self.energy_sprite = pygame.image.load(os.path.join("assets", "ui", "energy.png")) # The energy sprite
+        scaled_size = (int(self.energy_sprite.get_width() // 6.5), int(self.energy_sprite.get_height() // 6.5)) # The scaled size of the energy sprite
+        self.energy_sprite = pygame.transform.scale(self.energy_sprite, scaled_size) # The scaled energy sprite
+        self.energy_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 48) # The font of the energy
         self.action_time_start = 0
         self.last_time = 0
     
     def run_combat(self):
         """Main combat loop"""
-        running = True
-        exit = None
-        self.combat_start()
-        self.clock = pygame.time.Clock()
+        running = True # Whether the combat is running
+        exit = None # Whether the player wants to exit to the main menu
+        self.combat_start() # Start the combat
+        self.clock = pygame.time.Clock() # The clock
         while running and self.combat_active:
-            self.clock.tick(60)
-            self.last_time = pygame.time.get_ticks()
+            self.clock.tick(60) # The clock tick
+            self.last_time = pygame.time.get_ticks() # The last time
             
             # Clear screen and get mouse position
-            self.combat_surface.fill((30, 30, 30))
-            self.combat_surface.blit(self.background_sprite, (0, 0))
-            mouse_pos = pygame.mouse.get_pos()
+            self.combat_surface.fill((30, 30, 30)) # Clear the combat surface
+            self.combat_surface.blit(self.background_sprite, (0, 0)) # Draw the background sprite
+            mouse_pos = pygame.mouse.get_pos() # Get the mouse position
 
             # Execute current phase
             if self.current_phase:
-                phase_result = self.turn_phases[self.current_phase]()
+                phase_result = self.turn_phases[self.current_phase]() # Execute the current phase
                 
                 # Handle phase transitions
                 if phase_result == 'next':
-                    self.advance_phase()
+                    self.advance_phase() # Advance to the next phase
                 elif phase_result == 'end_combat':
-                    break
+                    break # End the combat
             
-            events = pygame.event.get()
+            events = pygame.event.get() # Get the events
             # Event handling
             for event in events:
                 if event.type == pygame.QUIT:
-                    self.quit_game()
+                    self.quit_game() # Quit the game
                 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (event.mod & pygame.KMOD_ALT):
-                    self.quit_game()
+                    self.quit_game() # Quit the game
                 
                 if event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self.player.deck_button_rect.collidepoint(mouse_pos):
-                    self.player.view_deck()
+                    self.player.view_deck() # View the deck
 
                 # Only handle card and potion events during player turn
                 if self.current_phase == 'player_turn':
-                    self.handle_card_events(event, mouse_pos)
-                    self.handle_potion_events(event, mouse_pos)
+                    self.handle_card_events(event, mouse_pos) # Handle card events
+                    self.handle_potion_events(event, mouse_pos) # Handle potion events
                     
             # Update and draw game state
-            self.run.handle_deck_view(events, mouse_pos)
-            self.run.potion_events(mouse_pos, events)
-            exit = self.run.handle_save_and_exit_input(events)
+            self.run.handle_deck_view(events, mouse_pos) # Handle deck view
+            self.run.potion_events(mouse_pos, events) # Handle potion events
+            exit = self.run.handle_save_and_exit_input(events) # Handle save and exit input
             if exit == 'Main Menu':
                 running = False
                 break
-            self.handle_enemy_events(mouse_pos)
-            self.handle_pile_events(events, mouse_pos)
-            self.handle_character_events(mouse_pos)
-            self.update_game_state(mouse_pos)
-            self.draw_game_state(mouse_pos)
-            self.screen.blit(self.combat_surface, (0, 0))
-            pygame.display.flip()
+            self.handle_enemy_events(mouse_pos) # Handle enemy events
+            self.handle_pile_events(events, mouse_pos) # Handle pile events
+            self.handle_character_events(mouse_pos) # Handle character events
+            self.update_game_state(mouse_pos) # Update the game state
+            self.draw_game_state(mouse_pos) # Draw the game state
+            self.screen.blit(self.combat_surface, (0, 0)) # Draw the combat surface
+            pygame.display.flip() # Update the display
 
         if exit == 'Main Menu':
-            self.run.main_menu.main_menu()
+            self.run.main_menu.main_menu() # Return to the main menu
         else:
             pygame.time.wait(1000)
-            return self.combat_result(), self.combat_surface
+            return self.combat_result(), self.combat_surface # Return the combat result and the combat surface
 
     def combat_result(self):
         """Determine the result of the combat"""
         if self.player.hp <= 0:
-            return 'defeat'
+            return 'defeat' # Defeat
         elif self.enemies.is_empty():
-            return 'victory'
+            return 'victory' # Victory
         else:
-            return 'escape'
+            return 'escape' # Escape
 
     def advance_phase(self):
         """Advance to the next combat phase"""
-        phase_order = [
+        phase_order = [ # The order of the phases
             'player_turn_start',
             'player_turn',
             'player_turn_end',
@@ -146,19 +146,19 @@ class Combat:
             'enemy_actions',
             'enemy_turn_end'
         ]
-        current_index = phase_order.index(self.current_phase)
-        next_index = (current_index + 1) % len(phase_order)
-        self.current_phase = phase_order[next_index]
+        current_index = phase_order.index(self.current_phase) # Get the current phase index
+        next_index = (current_index + 1) % len(phase_order) # Get the next phase index
+        self.current_phase = phase_order[next_index] # Set the current phase to the next phase
 
     def handle_enemy_events(self, mouse_pos):
         """Handle enemy-related events"""
-        if not self.targetting_potion and not self.dragged_card:
+        if not self.targetting_potion and not self.dragged_card: # If the player is not targeting a potion and not dragging a card
             for enemy in self.enemies.enemy_list:
                 if enemy is not None:
                     if enemy.rect.collidepoint(mouse_pos):
-                        enemy.hover()
+                        enemy.hover() # Hover the enemy
                     else:
-                        enemy.unhover()
+                        enemy.unhover() # Unhover the enemy
 
     def handle_pile_events(self, events, mouse_pos):
         """Handle pile-related events"""
@@ -169,39 +169,39 @@ class Combat:
             self.draw_pile.unhover()
             
         if self.discard_pile.rect.collidepoint(mouse_pos):
-            self.discard_pile.hover()
+            self.discard_pile.hover() # Hover the discard pile
         else:
-            self.discard_pile.unhover()
+            self.discard_pile.unhover() # Unhover the discard pile
             
         if self.exhaust_pile.rect.collidepoint(mouse_pos):
-            self.exhaust_pile.hover()
+            self.exhaust_pile.hover() # Hover the exhaust pile
         else:
-            self.exhaust_pile.unhover()
+            self.exhaust_pile.unhover() # Unhover the exhaust pile
             
         if self.powers.rect.collidepoint(mouse_pos):
-            self.powers.hover()
+            self.powers.hover() # Hover the powers pile
         else:
-            self.powers.unhover()
+            self.powers.unhover() # Unhover the powers pile
             
         # Handle clicking
         for event in events:
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 if self.draw_pile.rect.collidepoint(mouse_pos):
-                    self.view_pile(self.draw_pile)
+                    self.view_pile(self.draw_pile) # View the draw pile
                 elif self.discard_pile.rect.collidepoint(mouse_pos):
-                    self.view_pile(self.discard_pile)
+                    self.view_pile(self.discard_pile) # View the discard pile
                 elif self.exhaust_pile.rect.collidepoint(mouse_pos):
-                    self.view_pile(self.exhaust_pile)
+                    self.view_pile(self.exhaust_pile) # View the exhaust pile   
                 elif self.powers.rect.collidepoint(mouse_pos):
-                    self.view_pile(self.powers)
+                    self.view_pile(self.powers) # View the powers pile
 
 
     def handle_character_events(self, mouse_pos):
         """Handle character-related events"""
         if self.player.rect.collidepoint(mouse_pos):
-            self.player.hover()
+            self.player.hover() # Hover the player
         else:
-            self.player.unhover()
+            self.player.unhover() # Unhover the player
 
     def handle_card_events(self, event, mouse_pos):
         """Handle card-related events"""
@@ -209,115 +209,115 @@ class Combat:
             for card in reversed(self.hand.cards):
                 if card.rect.collidepoint(mouse_pos):
                     if card.target == 1:
-                        card.start_targeting(mouse_pos)
+                        card.start_targeting(mouse_pos) # Start targeting the card
                         self.dragged_card = card
                     else:
-                        card.start_dragging(mouse_pos)
+                        card.start_dragging(mouse_pos) # Start dragging the card
                         self.dragged_card = card
                     break
         
         elif event.type == pygame.MOUSEBUTTONUP:
             if self.dragged_card:
-                cost = self.dragged_card.get_cost(self)
+                cost = self.dragged_card.get_cost(self) # Get the cost of the card
                 
                 def show_error_message(message):
                     """Helper function to show temporary error message"""
-                    font = pygame.font.Font("assets/fonts/Kreon-Bold.ttf", 24)
-                    text = font.render(message, True, (255, 0, 0))
-                    text_rect = text.get_rect(center=(self.player.rect.right + 150, self.player.rect.centery))
-                    self.error_message = (text, text_rect, pygame.time.get_ticks())
-                
+                    font = pygame.font.Font("assets/fonts/Kreon-Bold.ttf", 24) # Load the font
+                    text = font.render(message, True, (255, 0, 0)) # Render the text
+                    text_rect = text.get_rect(center=(self.player.rect.right + 150, self.player.rect.centery)) # Get the rect of the text
+                    self.error_message = (text, text_rect, pygame.time.get_ticks()) # Set the error message
+
                 if self.player.debuffs['Entangle'] > 0 and self.dragged_card.type == 0:
-                    show_error_message("Can't play Attack cards while Entangled")
-                elif self.dragged_card.cost == 'U' and mouse_pos[1] <= 550:
+                    show_error_message("Can't play Attack cards while Entangled") # Show the error message
+                elif self.dragged_card.cost == 'U' and mouse_pos[1] <= 550: # If the card is a curse and the mouse is in the player's area
                     if (self.run.mechanics['Playable_Curse'] == True and self.dragged_card.type == 4) or (self.run.mechanics['Playable_Status'] == True and self.dragged_card.type == 3):
                         if self.can_play_card and self.energy >= cost:
-                            self.playing = self.dragged_card
-                            self.hand.remove_card(self.dragged_card)
-                            self.play_card(self.player_targeting(0, self.dragged_card.target))
-                            self.energy -= cost
+                            self.playing = self.dragged_card # Set the playing card
+                            self.hand.remove_card(self.dragged_card) # Remove the card from the hand
+                            self.play_card(self.player_targeting(0, self.dragged_card.target)) # Play the card
+                            self.energy -= cost # Subtract the cost from the energy
                         elif self.energy < cost:
-                            show_error_message("Not enough energy")
+                            show_error_message("Not enough energy") # Show the error message
                         else:
-                            show_error_message("Can't play more cards this turn")
+                            show_error_message("Can't play more cards this turn") # Show the error message
                     else:
-                        show_error_message("Can't play this card")
+                        show_error_message("Can't play this card") # Show the error message
                 elif self.dragged_card.target == 1:
                     for enemy in self.enemies.enemy_list:
                         if enemy and enemy.rect.collidepoint(mouse_pos):
                             if self.can_play_card and self.energy >= cost:
-                                self.playing = self.dragged_card
-                                self.hand.remove_card(self.dragged_card)
-                                self.play_card([enemy])
-                                self.energy -= cost
+                                self.playing = self.dragged_card # Set the playing card
+                                self.hand.remove_card(self.dragged_card) # Remove the card from the hand
+                                self.play_card([enemy]) # Play the card
+                                self.energy -= cost # Subtract the cost from the energy
                             elif self.energy < cost:
                                 show_error_message("Not enough energy")
                             else:
-                                show_error_message("Can't play more cards this turn")
+                                show_error_message("Can't play more cards this turn") # Show the error message
                 else:
                     if mouse_pos[1] <= 550:
                         if self.can_play_card and self.energy >= cost:
-                            self.playing = self.dragged_card
-                            self.hand.remove_card(self.dragged_card) 
-                            self.play_card(self.player_targeting(0, self.dragged_card.target))
-                            self.energy -= cost
+                            self.playing = self.dragged_card # Set the playing card
+                            self.hand.remove_card(self.dragged_card) # Remove the card from the hand
+                            self.play_card(self.player_targeting(0, self.dragged_card.target)) # Play the card
+                            self.energy -= cost # Subtract the cost from the energy
                         elif self.energy < cost:
                             show_error_message("Not enough energy")
                         else:
-                            show_error_message("Can't play more cards this turn")
-                self.dragged_card.stop_targeting()
-                self.dragged_card.stop_dragging()
-                self.dragged_card = None
+                            show_error_message("Can't play more cards this turn") # Show the error message
+                self.dragged_card.stop_targeting() # Card stops targeting
+                self.dragged_card.stop_dragging() # Stop dragging the card
+                self.dragged_card = None # Clear the dragged card
 
     def handle_potion_events(self, event, mouse_pos):
         """Handle potion-related events"""
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3: # If the right mouse button is clicked
             if self.targetting_potion:
-                self.targetting_potion.stop_targeting()
-                self.targetting_potion = None
+                self.targetting_potion.stop_targeting() # Potion stops targeting
+                self.targetting_potion = None # Clear the targetting potion
             if self.clicked_potion:
-                self.clicked_potion.unclick()
-                self.clicked_potion = None           
+                self.clicked_potion.unclick() # Unclick the potion
+                self.clicked_potion = None # Clear the clicked potion
 
         elif self.clicked_potion and not self.targetting_potion:
-            self.clicked_potion.unhover()
+            self.clicked_potion.unhover() # Unhover the potion
             box_width = 100
             box_height = 40
             box_x = self.clicked_potion.rect.x + (self.clicked_potion.sprite.get_width() - box_width) // 2
             box_y = self.clicked_potion.rect.y + self.clicked_potion.sprite.get_height() + 10
-            use_rect = pygame.Rect(box_x, box_y, box_width, box_height)
-            discard_rect = pygame.Rect(box_x, box_y + 45, 100, 40) 
+            use_rect = pygame.Rect(box_x, box_y, box_width, box_height) # Create a rect for the use button
+            discard_rect = pygame.Rect(box_x, box_y + 45, 100, 40) # Create a rect for the discard button
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 if use_rect.collidepoint(mouse_pos):
                     if self.clicked_potion.time_of_use in ['combat']:
                         if self.clicked_potion.target == 1:
-                            self.clicked_potion.start_targeting()
-                            self.clicked_potion.unclick()
-                            self.targetting_potion = self.clicked_potion
+                            self.clicked_potion.start_targeting() # Start targeting the potion
+                            self.clicked_potion.unclick() # Unclick the potion
+                            self.targetting_potion = self.clicked_potion # Set the targetting potion
                             self.dragged_card = None  # Clear any dragged card
                         else:
-                            self.use_potion(self.clicked_potion)
-                            self.clicked_potion.unclick()
-                            self.clicked_potion = None
+                            self.use_potion(self.clicked_potion) # Use the potion
+                            self.clicked_potion.unclick() # Unclick the potion
+                            self.clicked_potion = None # Clear the clicked potion
                     else:
-                        self.clicked_potion.unclick()
+                        self.clicked_potion.unclick() # Unclick the potion
                         self.clicked_potion = None
                 elif discard_rect.collidepoint(mouse_pos):
-                    self.run.discard_potion(self.clicked_potion)
-                    self.clicked_potion.unclick()
-                    self.clicked_potion = None
+                    self.run.discard_potion(self.clicked_potion) # Discard the potion
+                    self.clicked_potion.unclick() # Unclick the potion
+                    self.clicked_potion = None # Clear the clicked potion
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
-                self.clicked_potion.unclick()
-                self.clicked_potion = None
+                self.clicked_potion.unclick() # Unclick the potion
+                self.clicked_potion = None # Clear the clicked potion
 
         elif self.targetting_potion:
-            self.targetting_potion.unhover()
+            self.targetting_potion.unhover() # Unhover the potion
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 for enemy in self.enemies.enemy_list:
                     if enemy and enemy.rect.collidepoint(mouse_pos):
-                        self.use_potion(self.targetting_potion, [enemy])
-                        self.targetting_potion = None
-                        self.clicked_potion = None
+                        self.use_potion(self.targetting_potion, [enemy]) # Use the potion
+                        self.targetting_potion = None # Clear the targetting potion
+                        self.clicked_potion = None # Clear the clicked potion
                         break
 
         else:
@@ -326,22 +326,22 @@ class Combat:
                     if potion.rect.collidepoint(mouse_pos):
                         potion.hover()
                         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                            potion.click()
-                            self.clicked_potion = potion
-                            potion.unhover()
+                            potion.click() # Click the potion
+                            self.clicked_potion = potion # Set the clicked potion
+                            potion.unhover() # Unhover the potion
                     else:
-                        potion.unhover()
+                        potion.unhover() # Unhover the potion
         
     def update_game_state(self, mouse_pos):
         """Update all game objects"""
         for card in self.hand.cards:
-            card.update()
-            card.check_hover(mouse_pos)
+            card.update() # Update the card
+            card.check_hover(mouse_pos) # Check if the card is being hovered
         
-        self.hand.update_positions(self.dragged_card)
+        self.hand.update_positions(self.dragged_card) # Update the positions of the cards in the hand
 
     def view_pile(self, pile):
-        """Draw all piles"""
+        '''View a pile'''
         if pile.is_empty():
             # If the pile to select from is empty
             return None
@@ -407,31 +407,31 @@ class Combat:
 
         # Only draw targeting effects if card is being dragged
         if self.dragged_card:
-            self.dragged_card.draw_targeting_arrow(self.combat_surface, mouse_pos)
+            self.dragged_card.draw_targeting_arrow(self.combat_surface, mouse_pos) # Draw the targeting arrow
             if self.dragged_card.target in [1, 2, 3]:
                 for enemy in self.enemies.enemy_list:
                     if enemy:
-                        enemy.draw_collision_box(self.combat_surface)
+                        enemy.draw_collision_box(self.combat_surface) # Draw the collision box for the enemy
             else:
                 self.player.rect.x = player_x
                 self.player.rect.y = player_y
-                self.player.draw_collision_box(self.combat_surface)
+                self.player.draw_collision_box(self.combat_surface) # Draw the collision box for the player
 
         # Draw hand
-        self.hand.draw(self.combat_surface, self.dragged_card)
+        self.hand.draw(self.combat_surface, self.dragged_card) # Draw the hand
         
         # Draw potion targeting effects
         if self.targetting_potion:
-            self.targetting_potion.start_targeting()
-            self.targetting_potion.draw_targeting_arrow(self.combat_surface, mouse_pos)
+            self.targetting_potion.start_targeting() # Potions can target enemies
+            self.targetting_potion.draw_targeting_arrow(self.combat_surface, mouse_pos) # Draw the targeting arrow
             for enemy in self.enemies.enemy_list:
                 if enemy:
-                    enemy.draw_collision_box(self.combat_surface)
+                    enemy.draw_collision_box(self.combat_surface) # Draw the collision box for the enemy
         
-        self.draw_pile.draw_icon(self.combat_surface)
-        self.discard_pile.draw_icon(self.combat_surface)
-        self.exhaust_pile.draw_icon(self.combat_surface)
-        self.powers.draw_icon(self.combat_surface)
+        self.draw_pile.draw_icon(self.combat_surface) # Draw the draw pile
+        self.discard_pile.draw_icon(self.combat_surface) # Draw the discard pile
+        self.exhaust_pile.draw_icon(self.combat_surface) # Draw the exhaust pile
+        self.powers.draw_icon(self.combat_surface) # Draw the powers
         # Draw player
         
         self.player.draw(self.combat_surface, x=player_x, y=player_y)
@@ -495,19 +495,19 @@ class Combat:
 
     def combat_start(self):
         '''Method for starting combat'''
-        self.get_energy_cap()
+        self.get_energy_cap() # Get the energy cap
         for buff in self.player.buffs.keys():
-            self.player.buffs[buff] = 0
+            self.player.buffs[buff] = 0 # Reset buffs
         for debuff in self.player.debuffs.keys():
-            self.player.debuffs[debuff] = 0
+            self.player.debuffs[debuff] = 0 # Reset debuffs
         if self.combat_type == 'Elite':
             if self.player.relics:
                 for relic in self.player.relics:
-                    relic.combatActionEff('Elite Start', self)
+                    relic.combatActionEff('Elite Start', self) # Execute relic effects
         if self.run.mechanics['Insect'] == True and self.combat_type == 'Elite':
             for enemy in self.enemies.enemy_list:
                 if enemy != None:
-                    enemy.hp = int(enemy.hp * 0.75)
+                    enemy.hp = int(enemy.hp * 0.75) # Reduce enemy hp by 75%
         # check for preserved insect condition
         innate_or_bottled = []
         for card in reversed(self.draw_pile):
@@ -527,14 +527,13 @@ class Combat:
             for relic in self.player.relics:
                 if relic.counter != None:
                     if relic.counter_type != 'global':
-                        relic.counter = 0
+                        relic.counter = 0 # Reset turn counters
 
     def bonusEff(self, event):
         if self.player.relics:
             for relic in self.player.relics:
                 # Go through all relics
-                relic.eventBonus(event, self.run)
-                # Execute condisional effects of relics
+                relic.eventBonus(event, self.run) # Execute relic effects
 
     def passive_check_and_exe(self, cond: str):
         '''Method to check if a power's condition or relic's condition is met and activates its effect if it is
@@ -554,15 +553,14 @@ class Combat:
                     'exhaust': self.exhaust_pile,
                     'target': card.target
                 }
-                context['target'] = self.player_targeting(context, card.target)
+                context['target'] = self.player_targeting(context, card.target) # Get the target of the card
                 if 'Power' in card.effect and card.effect['Power'] != None:
                     # The power effect in a card
                     for power_cond, effect in card.effect['Power'].items():
                         # for every condition and effect
                         if cond == power_cond: # If the condition is met
                             for effects, effect_details in effect.items():
-                                effects(*effect_details, context, self)
-                                # Execute the power's effect
+                                effects(*effect_details, context, self) # Execute the power's effect
         if self.player.relics:
             for relic in self.player.relics:
                 # Go through all relics
@@ -785,25 +783,25 @@ class Combat:
 
         # If it's the draw pile and ordered_draw is False, randomize display order
         if pile.type == 'draw' and not self.run.mechanics['Ordered_Draw_Pile']:
-            display_pile = Pile(random.sample(pile.cards, len(pile.cards)), pile.type)
+            display_pile = Pile(random.sample(pile.cards, len(pile.cards)), pile.type) # Randomize the display order of the cards
         else:
-            display_pile = pile
+            display_pile = pile # If ordered draw is true, display the cards in order
 
         while viewing:
             card_surface = pygame.Surface((1600, 900), pygame.SRCALPHA)
             card_surface.fill((0, 0, 0, 0))  # Completely transparent background
-            events = pygame.event.get()
-            for event in events:
+            events = pygame.event.get() 
+            for event in events: # Handle events
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_F4 and (event.mod & pygame.KMOD_ALT):
-                    self.quit_game()
+                    self.quit_game() # Quit the game
                 
                 if event.type == pygame.QUIT:
-                    self.quit_game()
+                    self.quit_game() # Quit the game
 
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = pygame.mouse.get_pos()
-                    if confirm_button.collidepoint(mouse_pos):
-                        viewing = False
+                if event.type == pygame.MOUSEBUTTONDOWN: # If a mouse button is clicked
+                    mouse_pos = pygame.mouse.get_pos() # Get the mouse position
+                    if confirm_button.collidepoint(mouse_pos): # If the confirm button is clicked
+                        viewing = False # Stop viewing the pile
                         break
             
             display_pile.draw(card_surface, events)

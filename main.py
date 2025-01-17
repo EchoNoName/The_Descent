@@ -20,51 +20,64 @@ import sys
 
 class MainMenu:
     def __init__(self):
+        # Initialize pygame and set up display window
         pygame.init()
         self.screen = pygame.display.set_mode((1600, 900))
         self.clock = pygame.time.Clock()
-        self.player = None
-        self.run = None
-        self.save_data = {}
+        
+        # Initialize game state variables
+        self.player = None  # Will hold the player character
+        self.run = None    # Will hold the current game run
+        self.save_data = {} # Dictionary to store save data
         self.running = True
+        
+        # Initialize fonts and load menu background image
         pygame.font.init()
         self.main_menu_sprite = pygame.image.load(os.path.join("assets", "menu", "main_menu.png"))
         self.menu_option_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 30)
         self.title_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 70)
+        
+        # Define menu options and track selected option
         self.menu_options = ['New Game', 'Load Game', 'Exit']
         self.menu_option_selected = 0
     
     def main_menu(self): 
+        # Check if a save file exists and has content
         existing_save = False
         with open('assets/saves/save_data.txt', 'r') as file:
             save_content = file.read()
             if save_content and save_content.strip() != '{}':
                 existing_save = True
+                
         running = True
         while running:
+            # Clear screen and draw background
             self.screen.fill((0, 0, 0))
             self.screen.blit(self.main_menu_sprite, (0, 0))
             
-            # Draw title
-            # Draw title with black outline
+            # Draw game title with outline effect
             title_outline = self.title_font.render("The Descent", True, (0, 0, 0))
             title_text = self.title_font.render("The Descent", True, (255, 255, 255))
             title_rect = title_text.get_rect(center=(800, 200))
-            # Draw outline by offsetting in 4 directions
+            
+            # Draw outline by offsetting text in 4 directions
             self.screen.blit(title_outline, (title_rect.x - 2, title_rect.y))
             self.screen.blit(title_outline, (title_rect.x + 2, title_rect.y))
             self.screen.blit(title_outline, (title_rect.x, title_rect.y - 2))
             self.screen.blit(title_outline, (title_rect.x, title_rect.y + 2))
             self.screen.blit(title_text, title_rect)
             
-            # Draw menu options with black outline
+            # Draw menu options with outline effect
             for i, option in enumerate(self.menu_options):
+                # Skip "Load Game" option if no save exists
                 if option == 'Load Game' and not existing_save:
                     continue
+                    
                 outline = self.menu_option_font.render(option, True, (0, 0, 0))
                 text = self.menu_option_font.render(option, True, (255, 255, 255))
                 text_rect = text.get_rect(center=(800, 400 + i * 80))
-                # Draw outline by offsetting in 4 directions
+                
+                # Draw outline by offsetting text in 4 directions
                 self.screen.blit(outline, (text_rect.x - 2, text_rect.y))
                 self.screen.blit(outline, (text_rect.x + 2, text_rect.y))
                 self.screen.blit(outline, (text_rect.x, text_rect.y - 2))
@@ -73,12 +86,13 @@ class MainMenu:
                 
             pygame.display.flip()
             
+            # Handle events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                     mouse_pos = pygame.mouse.get_pos()
-                    # Check each menu option
+                    # Check if any menu option was clicked
                     for i, option in enumerate(self.menu_options):
                         text_rect = self.menu_option_font.render(option, True, (255,255,255)).get_rect(center=(800, 400 + i * 80))
                         if text_rect.collidepoint(mouse_pos):
@@ -90,13 +104,17 @@ class MainMenu:
                                 self.exit()
     
     def new_game(self):
+        # Create new player character and start a new run
         self.player = Character('Wandering Samerai', 80, 1)
         self.run = Run(self, self.screen, self.player)
         self.run.runStart()
 
     def load_save_data(self):
+        # Load save data from file
         with open('assets/saves/save_data.txt', 'r') as file:
             self.save_data = json.load(file)
+            
+        # Reconstruct path data from save file
         reconstructed_path = {}
         for key, value in self.save_data['path'].items():
             floor, room = key.split(',')
@@ -108,12 +126,15 @@ class MainMenu:
         self.save_data['path'] = reconstructed_path
         player = Character(self.save_data['player name'], self.save_data['player maxHp'], self.save_data['player class'], False, self.save_data['player deck'], self.save_data['player potions'], self.save_data['player relics'], self.save_data['player hp'], self.save_data['player gold'])
         self.player = player
+        
+        # Reconstruct map info from save data
         map_info = self.save_data['map'], self.save_data['path'], self.save_data['mapDisplay'], self.save_data['entered_rooms']
         run = Run(self, self.screen, self.player, False, False, self.save_data['ascension'], map_info, self.save_data['act'], self.save_data['act_name'], self.save_data['room'], self.save_data['roomInfo'], self.save_data['combats_finished'], self.save_data['easyPool'], self.save_data['normalPool'], self.save_data['elitePool'], self.save_data['boss'], self.save_data['eventList'], self.save_data['rareChanceMult'], self.save_data['rareChanceOffset'], self.save_data['potionChance'], self.save_data['cardRewardOptions'], self.save_data['removals'], self.save_data['encounterChance'], self.save_data['mechanics'], self.save_data['campfire'], self.save_data['eggs'])
         self.run = run
         self.run.runStart()
     
     def exit(self):
+        # Clean up pygame and exit program
         pygame.quit()
         sys.exit()
 
@@ -133,6 +154,7 @@ class Character:
         self.x = 0
         self.y = 0
         if new_character:
+            # Create a new character with default deck and starter relics
             if character_class == 1:
                 for i in range(5):
                     self.deck.append(card_constructor.create_card(1000, card_data.card_info[1000]))
@@ -141,6 +163,7 @@ class Character:
             self.deck.append(card_constructor.create_card(1001, card_data.card_info[1001]))
             self.relics.append(relic_data.createRelic('Purple Blood', relic_data.starterRelics['Purple Blood']))
         else:
+            # Load existing character with saved deck, potions, and relics
             self.maxHp = maxHp
             self.gold = gold
             self.hp = current_hp
@@ -163,12 +186,14 @@ class Character:
                 elif relic in relic_data.eventRelics:
                     self.relics.append(relic_data.createRelic(relic, relic_data.eventRelics[relic]))
         sprite = pygame.image.load('assets/sprites/characters/swordsman.png')
+        # Scale down the character sprite
         self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 2.75, sprite.get_height() // 2.75))
         self.rect = self.sprite.get_rect()
         self.selected_cards = []
         self.buffs = {'Strength': 0, 'Dexterity': 0, 'Vigour': 0, 'Ritual': 0, 'Plated Armour': 0, 'Metalicize': 0, 'Blur': 0, 'Thorns': 0, 'Regen': 0, 'Artifact': 0, 'Double Tap': 0, 'Duplicate': 0, 'Draw Card': 0, 'Energized': 0, 'Next Turn Block': 0, 'Parry': 0, 'Deflect': 0, 'Intangible': 0}
         #Debuffs: Atrophy = lose dex at the end of turn
         self.debuffs = {'Vulnerable': 0, 'Weak': 0, 'Frail': 0, '-Strength': 0, '-Dexterity': 0, 'Atrophy': 0, 'Chained': 0, 'Poison': 0, 'No Draw': 0, 'Chaotic': 0, 'Last Chance': 0, 'Draw Reduction': 0, 'Entangle': 0}
+        # Load buff and debuff icons
         self.attack_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "attack_buff.png"))
         self.defense_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "defense_buff.png"))
         self.misc_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "misc_buff.png"))
@@ -176,16 +201,19 @@ class Character:
         self.weak_sprite = pygame.image.load(os.path.join("assets", "icons", "weak.png"))
         self.frail_sprite = pygame.image.load(os.path.join("assets", "icons", "frail.png"))
         self.debuff_sprite = pygame.image.load(os.path.join("assets", "icons", "debuff.png"))
+        # Load block overlay and hp bar
         self.block_overlay_sprite = pygame.image.load(os.path.join("assets", "ui", "hp_bar", "block_overlay.png"))
         hp_bar_path = os.path.join("assets", "ui", "hp_bar", f"hp_bar_8_8.png")
         self.hp_bar_sprite = pygame.image.load(hp_bar_path)
         self.top_ui_sprite = pygame.image.load(os.path.join("assets", "ui", "ui_bar.png"))
         heart_sprite = pygame.image.load(os.path.join("assets", "icons", "hp.png"))
         gold_sprite = pygame.image.load(os.path.join("assets", "icons", "gold.png"))
+        # Scale down heart and gold icons
         self.heart_sprite = pygame.transform.scale(heart_sprite, (heart_sprite.get_width()//2, heart_sprite.get_height()//2))
         self.gold_sprite = pygame.transform.scale(gold_sprite, (gold_sprite.get_width()//11, gold_sprite.get_height()//11))
         self.empty_potion_sprite = pygame.image.load(os.path.join("assets", "icons", "empty_potion_slot .png"))
         self.deck_button_sprite = pygame.image.load(os.path.join("assets", "icons", "pile_icon.png"))
+        # Scale down deck button sprite
         self.deck_button_sprite = pygame.transform.scale(self.deck_button_sprite, (self.deck_button_sprite.get_width()//10, self.deck_button_sprite.get_height()//10))
         self.deck_button_rect = self.deck_button_sprite.get_rect()
         self.deck_button_hover = False
@@ -1374,7 +1402,7 @@ class Run:
                             self.room = [room.floor, room.room_num]
                             room_type = room.room_type
                             room.entered = True
-                            
+                            # Check room type and generate appropriate instance
                             if room_type == 1:
                                 enemies = self.get_enemies()
                                 self.generage_combat_instace(enemies, 'normal')
@@ -1415,10 +1443,12 @@ class Run:
                                 break
 
             pygame.display.flip()
-
+        
+        # Handle exit condition
         if exit == 'Main Menu':
             self.main_menu.main_menu()
 
+        # Handle room events
         self.eventMod('Room')
         if room_entered == 1:
             self.start_combat()
@@ -1438,10 +1468,12 @@ class Run:
             self.start_combat()
         
     def upload_save_data(self):
+        '''Method to upload save data to file'''
         with open('assets/saves/save_data.txt', 'w') as file:
             json.dump(self.save_data, file)
 
     def discard_potion(self, potion):
+        '''Method to discard a potion'''
         self.player.potions[self.player.potions.index(potion)] = None
         self.clicked_potion = None
 
@@ -1453,18 +1485,22 @@ class Run:
             set_reward: predetermained loot, used for events and special occasions
             additional_rewards: additive rewards from certain effects'''
         if self.player.relics:
+            '''Check if player has relics and apply additional rewards'''
             for relic in self.player.relics:
+                '''Apply additional rewards from relics'''
                 additonal_rewards = relic.additionalRewards(reward_type, additonal_rewards)
         self.reward = reward_screen.RewardScreen(self, self.player.character_class, self.rareChanceMult, self.rareChanceOffset, self.potionChance, self.cardRewardOptions, reward_type, set_reward, additonal_rewards)
 
     def potion_events(self, mouse_pos, events):
         if self.clicked_potion:
+            '''Check if a potion is clicked and display use and discard options'''
             box_width = 100
             box_height = 40
             box_x = self.clicked_potion.rect.x + (self.clicked_potion.sprite.get_width() - box_width) // 2
             box_y = self.clicked_potion.rect.y + self.clicked_potion.sprite.get_height() + 10
             use_rect = pygame.Rect(box_x, box_y, box_width, box_height)
             discard_rect = pygame.Rect(box_x, box_y + 45, 100, 40) 
+            # Create use and discard rects
             for event in events:
                 if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                     if use_rect.collidepoint(mouse_pos):
@@ -1481,11 +1517,11 @@ class Run:
         else:
             for potion in self.player.potions:
                 if potion:
-                    if potion.rect.collidepoint(mouse_pos):
-                        potion.hover()
+                    if potion.rect.collidepoint(mouse_pos): # Check if mouse is hovering over a potion
+                        potion.hover() # Highlight the potion
                         for event in events:
-                            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                                potion.click()
+                            if event.type == pygame.MOUSEBUTTONUP and event.button == 1: # Check if mouse is clicked on a potion
+                                potion.click() # Click the potion
                                 self.clicked_potion = potion
                                 potion.unhover()
                     else:
@@ -1499,6 +1535,7 @@ class Run:
                 # Execute condisional effects of relics
 
     def eventMod(self, event):
+        '''Method to modify events based on relics'''
         if self.player.relics:
             for relic in self.player.relics:
                 relic.eventModifcation(event, self)
@@ -1569,12 +1606,22 @@ class Run:
         self.eggs.append(type)
 
     def relic_pickup(self, relic):
+        '''Method to pickup a relic
+        
+        ### args:
+            relic: the relic object being added'''
         self.player.relics.append(relic)
         relic.pickUp(self)
     
     def potion_pickup(self, potion):
+        '''Method to pickup a potion
+        
+        ### args:
+            potion: the potion object being added'''
         if self.player.potions.count(None) > 0:
+            # Check if there is an empty potion slot
             for relic in self.player.relics:
+                # Apply relic effects to the potion
                 potion = relic.valueModificationEff('potion', potion)
             self.player.potions[self.player.potions.index(None)] = potion
             return True
@@ -1597,12 +1644,16 @@ class Run:
         '''
         i = 1
         self.player.potions[self.player.potions.index(potion)] = None
+        # Remove the potion from the player's inventory
         self.clicked_potion = None
+        # Reset the clicked potion
         for relic in self.player.relics:
+            # Check if the relic is a Sacred Bark
             if relic.effect_type == 'Sacred Bark':
                 i = 2
                 break
         for times in range(0, i):
+            # Apply the potion's effects
             for effect, details in potion.effect.items():
                     effect(*details, self)
                 # Execute effects
@@ -1701,16 +1752,25 @@ class Run:
                 card.bottled = True
 
     def get_enemies(self, combat = 'normal'):
+        '''Method to get enemies for combat
+        
+        ### args:
+            combat: the type of combat'''
         enemies_constructors = []
         cap = 0
+        # Initialize enemies constructors list and cap
         if self.act == 1:
             cap = 3
+        # Set cap to 3 if the player is on the first act
         if combat == 'elite':
+            # Get the enemies for elite combat
             enemies_constructors = self.combat_pool_details['elite'][self.elitePool[-1]]
             self.elitePool.pop(-1)
         elif combat == 'boss':
+            # Get the enemies for boss combat
             enemies_constructors = self.combat_pool_details['boss'][self.boss[-1]]
         elif self.combats_finished <= cap:
+            # Get the enemies for easy combat
             enemies_constructors = self.combat_pool_details['easy'][self.easyPool[-1]]
             self.easyPool.pop(-1)
         else:
@@ -1718,17 +1778,28 @@ class Run:
             self.normalPool.pop(-1)
         enemies = []
         for enemy_class in enemies_constructors:
+            # Create enemy instances
             enemies.append(enemy_class())
         return enemies
 
     def create_combat_deck(self):
+        '''Method to create a combat deck'''
         self.combat_deck = [card.create_copy() for card in self.player.deck]
 
     def generage_combat_instace(self, enemies, combatType):
+        '''Method to generate a combat instance
+        
+        ### args:
+            enemies: the enemies for the combat
+            combatType: the type of combat'''
         self.create_combat_deck()
         self.combat = combat.Combat(self.player, self.combat_deck, enemies, combatType, self, self.screen)
 
     def start_combat(self, set_rewards = False):
+        '''Method to start combat
+        
+        ### args:
+            set_rewards: whether to set rewards'''
         self.lastInstance = 'C'
         result, screen = self.combat.run_combat()
         if result == 'victory':
@@ -1750,6 +1821,7 @@ class Run:
             self.mapNav()
 
     def victory(self):
+        '''Method to display the victory screen'''
         running = True
         self.clear_save_file()
         while running:
@@ -1792,6 +1864,7 @@ class Run:
             pygame.display.flip()
 
     def defeat(self):
+        '''Method to display the defeat screen'''
         running = True
         self.clear_save_file()
         while running:
@@ -1834,18 +1907,28 @@ class Run:
             pygame.display.flip()
 
     def clear_save_file(self):
+        '''Method to clear the save file'''
         with open('assets/saves/save_data.txt', 'w') as file:
             json.dump({}, file)
 
     def open_reward_screen(self, screen):
+        '''Method to open the reward screen
+        
+        ### args:
+            screen: the screen to display the rewards on'''
         self.reward.listRewards(screen)
 
     def start_treasure(self):
+        '''Method to start the treasure event
+        
+        ### args:
+            screen: the screen to display the rewards on'''
         self.lastInstance = 'T'
         self.treasure.start_event()
         self.mapNav()
     
     def start_shop(self):
+        '''Method to start the shop event'''
         self.lastInstance = 'S'
         self.eventMod('shop')
         self.shop.generate_wares()
@@ -1853,11 +1936,16 @@ class Run:
         self.mapNav()
 
     def start_event(self):
+        '''Method to start the event
+        
+        ### args:
+            screen: the screen to display the rewards on'''
         self.lastInstance = 'E'
         self.event.run_event()
         self.mapNav()
 
     def start_campfire(self):
+        '''Method to start the campfire event'''
         self.lastInstance = 'R'
         self.rest_site.run_campfire()
         self.mapNav()
@@ -1869,24 +1957,30 @@ class Run:
         combat_chance = 10
         treasure_chance = 2
         shop_chance = 3
+        # Initialize encounter list and chances
         while possible_events:
+            # Generate a random number between 1 and 100
             rng = random.randint(1, 100)
             if rng <= combat_chance:
+                # Add combat to the encounter list
                 encounter_list.append('combat')
                 combat_chance = 10
                 treasure_chance += 2
                 shop_chance += 3
             elif rng <= combat_chance + treasure_chance:
+                # Add treasure to the encounter list
                 encounter_list.append('treasure')
                 treasure_chance = 2
                 combat_chance += 10
                 shop_chance += 3
             elif rng <= combat_chance + treasure_chance + shop_chance:
+                # Add shop to the encounter list
                 encounter_list.append('shop')
                 combat_chance += 10
                 treasure_chance += 2
                 shop_chance = 3
             else:
+                # Add a random event to the encounter list
                 combat_chance += 10
                 treasure_chance += 2
                 shop_chance += 3
@@ -1903,34 +1997,51 @@ class Run:
         return encounter_list
 
     def create_shop_instance(self):
+        '''Method to create a shop instance'''
         self.shop = shop.Shop(self)
     
     def create_event_instance(self, event):
+        '''Method to create an event instance
+        
+        ### args:
+            event: the event to create'''
         self.event = events.events1[event](self.player, self)
 
     def create_treasure_instance(self):
+        '''Method to create a treasure instance'''
         chest_event = chest.Treasure(self)
         self.treasure = chest_event
 
     def unknown_location(self):
+        '''Method to handle unknown locations'''
         event = self.eventList[-1]
         self.eventList.pop(-1)
+        # Check if the event is combat and random combat is disabled
         while event == 'combat' and self.mechanics['Random_Combat'] == False:
             self.eventList.pop(-1)
             event = self.eventList[-1]
         if event == 'combat':
+            # Get enemies for combat
             enemies = self.get_enemies()
+            # Generate a combat instance
             self.generage_combat_instace(enemies, 'normal')
+            # Start combat
             self.start_combat()
         elif event == 'treasure':
+            # Create a treasure instance
             self.create_treasure_instance()
+            # Start the treasure event
             self.start_treasure()
         elif event == 'shop':
+            # Create a shop instance
             self.create_shop_instance()
+            # Start the shop event
             self.start_shop()
         else:
+            # Create an event instance
             self.create_event_instance(event)
+            # Start the event
             self.start_event()
 
-game = MainMenu()
-game.main_menu()
+game = MainMenu() # Initialize the game
+game.main_menu() # Start the game

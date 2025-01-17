@@ -43,7 +43,7 @@ def random_card(type: str, character = None):
             return 'placeholder'
 
 class Card():
-    def __init__(self, id : int, name : str, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target = None, x = 1650, y = 950, bottled = False, removable = True, x_cost_effect = {}):
+    def __init__(self, id : int, name : str, rarity, type, cost, card_text, innate, exhaust, retain, ethereal, effect, target = None, removable = True, x = 1650, y = 950, bottled = False, x_cost_effect = {}):
         self.id = id # Card ID, which is an integer
         self.name = name # Name of the card, a string
         self.rarity = rarity # rarity represented by an integer
@@ -150,6 +150,11 @@ class Card():
         return self.__str__()
 
     def set_target_position(self, x, y):
+        '''Method to set the target position of the card
+        
+        ### args:
+            x: the x position to set the target to
+            y: the y position to set the target to'''
         self.target_x = x
         self.target_y = y
 
@@ -179,7 +184,10 @@ class Card():
             self.rect = pygame.Rect(self.current_pos[0], self.current_pos[1], scaled_sprite.get_width(), scaled_sprite.get_height())
 
     def check_hover(self, mouse_pos):
-        # Check if mouse is over card
+        '''Method to check if the mouse is over the card
+        
+        ### args:
+            mouse_pos: the position of the mouse'''
         was_hovered = self.is_hovered
         
         # Simply check if mouse collides with card rect
@@ -195,6 +203,10 @@ class Card():
                 self.target_pos.y -= self.hover_y_offset
 
     def draw(self, surface):
+        '''Method to draw the card
+        
+        ### args:
+            surface: the surface to draw the card on'''
         # Draw either normal or enlarged sprite based on hover/targeting/dragging state
         if self.is_hovered or self.targeting or self.dragging:  # Changed condition here
             # Scale down hover sprite to half size while preserving quality
@@ -212,10 +224,22 @@ class Card():
         self.draw_energy_cost(surface)
 
     def draw_as_power(self, surface, x, y):
+        '''Method to draw the card as a power
+        
+        ### args:
+            surface: the surface to draw the card on
+            x: the x position to draw the card at
+            y: the y position to draw the card at'''
         scaled_sprite = pygame.transform.smoothscale(self.sprite, (self.sprite.get_width()//20, self.sprite.get_height()//20))
         surface.blit(scaled_sprite, (x, y))
 
     def update_rect(self):
+        '''Method to update the rect of the card
+        
+        ### Variables:
+            self.is_hovered: whether the card is hovered
+            self.targeting: whether the card is targeting
+            self.dragging: whether the card is dragging'''
         if self.is_hovered or self.targeting or self.dragging:
             scaled_hover = pygame.transform.smoothscale(self.hover_sprite, (self.hover_sprite.get_width()//2, self.hover_sprite.get_height()//2))
             self.rect = pygame.Rect(self.current_pos[0] - (scaled_hover.get_width() - self.sprite.get_width()//2) / 2, self.current_pos[1], scaled_hover.get_width(), scaled_hover.get_height())
@@ -374,9 +398,17 @@ class Card():
         self.effect = new_eff
 
     def create_copy(self):
+        '''Method to create a copy of the card
+        
+        ### Returns:
+            a copy of the card'''
         return Card(self.id, self.name, self.rarity, self.type, self.cost, self.card_text, self.innate, self.exhaust, self.retain, self.ethereal, self.effect, self.target, self.x, self.y, self.bottled, self.removable)
 
     def get_cost(self, combat = None):
+        '''Method to get the cost of the card
+        
+        ### args:
+            combat: the combat instance'''
         if combat == None:
             if self.cost == 'c':
                 return 6
@@ -395,19 +427,37 @@ class Card():
             return self.cost
 
     def played(self):
+        '''Method to set the combat cost to None
+        
+        ### Variables:
+            self.combat_cost: the combat cost of the card'''
         if isinstance(self.combat_cost[1], str):
             if self.combat_cost == 'Played':
                 self.combat_cost = (None, None)
 
     def chaos(self):
+        '''Method to set the combat cost to a random cost between 0 and 3
+        
+        ### Variables:
+            self.cost: the cost of the card'''
         if self.cost not in {'U', 'X'}:
             self.combat_cost = (random.randint(0, 3), 'Combat')
     
     def cost_change(self, cost, duration):
+        '''Method to set the combat cost to a specific cost
+        
+        ### args:
+            cost: the cost to set the combat cost to
+            duration: the duration of the cost change'''
         if self.cost not in {'U', 'X'}:
             self.combat_cost = (cost, duration)
 
     def property_change(self, property, new_value):
+        '''Method to set the property of the card
+        
+        ### args:
+            property: the property to set
+            new_value: the new value to set the property to'''
         properties = {
             'innate': self.innate,
             'exhaust': self.exhaust,
@@ -418,10 +468,19 @@ class Card():
         properties[property] = new_value
 
     def play_x_cost(self, cost):
+        '''Method to set the x cost effect of the card
+        
+        ### args:
+            cost: the cost to set the x cost effect to'''
         for effect, details in self.effect.items():
             self.x_cost_effect[effect] = [i if i != 'X' else cost for i in details]
 
 def create_card(card_id, card_data: tuple):
+    '''Method to create a card
+    
+    ### args:
+        card_id: the id of the card
+        card_data: the data of the card'''
     return Card(card_id, *card_data)
 
 def generate_card_reward(type, rareChanceOffset, numberOfOptions, character_class, rareChanceMult = 1):
