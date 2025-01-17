@@ -85,7 +85,6 @@ class Card():
         self.target_pos = pygame.Vector2(x, y)
         self.snap_speed = 60  # Speed of snapping animation
         self.offset = pygame.Vector2(0, 0)  # Offset between mouse and card position during drag
-        
         # Add hover state attributes
         self.is_hovered = False
         self.original_size = self.sprite.get_size()
@@ -102,8 +101,7 @@ class Card():
         pygame.font.init()
         self.energy_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 24)
         self.energy_sprite = pygame.image.load(os.path.join("assets", "ui", "energy.png"))
-        self.energy_sprite = pygame.transform.scale(self.energy_sprite,
-            (self.energy_sprite.get_width()//16, self.energy_sprite.get_height()//16))
+        self.energy_sprite = pygame.transform.scale(self.energy_sprite, (self.energy_sprite.get_width()//16, self.energy_sprite.get_height()//16))
 
     def __str__(self):
         card_descrip = []
