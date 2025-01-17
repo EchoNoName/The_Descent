@@ -62,6 +62,7 @@ class Combat:
         self.energy_sprite = pygame.transform.scale(self.energy_sprite, scaled_size) # The scaled energy sprite
         self.energy_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 48) # The font of the energy
         self.action_time_start = 0
+        self.error_message = None # The error message
         self.last_time = 0
     
     def run_combat(self):
@@ -118,6 +119,8 @@ class Combat:
             self.handle_character_events(mouse_pos) # Handle character events
             self.update_game_state(mouse_pos) # Update the game state
             self.draw_game_state(mouse_pos) # Draw the game state
+            if self.error_message:
+                self.draw_error_message()
             self.screen.blit(self.combat_surface, (0, 0)) # Draw the combat surface
             pygame.display.flip() # Update the display
 
@@ -126,6 +129,20 @@ class Combat:
         else:
             pygame.time.wait(1000)
             return self.combat_result(), self.combat_surface # Return the combat result and the combat surface
+
+    def draw_error_message(self):
+        """Draw the error message"""
+        if pygame.time.get_ticks() - self.error_message['start_time'] < self.error_message['duration']:
+            # Create semi-transparent black background surface
+            background = pygame.Surface((self.error_message['text'].get_width(), self.error_message['text'].get_height()))
+            background.fill((0, 0, 0))
+            background.set_alpha(128)  # 50% opacity
+            
+            # Draw background then text
+            self.combat_surface.blit(background, self.error_message['rect'])
+            self.combat_surface.blit(self.error_message['text'], self.error_message['rect'])
+        else:
+            self.error_message = None # Clear the error message
 
     def combat_result(self):
         """Determine the result of the combat"""
@@ -221,11 +238,17 @@ class Combat:
                 cost = self.dragged_card.get_cost(self) # Get the cost of the card
                 
                 def show_error_message(message):
-                    """Helper function to show temporary error message"""
-                    font = pygame.font.Font("assets/fonts/Kreon-Bold.ttf", 24) # Load the font
-                    text = font.render(message, True, (255, 0, 0)) # Render the text
-                    text_rect = text.get_rect(center=(self.player.rect.right + 150, self.player.rect.centery)) # Get the rect of the text
-                    self.error_message = (text, text_rect, pygame.time.get_ticks()) # Set the error message
+                    """Helper function to show temporary error message that fades after 2 seconds"""
+                    font = pygame.font.Font("assets/fonts/Kreon-Bold.ttf", 24)
+                    text = font.render(message, True, (255, 0, 0))
+                    text_rect = text.get_rect(center=(self.player.rect.right + 150, self.player.rect.centery))
+                    # Store message text, position, start time, and duration in seconds
+                    self.error_message = {
+                        'text': text,
+                        'rect': text_rect, 
+                        'start_time': pygame.time.get_ticks(),
+                        'duration': 2000 # 2 seconds in milliseconds
+                    }
 
                 if self.player.debuffs['Entangle'] > 0 and self.dragged_card.type == 0:
                     show_error_message("Can't play Attack cards while Entangled") # Show the error message
@@ -1902,7 +1925,7 @@ class Combat:
         ### args:
         context: info related to the user and state of game'''
         self.player.thieved -= context['user'].buffs['Stolen']
-        self.enemies.remove(context['user'])
+        self.enemies.remove_enemy(context['user'])
         # Update info related to stolen gold and remove the escaping enemy
 
     def summon_enemies(self, enemies: list):
@@ -2398,7 +2421,7 @@ class Enemies:
             self.enemy_list[4] = enemy
         else:
             raise ValueError('Too many enemies')
-    
+
     def remove_enemy(self, enemy):
         if enemy in self.enemy_list:
             self.enemy_list[self.enemy_list.index(enemy)] = None

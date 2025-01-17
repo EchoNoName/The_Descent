@@ -1,6 +1,5 @@
 import random
 import effects
-import math
 import os
 import pygame
 
@@ -47,6 +46,7 @@ class Enemy:
         self.mega_debuff_intent_sprite = pygame.image.load(os.path.join("assets", "icons", "intents", "mega_debuff.png"))
         self.buff_intent_sprite = pygame.image.load(os.path.join("assets", "icons", "intents", "buff.png"))
         self.special_intent_sprite = pygame.image.load(os.path.join("assets", "icons", "intents", "special.png"))
+        self.escape_intent_sprite = pygame.image.load(os.path.join("assets", "icons", "intents", "escape.png"))
         self.buff_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 12)
         self.debuff_font = pygame.font.Font(os.path.join("assets", "fonts", "Kreon-Bold.ttf"), 12)
         self.attack_buff_sprite = pygame.image.load(os.path.join("assets", "icons", "attack_buff.png"))
@@ -377,6 +377,8 @@ class Enemy:
                 intent_sprite = self.mega_debuff_intent_sprite
             elif 'Special' in intent:
                 intent_sprite = self.special_intent_sprite
+            elif 'Escape' in intent:
+                intent_sprite = self.escape_intent_sprite
             # For complex attacks that also apply debuffs/buffs, overlay the icons
             if 'Attack' in intent or 'Block' in intent:
                 sprite_x = x + (self.sprite.get_width() - intent_sprite.get_width()) // 2
