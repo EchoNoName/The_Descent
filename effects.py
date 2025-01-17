@@ -603,13 +603,28 @@ def final_gambit(x, additional, context, combat):
         # Refund energy back if final gambit has been played already
 
 def combat_gold_gain(amount, context, combat):
+    '''Function for gaining gold in combat
+    
+    ### args:
+        amount: the amount of gold to gain
+        context: Information related to the current combat 
+        combat: The current combat'''
     combat.gold_gain(amount)
     
 def card_removal_cost_set(amount, run):
+    '''Function for setting the cost of removing a card
+    
+    ### args:
+        amount: the amount of gold to gain
+        run: The run object'''
     return amount
 
 def temporal_hiccup(context, combat):
-    '''Function for the effect of temporal hiccup'''
+    '''Function for the effect of temporal hiccup
+    
+    ### args:
+        context: Information related to the current combat 
+        combat: The current combat'''
     if combat.turn <= 3:
         combat.start_of_combat == True
 
@@ -670,6 +685,11 @@ def eventChange(encounter, run):
     run.eventList.append(encounter)
 
 def campfire_change(action: str, run):
+    '''Function for changing the campfire action
+    
+    ### args:
+        action: the action to change to
+        run: the run object'''
     run.campfire_restrict(action)
 
 def sneko_eye(context, combat):
@@ -700,6 +720,11 @@ def upgrade(target, context, combat):
         # Choose 1 card in hand and upgrade it
 
 def rand_card_no_cost(context, combat):
+    '''Function for changing the cost of a random card in hand to 0
+    
+    ### args:
+        context: Information related to the current combat 
+        combat: The current combat'''
     if combat.hand:
         card = random.choice(combat.hand)
         card.cost_change(0, 'Played')
@@ -850,11 +875,18 @@ def add_card_to_deck(card_id, run):
         run.card_pickup_from_id(card_id)
 
 def heal_player(amount, run):
-    '''Function to heal the player from effects'''
+    '''Function to heal the player from effects
+    
+    ### args:
+        amount: the amount of healing
+        run: the run object'''
     run.player.heal(amount)
 
 def eternal_feather(run):
-    '''Function for healing the player when they enter a fireplace for every 5 cards they have'''
+    '''Function for healing the player when they enter a fireplace for every 5 cards they have
+    
+    ### args:
+        run: the run object'''
     amount = len(run.player.deck) // 5
     heal_player(amount, run)
 
@@ -862,7 +894,11 @@ def card_reward_option_mod(mod, run):
     run.card_reward_option_mod(mod)
 
 def generate_rewards(name, run):
-    '''Function that generates a reward screen'''
+    '''Function that generates a reward screen
+    
+    ### args:
+        name: the name of the reward screen
+        run: the run object'''
     run.generate_reward_screen_instance(False, name)
     run.reward.listRewards()
 
@@ -938,20 +974,46 @@ def gold_gain(amount, run):
     run.gold_modification(amount)
 
 def price_discount(price, discount, *args):
+    '''Function for discounting the price of a card
+    
+    ### args:
+        price: the price of the card
+        discount: the discount to apply
+        *args: Avoid value errors'''
     return math.floor(price * discount)
 
 def gold_amount_mod(amount, mod, *args):
+    '''Function for modifying the amount of gold
+    
+    ### args:
+        amount: the amount of gold
+        mod: the modification
+        *args: Avoid value errors'''
     if amount < 0:
         return amount
     return max(0, amount + mod)
 
 def potion_to_nothing(*args):
+    '''Function for setting the cost of removing a potion to 0
+    
+    ### args:
+        *args: Avoid value errors'''
     return None
 
 def card_to_nothing(*args):
+    '''Function for setting the cost of removing a card to 0
+    
+    ### args:
+        *args: Avoid value errors'''
     return None
 
 def debuff_reduction(amount, reduction, *args):
+    '''Function for reducing the amount of debuffs
+    
+    ### args:
+        amount: the amount of debuffs
+        reduction: the amount to reduce by
+        *args: Avoid value errors'''
     return amount - reduction
 
 def hp_loss_reduction(hp_loss, reduction, *args): # Hp Loss Reduction Effect

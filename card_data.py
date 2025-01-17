@@ -1,43 +1,8 @@
 import effects
-import pygame
 
-#the card ids will consist of 4 numbers, ABCD, A represents the class of cards, and the rest represents the card number, adding 100 is the upgraded version of the card.
-# A = 0, Classless cards, curses, statuses. A = 1, Cursed Swordsman cards
+# id: (name, cost, rarity, type, card text, innate, exhaust, retain, ethereal, effect, target, removable)
 
-# 0000: (name: rarity:(0 = starter, 1 = common, 2 = uncommon, 3 = rare, 4 = other), type: (0 = atk, 1 = skill, 2 = power, 3 = status, 4 = curse), cost: #, card text: "Card_effect", exhaust, retain, ethereal, effect)
-#If mana cost is "U", its unplayable
-# Cost: # OR ('C', Original Cost, +/-, Condition) OR 'x'
-#Debuffs: 0 = Vulnerable, 1 = Weak, 2 = Negative Strength, 3 = Lose strength at the end of turn, 4 = No Draw, 5 = poison, 6 = lose dex at the end of turn
-#Buffs: 0 = strength, 1 = dexterity, 2 = vigour, 3 = blur, 4 = Metalicize, 5 = double tap, 6 = plated armour, 7 = thorns, 8 = regen, 9 = flurry (Play the next card twice), 10 = artifact, 11 = Ritual
-#tagets:  Self: 0, target: 1, random: 2, all: 3
-#effect:
-# dmg: (#, Times, target(Override)
-# block: (#, Times)
-# buff: (id, stacks, id, stacks, id, stacks...)
-# debuff: (id, stacks, id, stacks, id, stacks...)
-# draw: #
-# discard: #
-# place: (start, #, end, position if needed, cost)
-# exhaust: (#, location, choice/random/condition/position)
-# add: (location, card, #, cost(if applicable))
-# search: (location, card/type, #)
-# condition (Based on previous effect): (cond, cond eff, norm eff)
-# retain: (location, #)
-# play: (location, position, discard/exhaust, #)
-# Hp: #
-# Drawn: (eff)
-# turn end: (eff)
-# cost: (target, #, cond if applicable)
-# modify: (target, eff, modification, combat/Perm)
-# power: (name, duration(# OR Perm), amount)
-# E: # 
-# Exhausted: {eff}
-# Discarded: {eff}
-# upgrade: (target(s), #, combat/perm)
-
-#Note: When 'exhaust' is put in place for a #, that means # of cards exhausted
-
-# innate, exhaust, retain, ethereal
+# id + 100 = upgraded version of the card
 
 card_info = {
     0: ('Unfocused', 4, 4, 'U', None, True, False, False, True, None, 0),

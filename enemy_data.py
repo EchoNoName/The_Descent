@@ -2180,40 +2180,40 @@ def generate_act1_pools():
     ### returns:
         act1_fights: A dictonary containing all easy, normal, elite and boss encounters'''
     act1_easy_combats = {
-        'Single Cultist': [Cultist],
-        'Single Jawworm': [JawWorm],
+        'Single Cultist': [Cultist], # Easy encounter
+        'Single Jawworm': [JawWorm], # Easy encounter
     }
     rng = random.randint(0, 1)
     if rng == 0:
-        act1_easy_combats['2 Slimes'] = [MediumBlueSlime, SmallGreenSlime]
+        act1_easy_combats['2 Slimes'] = [MediumBlueSlime, SmallGreenSlime] # Easy encounter
     else:
-        act1_easy_combats['2 Slimes'] = [MediumGreenSlime, SmallBlueSlime]
+        act1_easy_combats['2 Slimes'] = [MediumGreenSlime, SmallBlueSlime] # Easy encounter
     louse_encounter = []
     for i in range(0, 2):
         rng = random.randint(0, 1)
         if rng == 0:
-            louse_encounter.append(RedLouse)
+            louse_encounter.append(RedLouse) # Easy encounter
         else:
-            louse_encounter.append(GreenLouse)
+            louse_encounter.append(GreenLouse) # Easy encounter
     act1_easy_combats['2 Louses'] = louse_encounter
 
     act1_normal_combat = {
-        '5 Slimes': [SmallBlueSlime, SmallBlueSlime, SmallBlueSlime, SmallGreenSlime, SmallGreenSlime],
-        'Blue Spider': [BlueArachnid],
-        'Red Spider': [RedArachnid],
-        '2 Corpes': [InfestedCorpes, InfestedCorpes],
-        'Single Looter': [Looter]
+        '5 Slimes': [SmallBlueSlime, SmallBlueSlime, SmallBlueSlime, SmallGreenSlime, SmallGreenSlime], # Normal encounter
+        'Blue Spider': [BlueArachnid], # Normal encounter
+        'Red Spider': [RedArachnid], # Normal encounter
+        '2 Corpes': [InfestedCorpes, InfestedCorpes], # Normal encounter
+        'Single Looter': [Looter] # Normal encounter
     }
 
-    goblin_pool = [MadGoblin, MadGoblin, SneakyGoblin, SneakyGoblin, FatGoblin, FatGoblin, ShieldGoblin, WizardGoblin]
+    goblin_pool = [MadGoblin, MadGoblin, SneakyGoblin, SneakyGoblin, FatGoblin, FatGoblin, ShieldGoblin, WizardGoblin] # Pool of goblins to choose from
     fight = []
     for i in range(0, 4):
-        enemy = random.choice(goblin_pool)
-        fight.append(enemy)
-        goblin_pool.remove(enemy)
-    act1_normal_combat['4 Goblins'] = fight
-    slime = [random.choice([LargeBlueSlime, LargeGreenSlime])]
-    act1_normal_combat['Single LSlime'] = slime
+        enemy = random.choice(goblin_pool) # Choose a random goblin from the pool
+        fight.append(enemy) # Add the goblin to the fight
+        goblin_pool.remove(enemy) # Remove the goblin from the pool
+    act1_normal_combat['4 Goblins'] = fight # Add the fight to the normal encounter pool
+    slime = [random.choice([LargeBlueSlime, LargeGreenSlime])] # Choose a random slime from the pool
+    act1_normal_combat['Single LSlime'] = slime # Add the slime to the normal encounter pool
     louses = []
     for i in range(0, 3):
         rng = random.randint(0, 1)
@@ -2223,48 +2223,48 @@ def generate_act1_pools():
             louses.append(GreenLouse)
     act1_normal_combat['3 Louses'] = louses
     act1_normal_combat['Forest and Human'] = [random.choice([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime]), random.choice([Looter, Cultist, RedArachnid, BlueArachnid])]
-    act1_normal_combat['Double Forest'] = [random.choice([InfestedCorpes, JawWorm]), random.choices([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime])]
+    act1_normal_combat['Double Forest'] = [random.choice([InfestedCorpes, JawWorm]), random.choices([RedLouse, GreenLouse, MediumBlueSlime, MediumGreenSlime])] # Normal encounter
 
     act1_elites = {
-        'Goblin Giant' : [GoblinGiant],
-        'Giant Louse': [GiantLouse],
-        'Sentries': [SentryA, SentryB, SentryA]
+        'Goblin Giant' : [GoblinGiant], # Elite encounter
+        'Giant Louse': [GiantLouse], # Elite encounter
+        'Sentries': [SentryA, SentryB, SentryA] # Elite encounter
     }
 
     act1_bosses = {
-        'Ancient Mech': [AncientMech]
+        'Ancient Mech': [AncientMech] # Boss encounter
     }
 
     act1_fights = {
-        'easy': act1_easy_combats,
-        'normal': act1_normal_combat,
-        'elite': act1_elites,
-        'boss': act1_bosses
+        'easy': act1_easy_combats, # Easy encounter pool
+        'normal': act1_normal_combat, # Normal encounter pool
+        'elite': act1_elites, # Elite encounter pool
+        'boss': act1_bosses # Boss encounter pool
     }
     
     return act1_fights
 
 def act_1_easy_pool():
     '''Function to generate the encounter order'''
-    pool = ['Single Cultist', 'Single Jawworm', '2 Slimes', '2 Louses']
+    pool = ['Single Cultist', 'Single Jawworm', '2 Slimes', '2 Louses'] # Easy encounter pool
     random.shuffle(pool)
     return pool
     
 def act_1_normal_pool():
-    pool = ['5 Slimes', 'Blue Spider', 'Red Spider', '2 Corpes', 'Single Looter', '4 Goblins', 'Single LSlime', '3 Louses', 'Forest and Human', 'Double Forest']
+    pool = ['5 Slimes', 'Blue Spider', 'Red Spider', '2 Corpes', 'Single Looter', '4 Goblins', 'Single LSlime', '3 Louses', 'Forest and Human', 'Double Forest'] # Normal encounter pool
     random.shuffle(pool)
     return pool
 
 def act_1_elite_pool():
-    pool = ['Goblin Giant', 'Giant Louse', 'Sentries']
+    pool = ['Goblin Giant', 'Giant Louse', 'Sentries'] # Elite encounter pool
     random.shuffle(pool)
-    pool2 = ['Goblin Giant', 'Giant Louse', 'Sentries']
+    pool2 = ['Goblin Giant', 'Giant Louse', 'Sentries'] # Elite encounter pool
     random.shuffle(pool2)
     pool.extend(pool2)
     return pool
 
 def act_1_boss_pool():
-    pool = ['Ancient Mech']
+    pool = ['Ancient Mech'] # Boss encounter pool
     random.shuffle(pool)
     return pool
 

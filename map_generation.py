@@ -129,23 +129,23 @@ def createMap(asc):
     def roomAssign(nC = nC, e = 22, eC = eC, s = 5):
         '''Randomly determains a room type based on percentages (53% normal combat, 22% random event, 8% Elite combat, 12% Campfire, 5% shop) or (45% normal combat, 22% random event, 16% Elite combat, 12% Campfire, 5% shop)
         '''
-        roomType = 0
-        i = random.randint(1, 100)
-        if i <= nC:
-            roomType = 1
+        roomType = 0 # Initialize the room type to 0
+        i = random.randint(1, 100) # Generate a random number between 1 and 100
+        if i <= nC: # If the random number is less than or equal to nC
+            roomType = 1 # Set the room type to 1
         elif i <= nC + e:
-            roomType = 2
-        elif i <= nC + e + eC:
-            roomType = 3
-        elif i <= nC + e + eC + s:
-            roomType = 4
+            roomType = 2 # Set the room type to 2
+        elif i <= nC + e + eC: # If the random number is less than or equal to nC + e + eC
+            roomType = 3 # Set the room type to 3
+        elif i <= nC + e + eC + s: # If the random number is less than or equal to nC + e + eC + s
+            roomType = 4 # Set the room type to 4
         else:
-            roomType = 6
+            roomType = 6 # Set the room type to 6
         return roomType
     
     for floor in range(2, 9):
         for room in map[floor].keys():
-            map[floor][room] = roomAssign()
+            map[floor][room] = roomAssign() # Assign a random room type to the room
     for floor in range(10, 15):
         for room in map[floor].keys():
             map[floor][room] = roomAssign()
@@ -162,18 +162,18 @@ def createMap(asc):
             returns: 
                 map: but with the above fixes
             '''
-            for room in map[14].keys():
-                if map[14][room] == 6:
-                    roomType = roomAssign()
-                    while roomType == 6:
-                        roomType = roomAssign()
-                    map[14][room] = roomType
+            for room in map[14].keys(): # Loop through all the rooms in floor 14
+                if map[14][room] == 6: # If the room type is 6
+                    roomType = roomAssign() # Assign a random room type to the room
+                    while roomType == 6: # While the room type is 6
+                        roomType = roomAssign() # Assign a random room type to the room
+                    map[14][room] = roomType # Assign the room type to the room
             return map
         
-        for type in map[14].values():
-            if type == 6:
-                map = floor14Camp(map)
-                break
+        for type in map[14].values(): # Loop through all the room types in floor 14
+            if type == 6: # If the room type is 6
+                map = floor14Camp(map) # Fix the map
+                break # Break the loop
         
         def earlyEC(map):
             '''Makes sure there is no elites or campfires below floor 6
@@ -184,13 +184,13 @@ def createMap(asc):
             returns
                 map: but with the rooms breaking the condition fixed
             '''
-            for floor in range(2, 6):
-                for room in map[floor].keys():
-                    if map[floor][room] == 3 or map[floor][room] == 6:
-                        roomType = roomAssign()
-                        while roomType == 3 or roomType == 6:
-                            roomType = roomAssign()
-                        map[floor][room] = roomType
+            for floor in range(2, 6): # Loop through all the floors from 2 to 6
+                for room in map[floor].keys(): # Loop through all the rooms in the floor
+                    if map[floor][room] == 3 or map[floor][room] == 6: # If the room type is 3 or 6
+                        roomType = roomAssign() # Assign a random room type to the room
+                        while roomType == 3 or roomType == 6: # While the room type is 3 or 6
+                            roomType = roomAssign() # Assign a random room type to the room
+                        map[floor][room] = roomType # Assign the room type to the room
             return map
 
         map = earlyEC(map)
@@ -393,142 +393,142 @@ def createMap(asc):
         return map
     
     map = nonValidMapFix(map)
-    i = 0
-    mapDisplay = []
-    pathDisplay = [[' ' for _ in range(13)] for _ in range(14)]
+    i = 0 # Initialize i to 0
+    mapDisplay = [] # Initialize mapDisplay to an empty list
+    pathDisplay = [[' ' for _ in range(13)] for _ in range(14)] # Initialize pathDisplay to a list of 14 lists of 13 empty strings
 
-    for start, end in path.items():
-            startFloor, startRoom = start
-            i = startFloor - 1
-            for connected in end:
+    for start, end in path.items(): # Loop through all the items in path
+            startFloor, startRoom = start # Unpack the start floor and room
+            i = startFloor - 1 # Set i to the start floor minus 1
+            for connected in end: # Loop through all the connected rooms
                 endRoom = connected[1]
-                if startRoom == endRoom:
-                    pathDisplay[i][startRoom * 2] = '|'
-                elif endRoom < startRoom:
-                    pathDisplay[i][startRoom * 2 - 1] = '\\'
-                else:
-                    pathDisplay[i][startRoom * 2 + 1] = '/'
-    for floor, room in map.items():
-        floorDisplay = ''
-        for i in range(0, 7):
+                if startRoom == endRoom: # If the start room is the same as the end room
+                    pathDisplay[i][startRoom * 2] = '|' # Set the pathDisplay to a vertical line
+                elif endRoom < startRoom: # If the end room is less than the start room
+                    pathDisplay[i][startRoom * 2 - 1] = '\\' # Set the pathDisplay to a backslash
+                else: # If the end room is greater than the start room
+                    pathDisplay[i][startRoom * 2 + 1] = '/' # Set the pathDisplay to a forward slash
+    for floor, room in map.items(): # Loop through all the items in map
+        floorDisplay = '' # Initialize floorDisplay to an empty string
+        for i in range(0, 7): # Loop through all the items in the room
             if i not in room:
                 floorDisplay += '  '
             else:
-                floorDisplay += f'{room[i]} '
-        mapDisplay.append(floorDisplay)
-        if floor < 15:
-            mapDisplay.append(''.join(pathDisplay[floor - 1]))
-    map[16] = {4: 7}
-    paths_needed = {i for i in map[15].keys()}
-    sorted(paths_needed)
-    boss_path = {
-        1: [' ' for _ in range(13)],
-        2: [' ' for _ in range(13)],
-        3: [' ' for _ in range(13)],
-        4: [' ' for _ in range(13)],
-        5: [' ' for _ in range(13)]
+                floorDisplay += f'{room[i]} ' # Add the room type to the floorDisplay
+        mapDisplay.append(floorDisplay) # Add the floorDisplay to the mapDisplay
+        if floor < 15: # If the floor is less than 15
+            mapDisplay.append(''.join(pathDisplay[floor - 1])) # Add the pathDisplay to the mapDisplay
+    map[16] = {4: 7} # Set the 16th floor to have a room with a room type of 7
+    paths_needed = {i for i in map[15].keys()} # Set paths_needed to the keys of the 15th floor
+    sorted(paths_needed) # Sort paths_needed
+    boss_path = { # Initialize boss_path to a dictionary with 5 keys and 13 values
+        1: [' ' for _ in range(13)], # Initialize the 1st key to a list of 13 empty strings
+        2: [' ' for _ in range(13)], # Initialize the 2nd key to a list of 13 empty strings
+        3: [' ' for _ in range(13)], # Initialize the 3rd key to a list of 13 empty strings
+        4: [' ' for _ in range(13)], # Initialize the 4th key to a list of 13 empty strings
+        5: [' ' for _ in range(13)] # Initialize the 5th key to a list of 13 empty strings
     }
-    floor16 = '      7      '
-    i = 1
-    if 0 in paths_needed:
-        for path_boss in boss_path.values():
+    floor16 = '      7      ' # Initialize floor16 to a string with a room type of 7
+    i = 1 # Initialize i to 1
+    if 0 in paths_needed: # If 0 is in paths_needed
+        for path_boss in boss_path.values(): # Loop through all the values in boss_path
             path_boss[i] = '/'
             i += 1
     i = 3
-    if 1 in paths_needed:
-        for path_boss in boss_path.values():
-            if i <= 5:
-                path_boss[i] = '/'
-                i += 1
+    if 1 in paths_needed: # If 1 is in paths_needed
+        for path_boss in boss_path.values(): # Loop through all the values in boss_path
+            if i <= 5: # If i is less than or equal to 5
+                path_boss[i] = '/' # Set the path_boss to a forward slash
+                i += 1 # Increment i by 1
             else:
                 path_boss[6] = '|'
     i = 5
-    if 2 in paths_needed:
-        for path_boss in boss_path.values():
-            if i <= 5:
-                path_boss[i] = '/'
+    if 2 in paths_needed: # If 2 is in paths_needed
+        for path_boss in boss_path.values(): # Loop through all the values in boss_path
+            if i <= 5: # If i is less than or equal to 5
+                path_boss[i] = '/' # Set the path_boss to a forward slash
                 i += 1
             else:
-                path_boss[6] = '|'
-    if 3 in paths_needed:
-        for path_boss in boss_path.values():
-            path_boss[6] = '|'
-    i = 7
+                path_boss[6] = '|' # Set the path_boss to a vertical line
+    if 3 in paths_needed: # If 3 is in paths_needed
+        for path_boss in boss_path.values(): # Loop through all the values in boss_path
+            path_boss[6] = '|' # Set the path_boss to a vertical line
+    i = 7 # Initialize i to 7
     if 4 in paths_needed:
-        for path_boss in boss_path.values():
-            if i > 6:
-                path_boss[i] = '\\'
-                i -= 1
+        for path_boss in boss_path.values(): # Loop through all the values in boss_path
+            if i > 6: # If i is greater than 6
+                path_boss[i] = '\\' # Set the path_boss to a backslash
+                i -= 1 # Decrement i by 1
             else:
-                path_boss[6] = '|'
+                path_boss[6] = '|' # Set the path_boss to a vertical line
     i = 9
     if 5 in paths_needed:
-        for path_boss in boss_path.values():
-            if i > 6:
-                path_boss[i] = '\\'
-                i -= 1
+        for path_boss in boss_path.values(): # Loop through all the values in boss_path
+            if i > 6: # If i is greater than 6
+                path_boss[i] = '\\' # Set the path_boss to a backslash
+                i -= 1 # Decrement i by 1
             else:
-                path_boss[6] = '|'
-    i = 11
-    if 6 in paths_needed:
-        for path_boss in boss_path.values():
-            path_boss[i] = '\\'
-            i -= 1
-    for pathDis in boss_path.values():
-        path_boss = ''.join(pathDis)
+                path_boss[6] = '|' # Set the path_boss to a vertical line
+    i = 11 # Initialize i to 11
+    if 6 in paths_needed: # If 6 is in paths_needed
+        for path_boss in boss_path.values(): # Loop through all the values in boss_path
+            path_boss[i] = '\\' # Set the path_boss to a backslash
+            i -= 1 # Decrement i by 1
+    for pathDis in boss_path.values(): # Loop through all the values in boss_path
+        path_boss = ''.join(pathDis) # Join the pathDis to a string
         mapDisplay.append(path_boss)
     # Adding paths to the boss room to map display
     mapDisplay.append(floor16)
-    for room_num in map[15].keys():
-        path[(15, room_num)] = [[16, 4]]
-    i = 1
-    for j in range(0, 30, 2):
+    for room_num in map[15].keys(): # Loop through all the keys in the 15th floor
+        path[(15, room_num)] = [[16, 4]] # Set the path to the boss room
+    i = 1 # Initialize i to 1
+    for j in range(0, 30, 2): # Loop through all the items in mapDisplay
         if i < 10:
-            mapDisplay[j] = f'{i}:  ' + mapDisplay[j]
+            mapDisplay[j] = f'{i}:  ' + mapDisplay[j] # Add the floor number to the mapDisplay
         else:
-            mapDisplay[j] = f'{i}: ' + mapDisplay[j]
+            mapDisplay[j] = f'{i}: ' + mapDisplay[j] # Add the floor number to the mapDisplay
+        i += 1 # Increment i by 1
+    for j in range(1, 30, 2): # Loop through all the items in mapDisplay
+        mapDisplay[j] = f'    ' + mapDisplay[j] # Add the floor number to the mapDisplay
         i += 1
-    for j in range(1, 30, 2):
-        mapDisplay[j] = f'    ' + mapDisplay[j]
-        i += 1
-    for j in range(30, 35):
-        mapDisplay[j] = f'    ' + mapDisplay[j]
+    for j in range(30, 35): # Loop through all the items in mapDisplay
+        mapDisplay[j] = f'    ' + mapDisplay[j] # Add the floor number to the mapDisplay
     return map, path, mapDisplay
 
 class Map:
     def __init__(self, asc = 0, map_info = None):
-        if map_info == None:
-            self.map, self.path, self.mapDisplay = createMap(asc)
-            self.entered_rooms = []
+        if map_info == None: # If map_info is None
+            self.map, self.path, self.mapDisplay = createMap(asc) # Create the map, path, and mapDisplay
+            self.entered_rooms = [] # Initialize entered_rooms to an empty list
         else:
-            self.map, self.path, self.mapDisplay, self.entered_rooms = map_info
-            map_copy = {}
-            for i in range(1, 16):
-                map_copy[i] = {}
+            self.map, self.path, self.mapDisplay, self.entered_rooms = map_info # Set the map, path, mapDisplay, and entered_rooms to the map_info
+            map_copy = {} # Initialize map_copy to an empty dictionary
+            for i in range(1, 16): # Loop through all the items in map_copy
+                map_copy[i] = {} # Set the map_copy to a dictionary with the floor number as the key
                 if str(i) in self.map:  # Check if floor exists as string key
-                    for key, value in self.map[str(i)].items():
-                        map_copy[i][int(key)] = int(value)
-            self.map = map_copy
-        self.rooms = []
-        self.map[16] = {4: 7}
-        for floor, room in self.map.items():
-            for room_num, room_type in room.items():
-                self.rooms.append(Room(int(room_type), int(floor), int(room_num)))
-        for room in self.rooms:
-            if room.floor != 16:    
-                for connection in self.path[(room.floor, room.room_num)]:
-                    room.add_connection(connection)
+                    for key, value in self.map[str(i)].items(): # Loop through all the items in self.map
+                        map_copy[i][int(key)] = int(value) # Set the map_copy to a dictionary with the floor number as the key and the room number as the value
+            self.map = map_copy # Set the map to the map_copy
+        self.rooms = [] # Initialize rooms to an empty list
+        self.map[16] = {4: 7} # Set the 16th floor to have a room with a room type of 7
+        for floor, room in self.map.items(): # Loop through all the items in self.map
+            for room_num, room_type in room.items(): # Loop through all the items in room
+                self.rooms.append(Room(int(room_type), int(floor), int(room_num))) # Add the room to the rooms list
+        for room in self.rooms: # Loop through all the items in self.rooms
+            if room.floor != 16: # If the floor is not 16
+                for connection in self.path[(room.floor, room.room_num)]: # Loop through all the items in self.path
+                    room.add_connection(connection) # Add the connection to the room
         # Connect floor 0,0 to all rooms in floor 1
-        self.path[(0, 0)] = []
-        if '1' in self.map:
+        self.path[(0, 0)] = [] # Set the path to the start room
+        if '1' in self.map: # If the 1st floor exists
             self.map[1] = self.map['1']
-        for room_num in self.map[1].keys():
-            self.path[(0, 0)].append([1, int(room_num)])
-        self.y = 0
-        for id in self.entered_rooms:
-            for room in self.rooms:
-                if room.floor == id[0] and room.room_num == id[1]:
-                    room.entered = True
+        for room_num in self.map[1].keys(): # Loop through all the items in self.map
+            self.path[(0, 0)].append([1, int(room_num)]) # Add the connection to the path
+        self.y = 0 # Initialize y to 0
+        for id in self.entered_rooms: # Loop through all the items in self.entered_rooms
+            for room in self.rooms: # Loop through all the items in self.rooms
+                if room.floor == id[0] and room.room_num == id[1]: # If the room is the entered room
+                    room.entered = True # Set the room to entered
         
 
     def draw(self, screen, x, y):
@@ -596,41 +596,41 @@ class Map:
 
 class Room:
     def __init__(self, room_type, floor, room_num):
-        self.room_type = room_type
-        self.floor = floor
-        self.room_num = room_num
-        self.connections = []
-        self.entered = False
-        self.entered_circle = pygame.image.load('assets/icons/map/circled.png')
-        room_type_to_sprite = {
-            1: 'assets/icons/map/combat.png',
-            2: 'assets/icons/map/event.png',
-            3: 'assets/icons/map/elite.png',
-            4: 'assets/icons/map/shop.png',
-            5: 'assets/icons/map/chest.png',
-            6: 'assets/icons/map/campfire.png',
-            7: 'assets/icons/map/boss.png'
+        self.room_type = room_type # Set the room_type to the room_type
+        self.floor = floor # Set the floor to the floor
+        self.room_num = room_num # Set the room_num to the room_num
+        self.connections = [] # Initialize connections to an empty list
+        self.entered = False # Initialize entered to False
+        self.entered_circle = pygame.image.load('assets/icons/map/circled.png') # Load the entered_circle image
+        room_type_to_sprite = { # Initialize room_type_to_sprite to a dictionary with the room_type as the key and the sprite as the value
+            1: 'assets/icons/map/combat.png', # Set the sprite to the combat image
+            2: 'assets/icons/map/event.png', # Set the sprite to the event image
+            3: 'assets/icons/map/elite.png', # Set the sprite to the elite image
+            4: 'assets/icons/map/shop.png', # Set the sprite to the shop image
+            5: 'assets/icons/map/chest.png', # Set the sprite to the chest image
+            6: 'assets/icons/map/campfire.png', # Set the sprite to the campfire image
+            7: 'assets/icons/map/boss.png' # Set the sprite to the boss image
         }
-        self.sprite = pygame.image.load(room_type_to_sprite[room_type])
-        self.rect = self.sprite.get_rect()
+        self.sprite = pygame.image.load(room_type_to_sprite[room_type]) # Load the sprite
+        self.rect = self.sprite.get_rect() # Get the rect of the sprite
 
     def enter(self):
-        self.entered = True
+        self.entered = True # Set the room to entered
     
     def update_rect(self, x, y):
-        self.rect.topleft = (x, y)
+        self.rect.topleft = (x, y) # Set the rect to the x and y
 
     def completed(self, run, map):
-        run.room = [self.floor, self.room_num]
-        run.roomInfo = self.room_type
-        map.entered_rooms.append([self.floor, self.room_num])
+        run.room = [self.floor, self.room_num] # Set the room to the floor and room_num
+        run.roomInfo = self.room_type # Set the roomInfo to the room_type
+        map.entered_rooms.append([self.floor, self.room_num]) # Add the room to the entered_rooms list
 
     def add_connection(self, connection):
-        self.connections.append(connection)
+        self.connections.append(connection) # Add the connection to the connections list
 
     def draw(self, screen, x, y):
-        screen.blit(self.sprite, (x, y))
-        if self.entered:
-            screen.blit(self.entered_circle, (x - 5, y - 5))
+        screen.blit(self.sprite, (x, y)) # Draw the sprite
+        if self.entered: # If the room is entered
+            screen.blit(self.entered_circle, (x - 5, y - 5)) # Draw the entered_circle
 
 

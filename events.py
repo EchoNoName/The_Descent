@@ -80,34 +80,34 @@ class ScorchedForest:
                     # Adjust mouse position to account for event_box position
                     adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
 
-                    if option1.collidepoint(adjusted_pos) and not result_active:
-                        self.player.hp_loss(8)
-                        self.run.gold_modification(75)
-                        result_dialogue = [result1, result2]
-                        result_active = True
+                    if option1.collidepoint(adjusted_pos) and not result_active: # If the first option is clicked and the result is not active
+                        self.player.hp_loss(8) # Lose 8 hp
+                        self.run.gold_modification(75) # Gain 75 gold
+                        result_dialogue = [result1, result2] # Set the result dialogue
+                        result_active = True # Set the result active to true
+                        self.completed = True # Set the event completed to true
+                    elif option2.collidepoint(adjusted_pos) and not result_active: # If the second option is clicked and the result is not active
+                        self.player.hp_loss(8) # Lose 8 hp
+                        self.run.generate_reward_screen_instance(False, {'Potions': [potion_data.randomPotion()]}) # Generate a random potion
+                        result_dialogue = [result3, result4] # Set the result dialogue
+                        result_active = True # Set the result active to true
                         self.completed = True
-                    elif option2.collidepoint(adjusted_pos) and not result_active:
-                        self.player.hp_loss(8)
-                        self.run.generate_reward_screen_instance(False, {'Potions': [potion_data.randomPotion()]})
-                        result_dialogue = [result3, result4]
-                        result_active = True
-                        self.completed = True
-                    elif option3.collidepoint(adjusted_pos) and not result_active:
-                        self.player.hp_loss(8)
+                    elif option3.collidepoint(adjusted_pos) and not result_active: # If the third option is clicked and the result is not active
+                        self.player.hp_loss(8) # Lose 8 hp
                         card_reward, self.run.rareChanceOffset = card_constructor.generate_card_reward('normal', self.run.rareChanceOffset, self.run.cardRewardOptions, self.player.character_class, self.run.rareChanceMult)
                         for i, card_id in enumerate(card_reward):
                             card_reward[i] = card_constructor.create_card(card_id, card_data.card_info[card_id])
                         self.run.generate_reward_screen_instance(False, {'Cards': [card_reward]})
                         self.run.reward.listRewards()
-                        result_dialogue = [result5, result6]
-                        result_active = True
-                        self.completed = True
-                    elif option4.collidepoint(adjusted_pos) and not result_active:
+                        result_dialogue = [result5, result6] # Set the result dialogue
+                        result_active = True # Set the result active to true
+                        self.completed = True # Set the event completed to true
+                    elif option4.collidepoint(adjusted_pos) and not result_active: # If the fourth option is clicked and the result is not active
                         result_dialogue = [result7, result8]
                         result_active = True
-                        self.completed = True
-                    elif continue_button.collidepoint(adjusted_pos) and self.completed:
-                        event_active = False
+                        self.completed = True # Set the event completed to true
+                    elif continue_button.collidepoint(adjusted_pos) and self.completed: # If the continue button is clicked and the event is completed
+                        event_active = False # Stop the event
                         break
 
             # Draw everything
@@ -151,32 +151,32 @@ class ScorchedForest:
                 continue_button_text = self.option_font.render("[Continue]", True, (255, 255, 255))
                 event_box.blit(continue_button_text, (continue_button.x + 10, continue_button.y + 8))
 
-            pygame.display.get_surface().blit(self.background, (0, 0))
-            self.run.screen.blit(event_box, (50, 100))
-            self.run.player.draw_ui(pygame.display.get_surface())
-            pygame.display.flip()
+            pygame.display.get_surface().blit(self.background, (0, 0)) # Draw the background
+            self.run.screen.blit(event_box, (50, 100)) # Draw the event box
+            self.run.player.draw_ui(pygame.display.get_surface()) # Draw the player ui
+            pygame.display.flip() # Update the display
         
         if exit == 'Main Menu':
-            self.run.main_menu.main_menu()
+            self.run.main_menu.main_menu() # Go to the main menu
         else:
-            self.end_event()
+            self.end_event() # End the event
 
     def end_event(self):
-        self.event_active = False
-        self.run.mapNav()
+        self.event_active = False # Stop the event
+        self.run.mapNav() # Go to the map navigation
 
 
 class EntangledTreasure:
     def __init__(self, player, run):
-        self.name = 'Entangled Treasure'
-        self.player = player
-        self.run = run
-        self.event_active = True
-        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png'))
-        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640))
-        self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png'))
-        self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26)
-        self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20)
+        self.name = 'Entangled Treasure' # Set the name of the event
+        self.player = player # Set the player
+        self.run = run # Set the run
+        self.event_active = True # Set the event active to true
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png')) # Load the event sprite
+        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640)) # Scale the event sprite
+        self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png')) # Load the background
+        self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26) # Set the dialogue font
+        self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20) # Set the option font
         self.completed = False
     
     def __str__(self):
@@ -218,57 +218,57 @@ class EntangledTreasure:
         option2 = pygame.Rect(650, 630, 800, 40)
         continue_button = pygame.Rect(650, 630, 800, 40)
 
-        event_active = True
-        exit = None
+        event_active = True # Set the event active to true
+        exit = None # Set the exit to none
         while event_active:
-            events = pygame.event.get()
-            mouse_pos = pygame.mouse.get_pos()
-            self.run.handle_deck_view(events, mouse_pos)
-            self.run.potion_events(mouse_pos, events)
-            exit = self.run.handle_save_and_exit_input(events)
+            events = pygame.event.get() # Get the events
+            mouse_pos = pygame.mouse.get_pos() # Get the mouse position
+            self.run.handle_deck_view(events, mouse_pos) # Handle the deck view
+            self.run.potion_events(mouse_pos, events) # Handle the potion events
+            exit = self.run.handle_save_and_exit_input(events) # Handle the save and exit input
             if exit == 'Main Menu':
-                event_active = False
+                event_active = False # Stop the event
                 break
 
             for event in events:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
-                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1: # If a mouse button is clicked
+                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100) # Adjust the mouse position
 
-                    if option1.collidepoint(adjusted_pos) and not self.completed:
-                        self.player.hp_loss(current_hp_loss)
+                    if option1.collidepoint(adjusted_pos) and not self.completed: # If the first option is clicked and the event is not completed
+                        self.player.hp_loss(current_hp_loss) # Lose hp
                         if self.player.died:  # Check for death
                             self.run.defeat()
                         else:
-                            rng = random.randint(1, 100)
-                            if rng <= current_chance:
-                                relic = None
-                                while True:
+                            rng = random.randint(1, 100) # Generate a random number
+                            if rng <= current_chance: # If the random number is less than or equal to the current chance
+                                relic = None # Set the relic to none
+                                while True: # While true
                                     relic = relic_data.spawnRelic()
                                     for owned_relic in self.player.relics:
                                         if owned_relic.name == relic.name:
-                                            continue
-                                    break   
-                                self.run.relic_pickup(relic)
-                                result_dialogue = [result1, result2, result5, result6, result7]
-                                result_active = True
-                                self.completed = True
-                            else:
-                                result_dialogue = [result1, result2, result3, result4]
-                                result_active = True
-                                attempts += 1
-                                current_hp_loss += 1
-                                current_chance += 10
+                                            continue # Continue
+                                    break # Break the loop
+                                self.run.relic_pickup(relic) # Pickup the relic
+                                result_dialogue = [result1, result2, result5, result6, result7] # Set the result dialogue
+                                result_active = True # Set the result active to true
+                                self.completed = True # Set the event completed to true
+                            else: # If the random number is greater than the current chance
+                                result_dialogue = [result1, result2, result3, result4] # Set the result dialogue
+                                result_active = True # Set the result active to true
+                                attempts += 1 # Increment the attempts
+                                current_hp_loss += 1 # Increment the hp loss
+                                current_chance += 10 # Increment the chance
 
-                    elif option2.collidepoint(adjusted_pos) and not self.completed:
-                        result_dialogue = [result8, result9]
-                        result_active = True
-                        self.completed = True
-                    elif continue_button.collidepoint(adjusted_pos) and result_active:
-                        if self.completed:
-                            event_active = False
+                    elif option2.collidepoint(adjusted_pos) and not self.completed: # If the second option is clicked and the event is not completed
+                        result_dialogue = [result8, result9] # Set the result dialogue
+                        result_active = True # Set the result active to true
+                        self.completed = True # Set the event completed to true
+                    elif continue_button.collidepoint(adjusted_pos) and result_active: # If the continue button is clicked and the result is active
+                        if self.completed: # If the event is completed
+                            event_active = False # Stop the event
                         else:
                             result_active = False  # Reset to show options again
 
@@ -288,8 +288,8 @@ class EntangledTreasure:
                 event_box.blit(text8, (650, 300))
 
                 # Draw option buttons
-                pygame.draw.rect(event_box, (70, 70, 70), option1)
-                pygame.draw.rect(event_box, (70, 70, 70), option2)
+                pygame.draw.rect(event_box, (70, 70, 70), option1) # Draw the first option button
+                pygame.draw.rect(event_box, (70, 70, 70), option2) # Draw the second option button
 
                 # Draw option text with updated values
                 option1_text = self.option_font.render(f"[Reach Inside] Lose {current_hp_loss} HP. {current_chance}% chance to find a Relic.", True, (255, 255, 255))
@@ -318,40 +318,40 @@ class EntangledTreasure:
                     event_box.blit(option1_text, (option1.x + 10, option1.y + 8))
                     event_box.blit(option2_text, (option2.x + 10, option2.y + 8))
 
-            pygame.display.get_surface().blit(self.background, (0, 0))
-            self.run.screen.blit(event_box, (50, 100))
-            self.run.player.draw_ui(pygame.display.get_surface())
-            pygame.display.flip()
+            pygame.display.get_surface().blit(self.background, (0, 0)) # Blit the background
+            self.run.screen.blit(event_box, (50, 100)) # Blit the event box
+            self.run.player.draw_ui(pygame.display.get_surface()) # Draw the player ui
+            pygame.display.flip() # Flip the display
 
         if exit == 'Main Menu':
-            self.run.main_menu.main_menu()
+            self.run.main_menu.main_menu() # Go to the main menu
         else:
-            self.end_event()
+            self.end_event() # End the event
 
     def end_event(self):
-        self.event_active = False
-        self.run.mapNav()
-
+        self.event_active = False # Stop the event
+        self.run.mapNav() # Go to the map navigation
+    
 
 class TheCleric:
     def __init__(self, player, run):
-        self.name = 'The Cleric'
-        self.player = player
-        self.run = run
-        self.event_active = True
-        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png'))
-        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640))
-        self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png'))
-        self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26)
-        self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20)
-        self.completed = False
+        self.name = 'The Cleric' # Set the name
+        self.player = player # Set the player
+        self.run = run # Set the run
+        self.event_active = True # Set the event active to true
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png')) # Load the event sprite
+        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640)) # Scale the event sprite
+        self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png')) # Load the background
+        self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26) # Set the dialogue font    
+        self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20) # Set the option font
+        self.completed = False # Set the completed to false
 
     def __str__(self):
         return self.name
     
     def run_event(self):
-        event_box = pygame.Surface((1500, 700))
-        event_box.fill((50, 50, 50))
+        event_box = pygame.Surface((1500, 700)) # Create an event box
+        event_box.fill((50, 50, 50)) # Fill the event box with a dark gray color
         
         # Create text surfaces for initial dialogue
         text1 = self.dialogue_font.render("A strange blue humanoid with a golden helm(?) approaches you with a huge smile.", True, (255, 255, 255))
@@ -377,45 +377,45 @@ class TheCleric:
         option2 = pygame.Rect(650, 580, 800, 40)
         option3 = pygame.Rect(650, 630, 800, 40)
         continue_button = pygame.Rect(650, 630, 800, 40)
-        exit = None
+        exit = None # Set the exit to none
 
-        event_active = True
+        event_active = True # Set the event active to true
         while event_active:
-            events = pygame.event.get()
-            mouse_pos = pygame.mouse.get_pos()
-            self.run.handle_deck_view(events, mouse_pos)
-            self.run.potion_events(mouse_pos, events)
+            events = pygame.event.get() # Get the events
+            mouse_pos = pygame.mouse.get_pos() # Get the mouse position
+            self.run.handle_deck_view(events, mouse_pos) # Handle the deck view
+            self.run.potion_events(mouse_pos, events) # Handle the potion events
             exit = self.run.handle_save_and_exit_input(events)
             if exit == 'Main Menu':
                 event_active = False
                 break
 
             for event in events:
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
-                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                if event.type == pygame.QUIT: # If the event is quit
+                    pygame.quit() # Quit the game
+                    exit() # Exit the game
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1: # If a mouse button is clicked
                     adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
 
-                    if option1.collidepoint(adjusted_pos) and not result_active and self.player.gold >= 35:
-                        self.run.gold_modification(-35)
-                        effects.heal_player(int(self.player.maxHp * 0.25), self.run)
-                        result_dialogue = [result1, result2, result3]
-                        result_active = True
-                        self.completed = True
-                    elif option2.collidepoint(adjusted_pos) and not result_active and self.player.gold >= 50:
-                        self.run.gold_modification(-50)
-                        effects.card_select(1, {}, self.run)
-                        self.player.remove_card(self.player.selected_cards)
-                        result_dialogue = [result4, result5, result6]
-                        result_active = True
-                        self.completed = True
-                    elif option3.collidepoint(adjusted_pos) and not result_active:
-                        result_dialogue = [result7]
-                        result_active = True
-                        self.completed = True
-                    elif continue_button.collidepoint(adjusted_pos) and result_active:
-                        event_active = False
+                    if option1.collidepoint(adjusted_pos) and not result_active and self.player.gold >= 35: # If the first option is clicked and the result is not active and the player has enough gold
+                        self.run.gold_modification(-35) # Subtract 35 gold from the player
+                        effects.heal_player(int(self.player.maxHp * 0.25), self.run) # Heal the player
+                        result_dialogue = [result1, result2, result3] # Set the result dialogue
+                        result_active = True # Set the result active to true
+                        self.completed = True # Set the event completed to true
+                    elif option2.collidepoint(adjusted_pos) and not result_active and self.player.gold >= 50: # If the second option is clicked and the result is not active and the player has enough gold
+                        self.run.gold_modification(-50) # Subtract 50 gold from the player
+                        effects.card_select(1, {}, self.run) # Select a card
+                        self.player.remove_card(self.player.selected_cards) # Remove the selected card
+                        result_dialogue = [result4, result5, result6] # Set the result dialogue
+                        result_active = True # Set the result active to true
+                        self.completed = True # Set the event completed to true
+                    elif option3.collidepoint(adjusted_pos) and not result_active: # If the third option is clicked and the result is not active
+                        result_dialogue = [result7] # Set the result dialogue
+                        result_active = True # Set the result active to true
+                        self.completed = True # Set the event completed to true
+                    elif continue_button.collidepoint(adjusted_pos) and result_active: # If the continue button is clicked and the result is active
+                        event_active = False # Stop the event
 
             # Draw everything
             event_box.fill((50, 50, 50))
@@ -447,18 +447,18 @@ class TheCleric:
                 # Draw result dialogue
                 y_offset = 30
                 for line in result_dialogue:
-                    event_box.blit(line, (650, y_offset))
-                    y_offset += 30
+                    event_box.blit(line, (650, y_offset)) # Blit the line
+                    y_offset += 30 # Increase the y offset
 
                 # Draw continue button
-                pygame.draw.rect(event_box, (70, 70, 70), continue_button)
-                continue_text = self.option_font.render("[Continue]", True, (255, 255, 255))
-                event_box.blit(continue_text, (continue_button.x + 10, continue_button.y + 8))
+                pygame.draw.rect(event_box, (70, 70, 70), continue_button) # Draw the continue button
+                continue_text = self.option_font.render("[Continue]", True, (255, 255, 255)) # Set the continue text
+                event_box.blit(continue_text, (continue_button.x + 10, continue_button.y + 8)) # Blit the continue text
 
-            pygame.display.get_surface().blit(self.background, (0, 0))
-            self.run.screen.blit(event_box, (50, 100))
-            self.run.player.draw_ui(pygame.display.get_surface())
-            pygame.display.flip()
+            pygame.display.get_surface().blit(self.background, (0, 0)) # Blit the background
+            self.run.screen.blit(event_box, (50, 100)) # Blit the event box
+            self.run.player.draw_ui(pygame.display.get_surface()) # Draw the player ui
+            pygame.display.flip() # Flip the display
 
         if exit == 'Main Menu':
             self.run.main_menu.main_menu()
@@ -472,23 +472,23 @@ class TheCleric:
 
 class GoddessStatue:
     def __init__(self, player, run):
-        self.name = 'Goddess Statue'
-        self.player = player
-        self.run = run
-        self.event_active = True
-        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png'))
-        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640))
-        self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png'))
-        self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26)
-        self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20)
-        self.completed = False
+        self.name = 'Goddess Statue' # Set the name
+        self.player = player # Set the player
+        self.run = run # Set the run
+        self.event_active = True # Set the event active to true
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png')) # Load the event sprite
+        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640)) # Scale the event sprite
+        self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png')) # Load the background
+        self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26) # Set the dialogue font
+        self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20) # Set the option font
+        self.completed = False # Set the completed to false
     
     def __str__(self):
         return self.name
     
     def run_event(self):
-        event_box = pygame.Surface((1500, 700))
-        event_box.fill((50, 50, 50))
+        event_box = pygame.Surface((1500, 700)) # Create an event box
+        event_box.fill((50, 50, 50)) # Fill the event box with a dark gray color
         
         # Create text surfaces for initial dialogue
         text1 = self.dialogue_font.render("As you wander deeper into the forest, the trees part to reveal a clearing", True, (255, 255, 255))
@@ -508,8 +508,8 @@ class GoddessStatue:
         result5 = self.dialogue_font.render("You bow respectfully to the statue and step away.", True, (255, 255, 255))
         result6 = self.dialogue_font.render("The clearing remains tranquil, the goddess watching silently as you depart.", True, (255, 255, 255))
 
-        result_active = False
-        result_dialogue = None
+        result_active = False # Set the result active to false
+        result_dialogue = None # Set the result dialogue to none
 
         # Create option buttons
         option1 = pygame.Rect(650, 580, 800, 40)
@@ -517,13 +517,13 @@ class GoddessStatue:
         continue_button = pygame.Rect(650, 630, 800, 40)
         exit = None
 
-        event_active = True
+        event_active = True # Set the event active to true
         while event_active:
-            events = pygame.event.get()
-            mouse_pos = pygame.mouse.get_pos()
-            self.run.handle_deck_view(events, mouse_pos)
-            self.run.potion_events(mouse_pos, events)
-            exit = self.run.handle_save_and_exit_input(events)
+            events = pygame.event.get() # Get the events
+            mouse_pos = pygame.mouse.get_pos() # Get the mouse position
+            self.run.handle_deck_view(events, mouse_pos) # Handle the deck view
+            self.run.potion_events(mouse_pos, events) # Handle the potion events
+            exit = self.run.handle_save_and_exit_input(events) # Handle the save and exit input
             if exit == 'Main Menu':
                 event_active = False
                 break
@@ -535,23 +535,23 @@ class GoddessStatue:
                 if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                     adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
 
-                    if option1.collidepoint(adjusted_pos) and not result_active:
-                        self.player.hp_loss(7)
-                        if self.player.died():
-                            self.run.defeat()
-                            event_active = False
+                    if option1.collidepoint(adjusted_pos) and not result_active: # If the first option is clicked and the result is not active
+                        self.player.hp_loss(7) # Lose 7 hp
+                        if self.player.died(): # If the player dies
+                            self.run.defeat() # Defeat the player
+                            event_active = False # Stop the event
                             break
-                        effects.card_select(1, {}, self.run)
-                        self.player.remove_card(self.player.selected_cards)
-                        result_dialogue = [result1, result2, result3, result4]
-                        result_active = True
-                        self.completed = True
-                    elif option2.collidepoint(adjusted_pos) and not result_active:
-                        result_dialogue = [result5, result6]
-                        result_active = True
-                        self.completed = True
-                    elif continue_button.collidepoint(adjusted_pos) and result_active:
-                        event_active = False
+                        effects.card_select(1, {}, self.run) # Select a card
+                        self.player.remove_card(self.player.selected_cards) # Remove the selected card
+                        result_dialogue = [result1, result2, result3, result4] # Set the result dialogue
+                        result_active = True # Set the result active to true
+                        self.completed = True # Set the event completed to true
+                    elif option2.collidepoint(adjusted_pos) and not result_active: # If the second option is clicked and the result is not active
+                        result_dialogue = [result5, result6] # Set the result dialogue
+                        result_active = True # Set the result active to true
+                        self.completed = True # Set the event completed to true
+                    elif continue_button.collidepoint(adjusted_pos) and result_active: # If the continue button is clicked and the result is active
+                        event_active = False # Stop the event
 
             # Draw everything
             event_box.fill((50, 50, 50))
@@ -585,37 +585,37 @@ class GoddessStatue:
                     y_offset += 30
 
                 # Draw continue button
-                pygame.draw.rect(event_box, (70, 70, 70), continue_button)
-                continue_text = self.option_font.render("[Continue]", True, (255, 255, 255))
-                event_box.blit(continue_text, (continue_button.x + 10, continue_button.y + 8))
+                pygame.draw.rect(event_box, (70, 70, 70), continue_button) # Draw the continue button
+                continue_text = self.option_font.render("[Continue]", True, (255, 255, 255)) # Set the continue text
+                event_box.blit(continue_text, (continue_button.x + 10, continue_button.y + 8)) # Blit the continue text
 
-            pygame.display.get_surface().blit(self.background, (0, 0))
-            self.run.screen.blit(event_box, (50, 100))
-            self.run.player.draw_ui(pygame.display.get_surface())
-            pygame.display.flip()
+            pygame.display.get_surface().blit(self.background, (0, 0)) # Blit the background
+            self.run.screen.blit(event_box, (50, 100)) # Blit the event box
+            self.run.player.draw_ui(pygame.display.get_surface()) # Draw the player ui
+            pygame.display.flip() # Flip the display
 
         if exit == 'Main Menu':
-            self.run.main_menu.main_menu()
+            self.run.main_menu.main_menu() # If the player wants to exit to the main menu
         else:
-            self.end_event()
+            self.end_event() # End the event
 
     def end_event(self):
-        self.event_active = False
-        self.run.mapNav()
+        self.event_active = False # Set the event active to false
+        self.run.mapNav() # Navigate to the map
 
 
 class AbandonedMonument:
     def __init__(self, player, run):
-        self.name = 'Abandoned Monument'
-        self.player = player
-        self.run = run
-        self.event_active = True
-        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png'))
-        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640))
+        self.name = 'Abandoned Monument' # Set the name
+        self.player = player # Set the player
+        self.run = run # Set the run
+        self.event_active = True # Set the event active to true
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png')) # Load the event sprite
+        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640)) # Scale the event sprite
         self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png'))
-        self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26)
-        self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20)
-        self.completed = False
+        self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26) # Set the dialogue font
+        self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20) # Set the option font
+        self.completed = False # Set the completed to false
 
     def __str__(self):
         return self.name
@@ -652,73 +652,73 @@ class AbandonedMonument:
         result13 = self.dialogue_font.render("its gleaming treasure untouched.", True, (255, 255, 255))
 
         result_active = False
-        result_dialogue = None
-        trap_choice = False
-        trap_dialogue = None
+        result_dialogue = None # Set the result dialogue to none
+        trap_choice = False # Set the trap choice to false
+        trap_dialogue = None # Set the trap dialogue to none
 
         # Create option buttons
-        option1 = pygame.Rect(650, 580, 800, 40)
-        option2 = pygame.Rect(650, 630, 800, 40)
-        option3 = pygame.Rect(650, 530, 800, 40)
-        continue_button = pygame.Rect(650, 630, 800, 40)
+        option1 = pygame.Rect(650, 580, 800, 40) # Set the first option
+        option2 = pygame.Rect(650, 630, 800, 40) # Set the second option
+        option3 = pygame.Rect(650, 530, 800, 40) # Set the third option
+        continue_button = pygame.Rect(650, 630, 800, 40) # Set the continue button
 
         event_active = True
         exit = None
         while event_active:
-            events = pygame.event.get()
-            mouse_pos = pygame.mouse.get_pos()
-            self.run.handle_deck_view(events, mouse_pos)
-            self.run.potion_events(mouse_pos, events)
-            exit = self.run.handle_save_and_exit_input(events)
-            if exit == 'Main Menu':
+            events = pygame.event.get() # Get the events
+            mouse_pos = pygame.mouse.get_pos() # Get the mouse position
+            self.run.handle_deck_view(events, mouse_pos) # Handle the deck view
+            self.run.potion_events(mouse_pos, events) # Handle the potion events
+            exit = self.run.handle_save_and_exit_input(events) # Handle the save and exit input
+            if exit == 'Main Menu': # If the player wants to exit to the main menu
                 event_active = False
                 break
 
             for event in events:
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    self.run.exit_game()
-                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
+                if event.type == pygame.QUIT: # If the game is quit
+                    pygame.quit() # Quit the game
+                    self.run.exit_game() # Exit the game
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1: # If a mouse button is clicked
+                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100) # Adjust the mouse position
 
-                    if not trap_choice and not result_active:
-                        if option1.collidepoint(adjusted_pos):
-                            self.run.relic_pickup(relic_data.createRelic('Golden Statue', relic_data.eventRelics['Golden Statue']))
-                            trap_dialogue = [result1, result2, result3]
-                            trap_choice = True
-                        elif option2.collidepoint(adjusted_pos):
-                            result_dialogue = [result11, result12, result13]
-                            result_active = True
-                            self.completed = True
-                    elif trap_choice and not self.completed:
-                        if option1.collidepoint(adjusted_pos):
-                            effects.max_hp_change(int(self.player.maxHp * -0.08), self.run)
-                            result_dialogue = [result4, result5, result6]
-                            result_active = True
-                            self.completed = True
-                        elif option2.collidepoint(adjusted_pos):
+                    if not trap_choice and not result_active: # If the trap choice is not active and the result is not active
+                        if option1.collidepoint(adjusted_pos): # If the first option is clicked
+                            self.run.relic_pickup(relic_data.createRelic('Golden Statue', relic_data.eventRelics['Golden Statue'])) # Pickup the golden statue
+                            trap_dialogue = [result1, result2, result3] # Set the trap dialogue
+                            trap_choice = True # Set the trap choice to true
+                        elif option2.collidepoint(adjusted_pos): # If the second option is clicked
+                            result_dialogue = [result11, result12, result13] # Set the result dialogue
+                            result_active = True # Set the result active to true
+                            self.completed = True # Set the completed to true
+                    elif trap_choice and not self.completed: # If the trap choice is active and the completed is not true
+                        if option1.collidepoint(adjusted_pos): # If the first option is clicked
+                            effects.max_hp_change(int(self.player.maxHp * -0.08), self.run) # Change the max hp
+                            result_dialogue = [result4, result5, result6] # Set the result dialogue
+                            result_active = True # Set the result active to true
+                            self.completed = True # Set the completed to true
+                        elif option2.collidepoint(adjusted_pos): # If the second option is clicked
                             self.run.card_pickup_from_id(4)  # Injury curse
-                            result_dialogue = [result7, result8]
-                            result_active = True
-                            self.completed = True
-                        elif option3.collidepoint(adjusted_pos):
-                            self.player.hp_loss(int(self.player.maxHp * 0.25))
-                            if self.player.died():
-                                self.run.defeat()
+                            result_dialogue = [result7, result8] # Set the result dialogue
+                            result_active = True # Set the result active to true
+                            self.completed = True # Set the completed to true
+                        elif option3.collidepoint(adjusted_pos): # If the third option is clicked
+                            self.player.hp_loss(int(self.player.maxHp * 0.25)) # Lose hp
+                            if self.player.died(): # If the player is dead
+                                self.run.defeat() # Defeat the player
                                 event_active = False
                                 break
-                            result_dialogue = [result9, result10]
-                            result_active = True
-                            self.completed = True
-                    elif continue_button.collidepoint(adjusted_pos) and result_active:
+                            result_dialogue = [result9, result10] # Set the result dialogue
+                            result_active = True # Set the result active to true
+                            self.completed = True # Set the completed to true
+                    elif continue_button.collidepoint(adjusted_pos) and result_active: # If the continue button is clicked and the result is active
                         if self.completed:
-                            event_active = False
+                            event_active = False # Set the event active to false
                         else:
-                            result_active = False
+                            result_active = False # Set the result active to false
 
             # Draw everything
-            event_box.fill((50, 50, 50))
-            event_box.blit(self.event_sprite, (30, 30))
+            event_box.fill((50, 50, 50)) # Fill the event box with a dark gray color
+            event_box.blit(self.event_sprite, (30, 30)) # Blit the event sprite
             
             if not result_active:
                 if not trap_choice:
@@ -732,10 +732,10 @@ class AbandonedMonument:
 
                     # Draw initial options
                     pygame.draw.rect(event_box, (70, 70, 70), option1)
-                    pygame.draw.rect(event_box, (70, 70, 70), option2)
+                    pygame.draw.rect(event_box, (70, 70, 70), option2) # Draw the second option
 
-                    option1_text = self.option_font.render("[Take] Obtain Golden Statue. Trigger a trap.", True, (255, 255, 255))
-                    option2_text = self.option_font.render("[Leave] Nothing happens.", True, (255, 255, 255))
+                    option1_text = self.option_font.render("[Take] Obtain Golden Statue. Trigger a trap.", True, (255, 255, 255)) # Set the first option text
+                    option2_text = self.option_font.render("[Leave] Nothing happens.", True, (255, 255, 255)) # Set the second option text
 
                     event_box.blit(option1_text, (option1.x + 10, option1.y + 8))
                     event_box.blit(option2_text, (option2.x + 10, option2.y + 8))
@@ -750,13 +750,13 @@ class AbandonedMonument:
                     pygame.draw.rect(event_box, (70, 70, 70), option2)
                     pygame.draw.rect(event_box, (70, 70, 70), option3)
 
-                    option1_text = self.option_font.render(f"[Dodge] Lose {int(self.player.maxHp * 0.08)} Max HP.", True, (255, 255, 255))
-                    option2_text = self.option_font.render("[Tank] Become Cursed - Injury.", True, (255, 255, 255))
-                    option3_text = self.option_font.render(f"[Run] Take {int(self.player.maxHp * 0.25)} damage.", True, (255, 255, 255))
+                    option1_text = self.option_font.render(f"[Dodge] Lose {int(self.player.maxHp * 0.08)} Max HP.", True, (255, 255, 255)) # Set the first option text
+                    option2_text = self.option_font.render("[Tank] Become Cursed - Injury.", True, (255, 255, 255)) # Set the second option text
+                    option3_text = self.option_font.render(f"[Run] Take {int(self.player.maxHp * 0.25)} damage.", True, (255, 255, 255)) # Set the third option text
 
-                    event_box.blit(option1_text, (option1.x + 10, option1.y + 8))
-                    event_box.blit(option2_text, (option2.x + 10, option2.y + 8))
-                    event_box.blit(option3_text, (option3.x + 10, option3.y + 8))
+                    event_box.blit(option1_text, (option1.x + 10, option1.y + 8)) # Blit the first option text
+                    event_box.blit(option2_text, (option2.x + 10, option2.y + 8)) # Blit the second option text
+                    event_box.blit(option3_text, (option3.x + 10, option3.y + 8)) # Blit the third option text
             else:
                 # Draw result dialogue
                 y_offset = 30
@@ -767,12 +767,12 @@ class AbandonedMonument:
                 if self.completed:
                     pygame.draw.rect(event_box, (70, 70, 70), continue_button)
                     continue_text = self.option_font.render("[Continue]", True, (255, 255, 255))
-                    event_box.blit(continue_text, (continue_button.x + 10, continue_button.y + 8))
+                    event_box.blit(continue_text, (continue_button.x + 10, continue_button.y + 8)) # Blit the continue text
 
-            pygame.display.get_surface().blit(self.background, (0, 0))
-            self.run.screen.blit(event_box, (50, 100))
-            self.run.player.draw_ui(pygame.display.get_surface())
-            pygame.display.flip()
+            pygame.display.get_surface().blit(self.background, (0, 0)) # Blit the background
+            self.run.screen.blit(event_box, (50, 100)) # Blit the event box
+            self.run.player.draw_ui(pygame.display.get_surface()) # Draw the player ui
+            pygame.display.flip() # Update the display
 
         if exit == 'Main Menu':
             self.run.main_menu.main_menu()
@@ -786,20 +786,20 @@ class AbandonedMonument:
 
 class DeadAdventurers:
     def __init__(self, player, run):
-        self.name = 'Dead Adventurers'
-        self.player = player
-        self.run = run
-        self.elite = None
-        self.event_active = True
-        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png'))
-        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640))
-        self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png'))
-        self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26)
-        self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20)
-        self.completed = False
-        self.elite = None
-        self.loot = ['Gold', 'N']
-        self.current_chance = 25
+        self.name = 'Dead Adventurers' # Set the name of the event
+        self.player = player # Set the player
+        self.run = run # Set the run
+        self.elite = None # Set the elite
+        self.event_active = True # Set the event active to true
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png')) # Load the event sprite
+        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640)) # Scale the event sprite
+        self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png')) # Load the background
+        self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26) # Set the dialogue font
+        self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20) # Set the option font
+        self.completed = False # Set the completed to false
+        self.elite = None # Set the elite
+        self.loot = ['Gold', 'N'] # Set the loot
+        self.current_chance = 25 # Set the current chance
         
     def __str__(self):
         return self.name
@@ -811,30 +811,30 @@ class DeadAdventurers:
         # Randomly determine the elite type
         rng = random.randint(1, 3)
         if rng == 1:
-            self.elite = [enemy_data.SentryA(), enemy_data.SentryB(), enemy_data.SentryA()]
-            elite_text = 'Their pants has been stolen! '
-            elite_text2 = 'Also, the armour and face appear to be scoured by flames.'
+            self.elite = [enemy_data.SentryA(), enemy_data.SentryB(), enemy_data.SentryA()] # Set the elite
+            elite_text = 'Their pants has been stolen! ' # Set the elite text
+            elite_text2 = 'Also, the armour and face appear to be scoured by flames.' # Set the elite text 2
         elif rng == 2:
-            self.elite = [enemy_data.GoblinGiant()]
-            elite_text = 'Their pants has been stolen! '
-            elite_text2 = 'Also, they look to have been eviscerated and chopped by giant blades.'
+            self.elite = [enemy_data.GoblinGiant()] # Set the elite
+            elite_text = 'Their pants has been stolen! ' # Set the elite text
+            elite_text2 = 'Also, they look to have been eviscerated and chopped by giant blades.' # Set the elite text 2
         else:
-            self.elite = [enemy_data.GiantLouseAwake()]
-            elite_text = 'Their pants has been stolen! '
-            elite_text2 = 'Also, purple liquid leaks from giant bite marks on their bodies.'
+            self.elite = [enemy_data.GiantLouseAwake()] # Set the elite
+            elite_text = 'Their pants has been stolen! ' # Set the elite text
+            elite_text2 = 'Also, purple liquid leaks from giant bite marks on their bodies.' # Set the elite text 2
         
         # Create text surfaces for initial dialogue
-        text1 = self.dialogue_font.render("As you walk on the path towards your destination, you come across a", True, (255, 255, 255))
-        text2 = self.dialogue_font.render("group of dead adventurers on the side.", True, (255, 255, 255))
-        text3 = self.dialogue_font.render(elite_text, True, (255, 255, 255))
-        text4 = self.dialogue_font.render(elite_text2, True, (255, 255, 255))
+        text1 = self.dialogue_font.render("As you walk on the path towards your destination, you come across a", True, (255, 255, 255)) # Set the text 1
+        text2 = self.dialogue_font.render("group of dead adventurers on the side.", True, (255, 255, 255)) # Set the text 2
+        text3 = self.dialogue_font.render(elite_text, True, (255, 255, 255)) # Set the elite text
+        text4 = self.dialogue_font.render(elite_text2, True, (255, 255, 255)) # Set the elite text 2
 
         # Create result dialogue surfaces
-        result1 = self.dialogue_font.render("You found some gold!", True, (255, 255, 255))
-        result2 = self.dialogue_font.render("Hmm, couldn't find anything...", True, (255, 255, 255))
-        result3 = self.dialogue_font.render("You found a relic!", True, (255, 255, 255))
-        result4 = self.dialogue_font.render("While searching the adventurer you are caught off guard!", True, (255, 255, 255))
-        result5 = self.dialogue_font.render("You leave without a sound.", True, (255, 255, 255))
+        result1 = self.dialogue_font.render("You found some gold!", True, (255, 255, 255)) # Set the result 1
+        result2 = self.dialogue_font.render("Hmm, couldn't find anything...", True, (255, 255, 255)) # Set the result 2
+        result3 = self.dialogue_font.render("You found a relic!", True, (255, 255, 255)) # Set the result 3
+        result4 = self.dialogue_font.render("While searching the adventurer you are caught off guard!", True, (255, 255, 255)) # Set the result 4
+        result5 = self.dialogue_font.render("You leave without a sound.", True, (255, 255, 255)) # Set the result 5
 
         result_dialogue = None
         combat_triggered = False
@@ -844,10 +844,10 @@ class DeadAdventurers:
         option2 = pygame.Rect(650, 630, 800, 40)
         continue_button = pygame.Rect(650, 630, 800, 40)
 
-        event_active = True
-        exit = None
+        event_active = True # Set the event active to true
+        exit = None # Set the exit to none
         while event_active:
-            events = pygame.event.get()
+            events = pygame.event.get() # Get the events
             mouse_pos = pygame.mouse.get_pos()
             self.run.handle_deck_view(events, mouse_pos)
             self.run.potion_events(mouse_pos, events)
@@ -863,38 +863,38 @@ class DeadAdventurers:
                 if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                     adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
 
-                    if option1.collidepoint(adjusted_pos) and not self.completed:
-                        rng = random.randint(1, 100)
-                        if rng <= self.current_chance:
+                    if option1.collidepoint(adjusted_pos) and not self.completed: # If the first option is clicked and the event is not completed
+                        rng = random.randint(1, 100) # Generate a random number between 1 and 100
+                        if rng <= self.current_chance: # If the random number is less than or equal to the current chance
                             # Elite encounter
-                            result_dialogue = [result4]
-                            combat_triggered = True
-                            self.completed = True
+                            result_dialogue = [result4] # Set the result dialogue to the result 4
+                            combat_triggered = True # Set the combat triggered to true
+                            self.completed = True # Set the completed to true
                         else:
                             # Found loot
-                            if self.loot:
-                                item = random.choice(self.loot)
-                                self.loot.remove(item)
+                            if self.loot: # If the loot is not empty
+                                item = random.choice(self.loot) # Choose a random item from the loot
+                                self.loot.remove(item) # Remove the item from the loot
                                 if item == 'Gold':
                                     self.run.gold_modification(30)
                                     result_dialogue = [result1]
                                 elif item == 'N':
-                                    result_dialogue = [result2]
-                                if not self.loot:
-                                    self.loot.append('Relic')
-                                self.current_chance += 25
+                                    result_dialogue = [result2] # Set the result dialogue to the result 2
+                                if not self.loot: # If the loot is empty
+                                    self.loot.append('Relic') # Add a relic to the loot
+                                self.current_chance += 25 # Increase the current chance by 25
                             else:
                                 # Found relic
-                                relic = relic_data.spawnRelic()
-                                self.run.relic_pickup(relic)
-                                result_dialogue = [result3]
-                                self.completed = True
+                                relic = relic_data.spawnRelic() # Spawn a relic
+                                self.run.relic_pickup(relic) # Pickup the relic
+                                result_dialogue = [result3] # Set the result dialogue to the result 3
+                                self.completed = True # Set the completed to true
                     elif option2.collidepoint(adjusted_pos) and not self.completed:
-                        result_dialogue = [result5]
-                        self.completed = True
-                        event_active = False
-                    elif continue_button.collidepoint(adjusted_pos) and combat_triggered:
-                        event_active = False
+                        result_dialogue = [result5] # Set the result dialogue to the result 5
+                        self.completed = True # Set the completed to true
+                        event_active = False # Set the event active to false
+                    elif continue_button.collidepoint(adjusted_pos) and combat_triggered: # If the continue button is clicked and the combat is triggered
+                        event_active = False # Set the event active to false
 
             # Draw everything
             event_box.fill((50, 50, 50))
@@ -919,12 +919,12 @@ class DeadAdventurers:
                 pygame.draw.rect(event_box, (70, 70, 70), option2)
 
                 # Draw option text
-                option1_text = self.option_font.render(f"[Search] Find Loot. {self.current_chance}% that an Elite will return to fight you.", True, (255, 255, 255))
-                option2_text = self.option_font.render("[Leave] End the search and resume your journey.", True, (255, 255, 255))
+                option1_text = self.option_font.render(f"[Search] Find Loot. {self.current_chance}% that an Elite will return to fight you.", True, (255, 255, 255)) # Set the option 1 text
+                option2_text = self.option_font.render("[Leave] End the search and resume your journey.", True, (255, 255, 255)) # Set the option 2 text
 
-                event_box.blit(option1_text, (option1.x + 10, option1.y + 8))
-                event_box.blit(option2_text, (option2.x + 10, option2.y + 8))
-            elif combat_triggered:
+                event_box.blit(option1_text, (option1.x + 10, option1.y + 8)) # Draw the option 1 text
+                event_box.blit(option2_text, (option2.x + 10, option2.y + 8)) # Draw the option 2 text
+            elif combat_triggered: # If the combat is triggered
                 pygame.draw.rect(event_box, (70, 70, 70), continue_button)
                 continue_text = self.option_font.render("[Continue]", True, (255, 255, 255))
                 event_box.blit(continue_text, (continue_button.x + 10, continue_button.y + 8))
@@ -934,18 +934,18 @@ class DeadAdventurers:
             self.run.player.draw_ui(pygame.display.get_surface())
             pygame.display.flip()
 
-        if exit == 'Main Menu':
-            self.run.main_menu.main_menu()
+        if exit == 'Main Menu': # If the exit is the main menu
+            self.run.main_menu.main_menu() # Go to the main menu
         else:
-            if not combat_triggered:
-                self.end_event()
+            if not combat_triggered: # If the combat is not triggered
+                self.end_event() # End the event
             else:
-                self.run_combat()
+                self.run_combat() # Run the combat
 
     def run_combat(self):
-        self.run.generage_combat_instace(self.elite, 'Elite')
-        self.run.start_combat()
-        self.end_event()
+        self.run.generage_combat_instace(self.elite, 'Elite') # Generate a combat instance
+        self.run.start_combat() # Start the combat
+        self.end_event() # End the event
 
     def end_event(self):
         self.event_active = False
@@ -959,9 +959,9 @@ class ColouredMushrooms:
         self.run = run
         self.combat_rewards = None
         self.event_active = True
-        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png'))
-        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640))
-        self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png'))
+        self.event_sprite = pygame.image.load(os.path.join('assets', 'sprites', 'events', f'{self.name}.png')) # Load the event sprite
+        self.event_sprite = pygame.transform.scale(self.event_sprite, (600, 640)) # Scale the event sprite
+        self.background = pygame.image.load(os.path.join('assets', 'ui', 'event_background.png')) # Load the background
         self.dialogue_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 26)
         self.option_font = pygame.font.Font(os.path.join('assets', 'fonts', 'Kreon-Bold.ttf'), 20)
         self.completed = False
@@ -1001,55 +1001,55 @@ class ColouredMushrooms:
         event_active = True
         exit = None
         while event_active:
-            events = pygame.event.get()
-            mouse_pos = pygame.mouse.get_pos()
-            self.run.handle_deck_view(events, mouse_pos)
-            self.run.potion_events(mouse_pos, events)
-            exit = self.run.handle_save_and_exit_input(events)
-            if exit == 'Main Menu':
+            events = pygame.event.get() # Get the events
+            mouse_pos = pygame.mouse.get_pos() # Get the mouse position
+            self.run.handle_deck_view(events, mouse_pos) # Handle the deck view
+            self.run.potion_events(mouse_pos, events) # Handle the potion events
+            exit = self.run.handle_save_and_exit_input(events) # Handle the save and exit input
+            if exit == 'Main Menu': # If the exit is the main menu
                 event_active = False
                 break
 
             for event in events:
-                if event.type == pygame.QUIT:
-                    pygame.quit()
+                if event.type == pygame.QUIT: # If the event is the quit event
+                    pygame.quit() # Quit the game
                     exit()
-                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1: # If the mouse button is up and the button is 1
+                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100) # Adjust the position
 
-                    if option1.collidepoint(adjusted_pos) and not self.completed:
-                        result_dialogue = [result1, result2]
-                        combat_triggered = True
-                        self.completed = True
-                        show_continue = True
-                        enemies_ready = True
+                    if option1.collidepoint(adjusted_pos) and not self.completed: # If the option 1 is clicked and the event is not completed
+                        result_dialogue = [result1, result2] # Set the result dialogue to the result 1 and 2
+                        combat_triggered = True # Set the combat triggered to true
+                        self.completed = True # Set the completed to true
+                        show_continue = True # Set the show continue to true
+                        enemies_ready = True # Set the enemies ready to true
                         # Set up combat rewards
-                        gold = random.randint(10, 20)
-                        cards, self.run.rareChanceOffset = card_constructor.generate_card_reward('normal', self.run.rareChanceOffset, self.run.cardRewardOptions, self.player.character_class)
-                        for i, card in enumerate(cards):
-                            cards[i] = card_constructor.create_card(card, card_data.card_info[card])
-                        potions = []
-                        rng = random.randint(1, 100)
-                        if rng <= self.run.potionChance:
-                            potion = potion_data.randomPotion()
-                            potions.append(potion)
-                            self.run.potionChance -= 10
+                        gold = random.randint(10, 20) # Generate a random amount of gold
+                        cards, self.run.rareChanceOffset = card_constructor.generate_card_reward('normal', self.run.rareChanceOffset, self.run.cardRewardOptions, self.player.character_class) # Generate a card reward
+                        for i, card in enumerate(cards): # For each card in the cards
+                            cards[i] = card_constructor.create_card(card, card_data.card_info[card]) # Create the card
+                        potions = [] # Create a list for the potions
+                        rng = random.randint(1, 100) # Generate a random number
+                        if rng <= self.run.potionChance: # If the random number is less than or equal to the potion chance
+                            potion = potion_data.randomPotion() # Generate a random potion
+                            potions.append(potion) # Add the potion to the potions list
+                            self.run.potionChance -= 10 # Decrease the potion chance by 10
                         else:
-                            self.run.potionChance += 20
-                        self.combat_rewards = {'Gold': gold, 'Cards': [cards], 'Potions': potions, 'Relics': [relic_data.createRelic('Strange Mushroom', relic_data.eventRelics['Strange Mushroom'])]}
-                    elif option2.collidepoint(adjusted_pos) and not self.completed:
-                        self.player.hp_recovery(int(self.player.maxHp * 0.25))
-                        card = card_constructor.create_card(6, card_data.card_info[6])
-                        self.run.card_pickup(card)
-                        result_dialogue = [result3, result4, result5, result6]
-                        self.completed = True
-                        show_continue = True
-                    elif continue_button.collidepoint(adjusted_pos) and show_continue:
-                        if combat_triggered and enemies_ready:
-                            self.run.generage_combat_instace([enemy_data.InfestedCorpes(), enemy_data.InfestedCorpes(), enemy_data.InfestedCorpes()], 'normal')
-                            event_active = False
+                            self.run.potionChance += 20 # Increase the potion chance by 20
+                        self.combat_rewards = {'Gold': gold, 'Cards': [cards], 'Potions': potions, 'Relics': [relic_data.createRelic('Strange Mushroom', relic_data.eventRelics['Strange Mushroom'])]} # Set the combat rewards
+                    elif option2.collidepoint(adjusted_pos) and not self.completed: # If the option 2 is clicked and the event is not completed
+                        self.player.hp_recovery(int(self.player.maxHp * 0.25)) # Heal the player by 25% of their max hp
+                        card = card_constructor.create_card(6, card_data.card_info[6]) # Create a card
+                        self.run.card_pickup(card) # Pickup the card
+                        result_dialogue = [result3, result4, result5, result6] # Set the result dialogue to the result 3, 4, 5 and 6
+                        self.completed = True # Set the completed to true
+                        show_continue = True # Set the show continue to true
+                    elif continue_button.collidepoint(adjusted_pos) and show_continue: # If the continue button is clicked and the show continue is true
+                        if combat_triggered and enemies_ready: # If the combat is triggered and the enemies are ready
+                            self.run.generage_combat_instace([enemy_data.InfestedCorpes(), enemy_data.InfestedCorpes(), enemy_data.InfestedCorpes()], 'normal') # Generate a combat instance
+                            event_active = False # Set the event active to false
                         else:
-                            event_active = False
+                            event_active = False # Set the event active to false
 
             # Draw everything
             event_box.fill((50, 50, 50))
@@ -1157,40 +1157,40 @@ class HallucinationFog:
         exit = None
         event_active = True
         while event_active:
-            events = pygame.event.get()
-            mouse_pos = pygame.mouse.get_pos()
-            self.run.handle_deck_view(events, mouse_pos)
-            self.run.potion_events(mouse_pos, events)
-            exit = self.run.handle_save_and_exit_input(events)
-            if exit == 'Main Menu':
+            events = pygame.event.get() # Get the events
+            mouse_pos = pygame.mouse.get_pos() # Get the mouse position
+            self.run.handle_deck_view(events, mouse_pos) # Handle the deck view
+            self.run.potion_events(mouse_pos, events) # Handle the potion events
+            exit = self.run.handle_save_and_exit_input(events) # Handle the save and exit input
+            if exit == 'Main Menu': # If the exit is the main menu
                 event_active = False
                 break
 
-            for event in events:
-                if event.type == pygame.QUIT:
-                    pygame.quit()
+            for event in events: # For each event
+                if event.type == pygame.QUIT: # If the event is the quit event
+                    pygame.quit() # Quit the game
                     exit()
                 if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
+                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100) # Adjust the position
 
-                    if not self.completed:
-                        if option1.collidepoint(adjusted_pos):
-                            effects.card_select(1, {}, self.run)
-                            self.player.transform_card()
-                            result_dialogue = [result1, result2, result3]
-                            self.completed = True
-                        elif option2.collidepoint(adjusted_pos):
-                            effects.card_select(1, {}, self.run)
-                            self.player.remove_card()
-                            result_dialogue = [result4, result5, result6]
-                            self.completed = True
-                        elif option3.collidepoint(adjusted_pos):
-                            effects.card_select(1, {}, self.run)
-                            self.player.upgrade_card()
-                            result_dialogue = [result7, result8, result9]
-                            self.completed = True
-                    elif continue_button.collidepoint(adjusted_pos):
-                        event_active = False
+                    if not self.completed: # If the event is not completed
+                        if option1.collidepoint(adjusted_pos): # If the option 1 is clicked
+                            effects.card_select(1, {}, self.run) # Select a card
+                            self.player.transform_card() # Transform the card
+                            result_dialogue = [result1, result2, result3] # Set the result dialogue to the result 1, 2 and 3
+                            self.completed = True # Set the completed to true
+                        elif option2.collidepoint(adjusted_pos): # If the option 2 is clicked
+                            effects.card_select(1, {}, self.run) # Select a card
+                            self.player.remove_card() # Remove a card
+                            result_dialogue = [result4, result5, result6] # Set the result dialogue to the result 4, 5 and 6
+                            self.completed = True # Set the completed to true
+                        elif option3.collidepoint(adjusted_pos): # If the option 3 is clicked
+                            effects.card_select(1, {}, self.run) # Select a card
+                            self.player.upgrade_card() # Upgrade a card
+                            result_dialogue = [result7, result8, result9] # Set the result dialogue to the result 7, 8 and 9
+                            self.completed = True # Set the completed to true
+                    elif continue_button.collidepoint(adjusted_pos): # If the continue button is clicked
+                        event_active = False # Set the event active to false
 
             # Draw everything
             event_box.fill((50, 50, 50))
@@ -1291,37 +1291,37 @@ class ShiningLight:
         exit = None
         event_active = True
         while event_active:
-            events = pygame.event.get()
-            mouse_pos = pygame.mouse.get_pos()
-            self.run.handle_deck_view(events, mouse_pos)
-            self.run.potion_events(mouse_pos, events)
-            exit = self.run.handle_save_and_exit_input(events)
-            if exit == 'Main Menu':
+            events = pygame.event.get() # Get the events
+            mouse_pos = pygame.mouse.get_pos() # Get the mouse position
+            self.run.handle_deck_view(events, mouse_pos) # Handle the deck view
+            self.run.potion_events(mouse_pos, events) # Handle the potion events
+            exit = self.run.handle_save_and_exit_input(events) # Handle the save and exit input
+            if exit == 'Main Menu': # If the exit is the main menu
                 event_active = False
                 break
 
             for event in events:
                 if event.type == pygame.QUIT:
-                    pygame.quit()
+                    pygame.quit() # Quit the game
                     exit()
-                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1: # If a mouse button is clicked
+                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100) # Adjust the position
 
-                    if not self.completed:
-                        if option1.collidepoint(adjusted_pos):
-                            self.player.hp_loss(int(self.player.maxHp * 0.2))
-                            if self.player.died():
-                                self.run.defeat()
+                    if not self.completed: # If the event is not completed
+                        if option1.collidepoint(adjusted_pos): # If the option 1 is clicked
+                            self.player.hp_loss(int(self.player.maxHp * 0.2)) # Lose hp
+                            if self.player.died(): # If the player dies
+                                self.run.defeat() # Defeat the player
                                 event_active = False
                                 break
-                            self.player.upgrade_card(['Card', 'Card'])
-                            result_dialogue = [result1, result2, result3, result4, result5]
+                            self.player.upgrade_card(['Card', 'Card']) # Upgrade 2 random cards
+                            result_dialogue = [result1, result2, result3, result4, result5] # Set the result dialogue to the result 1, 2, 3, 4 and 5
                             self.completed = True
-                        elif option2.collidepoint(adjusted_pos):
-                            result_dialogue = [result6]
-                            self.completed = True
-                    elif continue_button.collidepoint(adjusted_pos):
-                        event_active = False
+                        elif option2.collidepoint(adjusted_pos): # If the option 2 is clicked
+                            result_dialogue = [result6] # Set the result dialogue to the result 6
+                            self.completed = True # Set the completed to true
+                    elif continue_button.collidepoint(adjusted_pos): # If the continue button is clicked
+                        event_active = False # Set the event active to false
 
             # Draw everything
             event_box.fill((50, 50, 50))
@@ -1427,25 +1427,25 @@ class SlimeGoop:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
-                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100)
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1: # If a mouse button is clicked
+                    adjusted_pos = (mouse_pos[0] - 50, mouse_pos[1] - 100) # Adjust the position
 
                     if not self.completed:
-                        if option1.collidepoint(adjusted_pos):
-                            gold_amount = random.randint(45, 85)
-                            self.run.gold_modification(gold_amount)
-                            self.player.hp_loss(11)
-                            if self.player.died():
-                                self.run.defeat()
-                                event_active = False
+                        if option1.collidepoint(adjusted_pos): # If the option 1 is clicked
+                            gold_amount = random.randint(45, 85) # Generate a random amount of gold
+                            self.run.gold_modification(gold_amount) # Modify the gold
+                            self.player.hp_loss(11) # Lose hp
+                            if self.player.died(): # If the player dies
+                                self.run.defeat() # Defeat the player
+                                event_active = False # Set the event active to false
                                 break
-                            result_dialogue = [result1, result2]
-                            self.completed = True
-                        elif option2.collidepoint(adjusted_pos):
-                            result_dialogue = [result3]
-                            self.completed = True
-                    elif continue_button.collidepoint(adjusted_pos):
-                        event_active = False
+                            result_dialogue = [result1, result2] # Set the result dialogue to the result 1 and 2
+                            self.completed = True # Set the completed to true
+                        elif option2.collidepoint(adjusted_pos): # If the option 2 is clicked
+                            result_dialogue = [result3] # Set the result dialogue to the result 3
+                            self.completed = True # Set the completed to true
+                    elif continue_button.collidepoint(adjusted_pos): # If the continue button is clicked
+                        event_active = False # Set the event active to false
 
             # Draw everything
             event_box.fill((50, 50, 50))
@@ -1497,7 +1497,7 @@ class SlimeGoop:
         self.event_active = False
         self.run.mapNav()
 
-events1 = {
+events1 = { # Act 1 events
     'Scorched Forest': ScorchedForest,
     'Entangled Treasure': EntangledTreasure,
     'The Cleric': TheCleric,

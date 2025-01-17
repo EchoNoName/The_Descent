@@ -3,73 +3,44 @@ import random
 import pygame
 import os
 import math
-#effect:
-# dmg: (#, Times, target(Override)
-# block: (#, Times)
-# buff: (id, stacks, id, stacks, id, stacks...)
-# debuff: (id, stacks, id, stacks, id, stacks...)
-# draw: #
-# discard: #
-# place: (start, #, end, position if needed, cost)
-# exhaust: (#, location, choice/random/condition/position)
-# add: (location, card, #, cost(if applicable))
-# search: (location, card/type, #)
-# condition (Based on previous effect): (cond, cond eff, norm eff)
-# retain: (location, #)
-# play: (location, position, discard/exhaust, #)
-# Hp: #
-# Drawn: (eff)
-# turn end: (eff)
-# cost: (target, #, cond if applicable)
-# modify: (target, eff, modification, combat/Perm)
-# power: (name, duration(# OR Perm), amount)
-# E: # 
-# Exhausted: {eff}
-# Discarded: {eff}
-# upgrade: (target(s), #, combat/perm)
-# gamble: # (Do a mulligan # of times)
-# potion: (Slots, Type), adds potions to empty slots
-# MaxHp: #
-# Chaotic: Location
 
-# 'NAME': ('DESCRIPTION', 'TIME OF USE', ('EFFECT': 'MAGNITUDE'...), 'TARGET')
 class Potion:
     def __init__(self, name, desciption, time_of_use, effect, target, rarity):
-        self.name = name
-        self.description = desciption
-        self.time_of_use = time_of_use
-        self.effect = effect
-        self.target = target
-        self.rarity = rarity
-        sprite = pygame.image.load(os.path.join('assets', 'sprites', 'potions', 'basic_potion.png'))
-        self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 5, sprite.get_height() // 5))
-        self.is_hovered = False
-        self.rect = self.sprite.get_rect()
+        self.name = name # Set the name to the name
+        self.description = desciption # Set the description to the description
+        self.time_of_use = time_of_use # Set the time_of_use to the time_of_use
+        self.effect = effect # Set the effect to the effect
+        self.target = target # Set the target to the target
+        self.rarity = rarity # Set the rarity to the rarity
+        sprite = pygame.image.load(os.path.join('assets', 'sprites', 'potions', 'basic_potion.png')) # Load the sprite
+        self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 5, sprite.get_height() // 5)) # Scale the sprite
+        self.is_hovered = False # Set the is_hovered to False
+        self.rect = self.sprite.get_rect() # Get the rect of the sprite
         self.hover_scale = 1.1
-        self.clicked = False
-        self.targeting = False
-        self.arrow_body_sprite = pygame.image.load(os.path.join("assets", "arrows", "arrow_body.png"))
-        self.arrow_head_sprite = pygame.image.load(os.path.join("assets", "arrows", "arrow_head.png"))
+        self.clicked = False # Set the clicked to False
+        self.targeting = False # Set the targeting to False
+        self.arrow_body_sprite = pygame.image.load(os.path.join("assets", "arrows", "arrow_body.png")) # Load the arrow_body_sprite 
+        self.arrow_head_sprite = pygame.image.load(os.path.join("assets", "arrows", "arrow_head.png")) # Load the arrow_head_sprite
         self.arrow_body_sprite = pygame.transform.scale(self.arrow_body_sprite, 
-            (self.arrow_body_sprite.get_width()//4, self.arrow_body_sprite.get_height()//4))
+            (self.arrow_body_sprite.get_width()//4, self.arrow_body_sprite.get_height()//4)) # Scale the arrow_body_sprite  
         self.arrow_head_sprite = pygame.transform.scale(self.arrow_head_sprite,
-            (self.arrow_head_sprite.get_width()//4, self.arrow_head_sprite.get_height()//4))
+            (self.arrow_head_sprite.get_width()//4, self.arrow_head_sprite.get_height()//4)) # Scale the arrow_head_sprite
     
     def __str__(self):
-        return f'{self.name}: {self.description}'
+        return f'{self.name}: {self.description}' # Return the string representation of the potion
     
     def __repr__(self):
-        return self.__str__()
+        return self.__str__() # Return the string representation of the potion
 
     def draw(self, screen, x, y):
         y -= 4
         if self.is_hovered:
             scaled_sprite = pygame.transform.scale(self.sprite, (int(self.sprite.get_width() * self.hover_scale), int(self.sprite.get_height() * self.hover_scale)))
-            screen.blit(scaled_sprite, (x, y))
+            screen.blit(scaled_sprite, (x, y)) # Draw the scaled sprite
         else:
-            screen.blit(self.sprite, (x, y))
-        self.rect.x = x
-        self.rect.y = y
+            screen.blit(self.sprite, (x, y)) # Draw the sprite
+        self.rect.x = x # Set the rect to the x
+        self.rect.y = y # Set the rect to the y
         if self.clicked:
             # Draw boxes
             box_width = 100
@@ -147,29 +118,33 @@ class Potion:
                 screen.blit(surface, (box_x + 10, box_y + 40 + (i * 30)))
     
     def hover(self):
+        '''Method to hover over the potion'''
         self.is_hovered = True
     
     def unhover(self):
+        '''Method to unhover over the potion'''
         if not self.clicked:
-            self.is_hovered = False
+            self.is_hovered = False # Set the is_hovered to False
     
     def click(self):
+        '''Method to click the potion'''
         self.clicked = True
     
     def unclick(self):
+        '''Method to unclick the potion'''
         self.clicked = False
         self.targeting = False
     
     def start_targeting(self):
-        """Start the targeting state instead of dragging"""
+        '''Method to start the targeting state instead of dragging'''
         self.targeting = True
 
     def stop_targeting(self):
-        """Stop the targeting state"""
+        '''Method to stop the targeting state'''
         self.targeting = False
         
     def draw_targeting_arrow(self, surface, mouse_pos):
-        """Draw an arrow from the card to the mouse position using separate head and body sprites"""
+        '''Method to draw an arrow from the card to the mouse position using separate head and body sprites'''
         if self.targeting:
             # Calculate start position (center of card)
             self.current_pos = self.rect.center
@@ -247,7 +222,7 @@ class Potion:
     def update_rect(self):
         self.rect = self.sprite.get_rect()
 
-potions = {
+potions = { # Dictionary of potions
     "Attack Potion": ("Add 1 of 3 random Attack cards to your hand, it costs 0 this turn.", 'combat', {effects.discover: ('Attack', 0)}, 0, 0),
     "Skill Potion": ("Add 1 of 3 random Skill cards to your hand, it costs 0 this turn.", 'combat', {effects.discover: ('Skill', 0)}, 0, 0),
     "Power Potion": ("Add 1 of 3 random Power cards to your hand, it costs 0 this turn.", 'combat', {effects.discover: ('Power', 0)}, 0, 0),
@@ -282,23 +257,24 @@ potions = {
 }
 
 def createPotion(name, data):
-    return Potion(name, *data)
+    return Potion(name, *data) # Create a potion    
 
 def randomPotion():
     name = ''
     data = ()
-    rng = random.randint(1, 100)
-    if rng <= 65:
+    rng = random.randint(1, 100) 
+    if rng <= 65: # 65% chance of rarity 0
         rng = 0
-    elif rng <= 90:
-        rng = 1
-    else:
-        rng = 2
+    elif rng <= 90: # 25% chance of rarity 1
+        rng = 1 # Set the rng to 1
+    else: # 10% chance of rarity 2
+        rng = 2 # Set the rng to 2
     while True:
-        name, data = random.choice(list(potions.items()))
-        if data[4] != rng:
-            continue
+        name, data = random.choice(list(potions.items())) # Choose a random potion
+        if data[4] != rng: # If the rarity of the chosen potion is not the same as the rng
+            continue # Continue the loop
         else:
-            break
-    return createPotion(name, data)
+            break # Break the loop
+    return createPotion(name, data) # Create a potion
+
 

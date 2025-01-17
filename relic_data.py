@@ -250,6 +250,7 @@ class Relics: # Relic Object Class
             self.effect_type(*self.effect_details, context, combat)
 
 def createRelic(name: str, details: tuple):
+    '''Function to create a relic'''
     return Relics(name, *details)
 
 def createCommon():
