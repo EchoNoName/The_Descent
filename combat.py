@@ -2197,7 +2197,7 @@ class Hand:
         self.cards = cards
         self.type = 'hand'
         self.center_pos = center_pos  # Center position of the hand
-        self.spread = spread  # Spread angle or linear spread
+        self.spread = spread  # linear spread
         self.hover_spread = spread * 1.3  # Increased spread when hovering
 
     def index(self, card):
@@ -2279,8 +2279,8 @@ class Hand:
             if card == dragged_card:
                 continue
 
-            target_x = start_x + i * self.spread
-            target_y = self.center_pos[1]
+            target_x = start_x + i * self.spread # calculate the desired x position
+            target_y = self.center_pos[1] 
 
             # If there's a hovered card, adjust positions
             if hovered_index != -1:

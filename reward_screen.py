@@ -450,7 +450,7 @@ class RewardScreen: # Class for any reward screed
                     for i, relic in enumerate(self.rewards['Relics']):
                         relic_rect = pygame.Rect(30, reward_y, 460, reward_height) # Create a relic rectangle
                         if relic_rect.collidepoint(box_mouse_pos): # If the relic rectangle collides with the box mouse position
-                            self.run.relic_pickup(relic) # Pickup the relic
+                            print(self.run.player.relics)
                             self.rewards['Relics'].pop(i) # Pop the relic from the relics
                         reward_y += reward_height + reward_spacing
 

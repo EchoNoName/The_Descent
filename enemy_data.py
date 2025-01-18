@@ -620,7 +620,7 @@ class Enemy:
         '''
         if self.buffs['Artifact'] > 0:
             # If artifact is present
-            self.buffs['ArtiFact'] -= 1
+            self.buffs['Artifact'] -= 1
             # Subtrack 1 from artifact and negate the debuff
         elif debuff_type in {'Strength', '-Dexterity'}:
             # If its Str or Dex
