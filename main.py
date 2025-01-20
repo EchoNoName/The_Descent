@@ -185,6 +185,8 @@ class Character:
                     self.relics.append(relic_data.createRelic(relic, relic_data.bossRelics[relic]))
                 elif relic in relic_data.eventRelics:
                     self.relics.append(relic_data.createRelic(relic, relic_data.eventRelics[relic]))
+                elif relic in relic_data.starterRelics:
+                    self.relics.append(relic_data.createRelic(relic, relic_data.starterRelics[relic]))
         sprite = pygame.image.load('assets/sprites/characters/swordsman.png')
         # Scale down the character sprite
         self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 2.75, sprite.get_height() // 2.75))
