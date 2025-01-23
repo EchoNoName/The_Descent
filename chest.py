@@ -52,7 +52,10 @@ class Treasure:
             # Handle deck view
             self.run.handle_deck_view(events, mouse_pos)
             # Handle save and exit input
-            exit = self.run.handle_save_and_exit_input(events)
+            exit = self.run.handle_save_and_exit_input(events) # Handle save and exit input
+            if exit == 'Main Menu':
+                running = False
+                break
 
             for event in events:
                 # Handle quit event

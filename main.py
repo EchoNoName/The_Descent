@@ -1614,6 +1614,7 @@ class Run:
         
         ### args:
             relic: the relic object being added'''
+        print(f'Pickup {relic}')
         self.player.relics.append(relic)
         relic.pickUp(self)
     

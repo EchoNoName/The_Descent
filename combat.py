@@ -1788,7 +1788,8 @@ class Combat:
                     # removes the card from hand
                 if self.selected:
                     # If cards were selected to be retained
-                    self.hand.extend(self.selected)
+                    for card in self.selected:
+                        self.hand.add_card(card)
                     # Add them back to hand
                     self.selected[:] = []
                     # empty selected

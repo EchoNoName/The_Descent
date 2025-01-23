@@ -693,7 +693,7 @@ def campfire_change(action: str, run):
     run.campfire_restrict(action)
 
 def sneko_eye(context, combat):
-    if combat.start_of_combat == True:
+    if combat.turn in {0, 1}:
         apply_debuff(['Chaotic'], [1], context, combat)
     draw_cards(2, context, combat)
 
